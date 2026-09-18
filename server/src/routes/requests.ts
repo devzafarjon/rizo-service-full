@@ -16,6 +16,7 @@ import { buildTimeline, serializePauses } from "../lib/timeline.js";
 import { isAllowedStatus } from "../lib/status.js";
 import { addMonths, computeWarrantyStatus, parseDateOnly } from "../lib/warranty.js";
 import { allocateDisplayId, normalizeDisplayIdQuery } from "../lib/displayId.js";
+import { serializeNamed } from "../lib/named.js";
 import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
 
 const patchSchema = z.object({
@@ -195,13 +196,13 @@ requestsRouter.get(
       ...serializeJobWork(request),
       matchingServices: services.map((item) => ({
         id: item.id,
-        name: item.name,
+        ...serializeNamed(item),
         price: Number(item.price),
         productCategory: item.productCategory,
       })),
       matchingParts: parts.map((item) => ({
         id: item.id,
-        name: item.name,
+        ...serializeNamed(item),
         price: Number(item.price),
         productCategory: item.productCategory,
         stockQuantity: item.stockQuantity,
