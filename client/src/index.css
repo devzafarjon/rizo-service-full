@@ -1,0 +1,153 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-rizo: #b439fd;
+  --color-rizo-dark: #8200bf;
+  --color-rizo-hover: #c45fff;
+  --color-rizo-soft: #f3e8ff;
+  --color-rizo-orange: #f6921e;
+  --color-rizo-orange-hover: #e08512;
+  --color-rizo-orange-soft: #fff4e5;
+  --color-surface: #ffffff;
+  --color-ink: #000000;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  min-height: 100dvh;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  background: #ffffff;
+  color: #000000;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+.btn-rizo {
+  display: inline-flex;
+  height: 56px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 8px;
+  background: #b439fd;
+  padding: 16px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  transition: background-color 150ms ease;
+}
+
+.btn-rizo:hover {
+  background: #c45fff;
+}
+
+.btn-rizo:disabled {
+  opacity: 0.7;
+}
+
+.btn-rizo-sm {
+  display: inline-flex;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 8px;
+  background: #b439fd;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  transition: background-color 150ms ease;
+}
+
+.btn-rizo-sm:hover {
+  background: #c45fff;
+}
+
+.btn-rizo-sm:disabled {
+  opacity: 0.7;
+}
+
+.btn-rizo-orange {
+  display: inline-flex;
+  height: 56px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #f6921e;
+  padding: 16px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  transition: background-color 150ms ease;
+}
+
+.btn-rizo-orange:hover {
+  background: #e08512;
+}
+
+.btn-rizo-ghost {
+  display: inline-flex;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #f3f4f6;
+  padding: 8px 16px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #b439fd;
+}
+
+.receipt-sheet {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+@media print {
+  @page {
+    margin: 12mm;
+    size: A4;
+  }
+
+  body {
+    background: #ffffff;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  a[href]::after {
+    content: none !important;
+  }
+}

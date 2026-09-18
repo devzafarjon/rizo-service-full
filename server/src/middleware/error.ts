@@ -1,0 +1,84 @@
+import type { NextFunction, Request, Response } from "express";
+import { HttpError } from "../lib/httpError.js";
+
+const MESSAGE_CODES: Record<string, string> = {
+  "Incorrect phone number or password": "badCredentials",
+  "Sign in required": "required",
+  "Staff access only": "staffOnly",
+  "Customer portal access only": "customerOnly",
+  "You do not have access to this area": "forbidden",
+  "Account no longer exists": "accountGone",
+  "Invalid or expired session": "invalidSession",
+  "isAvailable must be true or false": "invalidAvailability",
+  "An account with this phone number already exists": "phoneExists",
+  "No portal account for this number. Create one instead.": "noPortalAccount",
+  "Invalid input": "invalidInput",
+  "Enter a valid phone number": "phone",
+  "Use a valid date (YYYY-MM-DD)": "date",
+  "A valid date is required": "date",
+  "Password must be at least 6 characters": "passwordLength",
+  "Use all, 30d, 90d, or year": "reportRange",
+  "Photos must be image files": "photosType",
+  "Each photo must be 8 MB or smaller": "photosSize",
+  "You can upload up to 8 photos at once": "photosCount",
+  "Could not upload photos": "uploadFailed",
+  "Choose at least one photo": "choosePhoto",
+  "Record not found": "notFound",
+  "Customer not found": "customerNotFound",
+  "Product not found": "productNotFound",
+  "Sale not found": "saleNotFound",
+  "Service request not found": "requestNotFound",
+  "Request not found": "requestNotFound",
+  "Job not found": "jobNotFound",
+  "Service not found": "serviceNotFound",
+  "Spare part not found": "partNotFound",
+  "Service line not found": "notFound",
+  "Part line not found": "notFound",
+  "Extra expense not found": "notFound",
+  "Photo not found": "notFound",
+  "Notification not found": "notificationNotFound",
+  "Technician not found": "technicianNotFound",
+  "A record with these details already exists": "conflict",
+  "A product with this SKU already exists": "skuExists",
+  "This customer has sales or service history and cannot be deleted": "customerHasHistory",
+  "This sale is linked to service requests and cannot be deleted": "saleHasRequests",
+  "This product is used on sales or service requests and cannot be deleted": "productInUse",
+  "This service is used on existing jobs and cannot be deleted": "serviceInUse",
+  "This part is used on existing jobs and cannot be deleted": "partInUse",
+  "You already left feedback for this request": "feedbackExists",
+  "Jobs cannot be moved back to New": "cannotMoveToNew",
+  "Completed jobs cannot be moved on this board": "cannotMoveCompleted",
+  "This job is already paused": "alreadyPaused",
+  "Pause reason and duration are required": "pauseRequired",
+  "This service does not match the product category": "categoryMismatch",
+  "This spare part does not match the product category": "categoryMismatch",
+  "This service is already on the job": "serviceAlreadyOnJob",
+  "Completed jobs cannot be edited": "completedLocked",
+  "This sale does not belong to the selected customer": "saleNotForCustomer",
+  "This technician does not match the required type": "techTypeMismatch",
+  "Select a past purchase or a product": "needPurchaseOrProduct",
+  "Feedback is available after the job is completed": "feedbackNotReady",
+  "This purchase was not found on your account": "purchaseNotYours",
+  "Phone is required": "phoneRequired",
+  "Password is required": "passwordRequired",
+  "Name is required": "nameRequired",
+  "SKU is required": "skuRequired",
+  "Category is required": "categoryRequired",
+  "Product category is required": "categoryRequired",
+  "Something went wrong": "server",
+};
+
+export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction) {
+  const status = err instanceof HttpError ? err.status : 500;
+  const message = err instanceof Error ? err.message : "Unexpected error";
+  if (status >= 500) {
+    console.error(err);
+  }
+  const mapped = err instanceof HttpError && err.code !== "generic" ? err.code : MESSAGE_CODES[message];
+  const code = mapped ?? (status === 500 ? "server" : "generic");
+  res.status(status).json({
+    error: status === 500 ? "Something went wrong" : message,
+    code,
+    details: err instanceof HttpError ? err.details : undefined,
+  });
+}
