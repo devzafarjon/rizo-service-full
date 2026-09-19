@@ -14,6 +14,7 @@
     "back": "Orqaga",
     "print": "Chop etish",
     "signOut": "Chiqish",
+    "accountMenu": "Hisob menyusi",
     "signIn": "Kirish",
     "language": "Til",
     "actions": "Amallar",
@@ -56,7 +57,6 @@
     "paidRepair": "pullik ta’mirlash",
     "geoUnavailable": "Bu brauzerda joylashuv mavjud emas",
     "geoFailed": "Joylashuvni o‘qib bo‘lmadi",
-    "nextOccurrence": "Keyingi texnik xizmat so‘rovi yaratildi",
     "jobPhoto": "Ish rasmi",
     "takePhoto": "Rasmga olish",
     "removePhoto": "Rasmni o‘chirish",
@@ -74,7 +74,7 @@
     "service": "RIZO Service",
     "staff": "Xizmat xodimlari",
     "portal": "Mijoz portali",
-    "tagline": "RIZO market mahsulotlari uchun o‘rnatish, ta’mirlash va texnik xizmat."
+    "tagline": "RIZO market mahsulotlari uchun o‘rnatish va ta’mirlash."
   },
   "home": {
     "staff": "Xodimlar kirishi",
@@ -144,11 +144,20 @@
     "boardTitle": "Jo‘natish doskasi",
     "boardBody": "Jonli Kanban, holatni sudrab o‘zgartirish va texnik bandligi.",
     "newTitle": "Yangi so‘rov",
-    "newBody": "O‘rnatish, ta’mirlash yoki xizmatni kafolat tekshiruvi va avtomatik tayinlash bilan yarating.",
+    "newBody": "O‘rnatish yoki ta’mirlashni kafolat tekshiruvi va avtomatik tayinlash bilan yarating.",
     "catalogTitle": "Katalog",
     "catalogBody": "Mahsulotlar, xizmatlar va ehtiyot qismlar turkum bo‘yicha.",
     "reportsTitle": "Hisobotlar",
-    "reportsBody": "Holat, bajarish vaqti, nuqsonlar, kafolat va pullik tushum, baholar."
+    "reportsBody": "Mahsulot, qism, xarajat, foyda, texnik, kafolat va manba hisobotlari."
+  },
+  "dashboard": {
+    "intro": "Tanlangan davr uchun xizmat hajmi, tushum va foyda. Sana oralig‘ini o‘zgartirsangiz, barcha diagrammalar yangilanadi.",
+    "trend": "Tushum, xarajat va foyda",
+    "topProducts": "Xizmat hajmi bo‘yicha mahsulotlar",
+    "topParts": "Eng ko‘p ishlatilgan ehtiyot qismlar",
+    "defects": "Qurilma turi bo‘yicha eng ko‘p nuqsonlar",
+    "status": "So‘rov holatlari",
+    "warranty": "Kafolat va pullik ta’mirlash"
   },
   "shell": {
     "adminRole": "Admin / dispetcher",
@@ -156,7 +165,6 @@
     "busy": "Band"
   },
   "status": {
-    "due": "Muddati kelgan",
     "scheduled": "Rejalashtirilgan",
     "received": "Qabul qilingan",
     "diagnosing": "Diagnostika",
@@ -177,8 +185,7 @@
   },
   "type": {
     "installation": "O‘rnatish",
-    "repair": "Ta’mirlash",
-    "maintenance": "Texnik xizmat"
+    "repair": "Ta’mirlash"
   },
   "priority": {
     "low": "Past",
@@ -401,7 +408,7 @@
     "addSale": "Sotuv qo‘shish",
     "noPurchasesBody": "Kafolat muddatini avtomatik hisoblash uchun sotuv yozing.",
     "historyHint": "Bu mijozning har bir ishi doimiy saqlanadi — sanalar, turi va natija profilda qoladi.",
-    "noJobsBody": "O‘rnatish, ta’mirlash va texnik xizmat shu profilda qoladi.",
+    "noJobsBody": "O‘rnatish va ta’mirlash shu profilda qoladi.",
     "outcome": "Natija"
   },
   "sales": {
@@ -433,7 +440,7 @@
   },
   "requests": {
     "title": "Xizmat so‘rovlari",
-    "intro": "Barcha o‘rnatish, ta’mirlash va texnik xizmat ishlari.",
+    "intro": "Barcha o‘rnatish va ta’mirlash ishlari.",
     "new": "Yangi so‘rov",
     "emptyTitle": "Hali so‘rov yo‘q",
     "emptyBody": "Mijoz sotuvidan yoki yangi RIZO Service so‘rovi sifatida yarating.",
@@ -459,11 +466,10 @@
     "type": "Xizmat turi",
     "hint": {
       "installation": "Yangi xarid qilingan mahsulotni o‘rnatish",
-      "repair": "Buzilgan yoki nuqsonli mahsulotni tuzatish",
-      "maintenance": "Davriy texnik xizmat"
+      "repair": "Buzilgan yoki nuqsonli mahsulotni tuzatish"
     },
     "issue": "Muammo tavsifi",
-    "issueHint": "Nimani o‘rnatish, ta’mirlash yoki xizmat qilish kerak?",
+    "issueHint": "Nimani o‘rnatish yoki ta’mirlash kerak?",
     "defect": "Nuqson turi",
     "selectDefect": "Ta’mirlash bo‘lsa tanlang",
     "location": "Joy",
@@ -471,8 +477,6 @@
     "addressPlaceholder": "Ko‘cha, bino, mo‘ljal",
     "priority": "Muhimlik",
     "technicianType": "Kerakli texnik turi",
-    "recurring": "Takroriy texnik xizmat",
-    "interval": "Har (oyda) takrorlash",
     "submit": "So‘rov yaratish",
     "created": "So‘rov yaratildi",
     "failed": "So‘rov yaratib bo‘lmadi",
@@ -515,7 +519,6 @@
     "defect": "Nuqson",
     "source": "Manba",
     "payment": "To‘lov",
-    "recurring": "Takroriy",
     "required": "Talab",
     "address": "Manzil",
     "services": "Xizmatlar",
@@ -535,8 +538,6 @@
     "warrantyPays": "Kafolatda — mijoz {{amount}} to‘laydi",
     "customerPays": "Mijoz to‘laydi {{amount}}",
     "saleLine": "{{invoice}} · tugash {{date}}",
-    "everyMonths": "Har {{count}} oyda",
-    "nextDue": "keyingisi {{date}}",
     "notLinked": "Bog‘lanmagan",
     "location": "Joy"
   },
@@ -661,6 +662,11 @@
   "reports": {
     "title": "Hisobotlar",
     "intro": "Yuklama, bajarish vaqti, nuqsonlar, tushum va texnik baholari.",
+    "hubIntro": "Faqat admin uchun tahlil. Har bir hisobot bir xil sana oralig‘idan foydalanadi va Excel uchun CSV sifatida yuklab olinadi.",
+    "export": "CSV / Excel yuklab olish",
+    "from": "Dan",
+    "to": "Gacha",
+    "paused": "Pauzada",
     "rangeAll": "Butun vaqt",
     "range30": "So‘nggi 30 kun",
     "range90": "So‘nggi 90 kun",
@@ -672,8 +678,10 @@
     "avgRating": "O‘rtacha baho",
     "byType": "Tur bo‘yicha",
     "byStatus": "Holat bo‘yicha",
+    "byTechnician": "Texnik bo‘yicha",
+    "byProduct": "Mahsulot bo‘yicha",
     "revenue": "Tushum",
-    "revenueHint": "Tushum ish yakunlanganda, yopilganda yoki almashtirilganda hisoblanadi.",
+    "revenueHint": "Tushum — yakunlangan pullik ishlarning yakuniy narxi. Kafolatdagi bepul ta’mirlash tushumga kirmaydi.",
     "inWarranty": "Kafolatda",
     "paid": "Pullik ishlar",
     "defects": "Nuqsonlar",
@@ -684,24 +692,78 @@
     "jobsDone": "Yakunlangan ishlar",
     "noRatings": "Baho yo‘q",
     "empty": "Bu davrda so‘rov yo‘q.",
+    "emptyBody": "Sana oralig‘ini kengaytiring yoki yangi ishlar ochilishini kuting.",
     "jobsCount": "{{count}} ta ish",
     "loadFailed": "Hisobotlarni yuklab bo‘lmadi",
     "loadFailedBody": "Birozdan so‘ng qayta urinib ko‘ring. Ishlar o‘zgaganda raqamlar yangilanadi.",
     "noCompleted": "Bu davrda yakunlangan ish yo‘q",
     "paidRevenue": "Pullik ta’mirlash tushumi",
+    "costs": "Xarajatlar",
+    "profit": "Foyda",
+    "profitTrend": "Foyda dinamikasi",
+    "warrantyTrend": "Kafolat va pullik dinamikasi",
+    "warrantyRatio": "Kafolat / pullik",
+    "warrantyPaid": "{{warranty}} kafolat / {{paid}} pullik ({{ratio}}% kafolat)",
+    "part": "Ehtiyot qism",
+    "qtyUsed": "Ishlatilgan miqdor",
+    "partRevenue": "Qismlardan tushum",
+    "allProducts": "Barcha mahsulotlar",
+    "rank": "O‘rin",
+    "partsCost": "Qismlar narxi",
+    "extras": "Qo‘shimcha xarajatlar",
+    "running": "Yig‘ma jami",
+    "group": "Guruh",
+    "period": "Davr",
+    "freeValue": "Kafolatdagi xarajat",
+    "paidValue": "Pullik tushum",
+    "sourceLabel": "Manba",
     "ratingsCount": "{{count}} baho",
     "noFeedback": "Hali fikr-mulohaza yo‘q",
     "inWarrantyFree": "Kafolatda (bepul)",
-    "paidRepair": "Pullik ta’mirlash"
+    "paidRepair": "Pullik ta’mirlash",
+    "preset": {
+      "week": "Shu hafta",
+      "month": "Shu oy",
+      "quarter": "Shu chorak",
+      "year": "Shu yil",
+      "all": "Butun vaqt",
+      "custom": "Boshqa"
+    },
+    "grain": {
+      "day": "Kunlik",
+      "week": "Haftalik",
+      "month": "Oylik"
+    },
+    "nav": {
+      "products": "Mahsulot bo‘yicha",
+      "productsBody": "Har bir mahsulot uchun so‘rovlar soni, o‘rnatish/ta’mirlash, pullik tushum va kafolat nisbati.",
+      "parts": "Ehtiyot qism bo‘yicha",
+      "partsBody": "Ishlatilgan miqdor, qismlardan tushum va eng ko‘p ishlatilgan qismlar. Mahsulot bo‘yicha filtrlash mumkin.",
+      "expenses": "Xarajatlar bo‘yicha",
+      "expensesBody": "Qo‘shimcha xarajatlar va qismlar narxi — texnik va mahsulot kesimida.",
+      "profit": "Foyda bo‘yicha",
+      "profitBody": "Pullik ta’mirlash tushumidan qismlar va qo‘shimcha xarajatlar ayiriladi. Kunlik, haftalik yoki oylik trend.",
+      "technicians": "Texnik bo‘yicha",
+      "techniciansBody": "Yakunlangan ishlar, o‘rtacha bajarish vaqti, mijoz bahosi va har bir texnikning tushumi.",
+      "warranty": "Kafolat holati bo‘yicha",
+      "warrantyBody": "Kafolatdagi (bepul) va kafolatsiz (pullik) so‘rovlar soni va qiymati vaqt bo‘yicha.",
+      "sources": "So‘rov manbasi bo‘yicha",
+      "sourcesBody": "RIZO market orqali kelgan so‘rovlar va RIZO Service yoki mijoz portalidan ochilgan ishlar."
+    },
+    "source": {
+      "rizo_market": "RIZO market",
+      "rizo_service": "RIZO Service (xodim)",
+      "portal": "Mijoz portali"
+    }
   },
   "portal": {
     "homeTitle": "Xizmat so‘rovlaringiz",
-    "homeIntro": "Hisobingizdagi har bir o‘rnatish, ta’mirlash va texnik xizmatning jonli holati.",
+    "homeIntro": "Hisobingizdagi har bir o‘rnatish va ta’mirlashning jonli holati.",
     "hello": "Salom {{name}}",
     "waitingTech": "Texnik kutilmoqda",
     "waitingAssignment": "Tayinlash kutilmoqda",
     "emptyTitle": "Bu yerda so‘rov yo‘q",
-    "emptyBody": "O‘rnatish, ta’mirlash yoki texnik xizmat so‘rang — jonli holat shu sahifada chiqadi.",
+    "emptyBody": "O‘rnatish yoki ta’mirlash so‘rang — jonli holat shu sahifada chiqadi.",
     "newTitle": "Xizmat so‘rash",
     "newIntro": "Oldingi xaridni tanlang yoki yangi muammoni yozing. Joyidagi ishlar uchun manzil kerak.",
     "purchase": "Xaridingiz",
@@ -728,8 +790,7 @@
     "notFoundBody": "Bu ish sizning hisobingizda yo‘q.",
     "hint": {
       "repair": "Nimadir buzilgan yoki ishlamayapti",
-      "installation": "Yangi xarid qilingan mahsulotni o‘rnatish",
-      "maintenance": "Davriy texnik xizmat"
+      "installation": "Yangi xarid qilingan mahsulotni o‘rnatish"
     },
     "pendingFeedback_one": "Yakunlangan ish bahongizni kutmoqda.",
     "pendingFeedback_few": "{{count}} ta yakunlangan ish bahongizni kutmoqda.",

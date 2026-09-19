@@ -6,6 +6,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useStaffAuth } from "../../features/auth/StaffAuthContext";
 import { formatPhone, technicianTypeLabel } from "../../lib/format";
 import { useStaffRealtime } from "../../lib/useStaffRealtime";
+import { AccountMenu } from "../AccountMenu";
 import { LanguageSwitcher } from "../LanguageSwitcher";
 import { QuickSearch } from "../QuickSearch";
 import { RizoLogo } from "../RizoLogo";
@@ -61,6 +62,26 @@ export function StaffShell() {
             </div>
             {user.role === "admin" ? <QuickSearch /> : <div className="flex-1" />}
             <LanguageSwitcher />
+            <AccountMenu
+              name={user.name}
+              detail={
+                user.role === "admin"
+                  ? `${t("shell.adminRole")} · ${formatPhone(user.phone)}`
+                  : `${technicianTypeLabel(user.technicianType) ?? t("role.technician")} · ${formatPhone(user.phone)}`
+              }
+              onLogout={onLogout}
+            >
+              {user.role === "technician" ? (
+                <button
+                  type="button"
+                  onClick={() => setAvailability(!user.isAvailable)}
+                  className="flex min-h-10 w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                >
+                  <span className={`h-2 w-2 rounded-full ${user.isAvailable ? "bg-emerald-500" : "bg-gray-400"}`} />
+                  {user.isAvailable ? t("shell.available") : t("shell.busy")}
+                </button>
+              ) : null}
+            </AccountMenu>
             <button
               type="button"
               className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 lg:hidden"

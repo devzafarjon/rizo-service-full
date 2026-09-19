@@ -7,8 +7,18 @@ import { CustomerSignupPage } from "./features/auth/CustomerSignupPage";
 import { CustomerProtectedRoute } from "./features/auth/CustomerProtectedRoute";
 import { HomePage } from "./features/auth/HomePage";
 import { RoleRoute, StaffProtectedRoute } from "./features/auth/ProtectedRoute";
-import { StaffHomePage } from "./features/auth/StaffHomePage";
 import { StaffLoginPage } from "./features/auth/StaffLoginPage";
+import { DashboardPage } from "./features/reporting/DashboardPage";
+import {
+  ExpensesReportPage,
+  PartsReportPage,
+  ProductReportPage,
+  ProfitReportPage,
+  ReportsIndexPage,
+  SourcesReportPage,
+  TechnicianReportPage,
+  WarrantyReportPage,
+} from "./features/reporting/ReportsPages";
 import { CatalogPage } from "./features/catalog/CatalogPage";
 import { CustomerDetailPage } from "./features/customers/CustomerDetailPage";
 import { CustomersPage } from "./features/customers/CustomersPage";
@@ -20,7 +30,6 @@ import { PortalNewRequestPage } from "./features/portal/PortalNewRequestPage";
 import { PortalRequestDetailPage } from "./features/portal/PortalRequestDetailPage";
 import { ReceiptPage } from "./features/receipt/ReceiptPage";
 import { ReceiptPrintPage } from "./features/receipt/ReceiptPrintPage";
-import { ReportingPage } from "./features/reporting/ReportingPage";
 import { SalesPage } from "./features/sales/SalesPage";
 import { NewRequestPage } from "./features/service-requests/NewRequestPage";
 import { RequestDetailPage } from "./features/service-requests/RequestDetailPage";
@@ -38,7 +47,7 @@ export default function App() {
       <Route element={<StaffProtectedRoute />}>
         <Route path="/app" element={<StaffShell />}>
           <Route element={<RoleRoute roles={["admin"]} />}>
-            <Route index element={<StaffHomePage />} />
+            <Route index element={<DashboardPage />} />
             <Route path="kanban" element={<AdminKanbanPage />} />
             <Route path="customers" element={<CustomersPage />} />
             <Route path="customers/:id" element={<CustomerDetailPage />} />
@@ -49,7 +58,14 @@ export default function App() {
             <Route path="requests/:id" element={<RequestDetailPage />} />
             <Route path="receipts" element={<ReceiptPage />} />
             <Route path="receipts/:id" element={<ReceiptPrintPage />} />
-            <Route path="reports" element={<ReportingPage />} />
+            <Route path="reports" element={<ReportsIndexPage />} />
+            <Route path="reports/products" element={<ProductReportPage />} />
+            <Route path="reports/parts" element={<PartsReportPage />} />
+            <Route path="reports/expenses" element={<ExpensesReportPage />} />
+            <Route path="reports/profit" element={<ProfitReportPage />} />
+            <Route path="reports/technicians" element={<TechnicianReportPage />} />
+            <Route path="reports/warranty" element={<WarrantyReportPage />} />
+            <Route path="reports/sources" element={<SourcesReportPage />} />
           </Route>
           <Route element={<RoleRoute roles={["technician"]} />}>
             <Route path="my-jobs" element={<TechnicianKanbanPage />} />

@@ -8,13 +8,11 @@ const OPEN_STATUSES: RequestStatus[] = [
   "diagnosing",
   "awaiting_parts",
   "repairing",
-  "due",
 ];
 
 export function initialStatusFor(type: ServiceType): RequestStatus {
   if (type === "installation") return "scheduled";
-  if (type === "repair") return "received";
-  return "due";
+  return "received";
 }
 
 export function paymentFor(type: ServiceType, warranty: WarrantyStatus) {

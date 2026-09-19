@@ -26,7 +26,7 @@ import type {
   TechnicianType,
 } from "../../lib/types";
 
-const TYPES: ServiceType[] = ["installation", "repair", "maintenance"];
+const TYPES: ServiceType[] = ["installation", "repair"];
 const PRIORITIES: Priority[] = ["low", "medium", "high", "urgent"];
 const ASSIGNMENT_MODES = ["auto", "manual", "unassigned"] as const;
 
@@ -56,8 +56,6 @@ export function NewRequestPage() {
   const [assignedTechnicianId, setAssignedTechnicianId] = useState("");
   const [priority, setPriority] = useState<Priority>("medium");
   const [source, setSource] = useState<"rizo_service" | "rizo_market">("rizo_service");
-  const [isRecurring, setIsRecurring] = useState(false);
-  const [recurrenceIntervalMonths, setRecurrenceIntervalMonths] = useState("6");
   const [error, setError] = useState<string | null>(null);
 
   const customersQuery = useQuery({
@@ -202,8 +200,6 @@ export function NewRequestPage() {
       assignedTechnicianId: assignmentMode === "manual" ? assignedTechnicianId : null,
       priority,
       source,
-      isRecurring: type === "maintenance" ? isRecurring : false,
-      recurrenceIntervalMonths: type === "maintenance" && isRecurring ? Number(recurrenceIntervalMonths) : null,
     });
   }
 
@@ -224,7 +220,7 @@ export function NewRequestPage() {
         <div className="space-y-6">
           <section className="rounded-2xl border border-neutral-200 bg-white p-5">
             <p className="mb-3 text-sm font-semibold text-neutral-700">{t("newRequest.type")}</p>
-            <div className="grid gap-2 sm:grid-cols-3">
+            <div className="grid gap-2 sm:grid-cols-2">
               {TYPES.map((item) => (
                 <button
                   key={item}
@@ -318,25 +314,6 @@ export function NewRequestPage() {
                   <option value="rizo_market">{t("source.rizo_market")}</option>
                 </select>
               </Field>
-              {type === "maintenance" ? (
-                <label className="flex items-center gap-2 text-sm font-semibold text-neutral-700">
-                  <input type="checkbox" checked={isRecurring} onChange={(event) => setIsRecurring(event.target.checked)} />
-                  {t("newRequest.recurring")}
-                </label>
-              ) : null}
-              {type === "maintenance" && isRecurring ? (
-                <Field label={t("newRequest.interval")}>
-                  <input
-                    className={inputClass}
-                    type="number"
-                    min={1}
-                    max={24}
-                    value={recurrenceIntervalMonths}
-                    onChange={(event) => setRecurrenceIntervalMonths(event.target.value)}
-                    required
-                  />
-                </Field>
-              ) : null}
             </div>
           </section>
 

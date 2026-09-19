@@ -14,6 +14,7 @@
     "back": "Back",
     "print": "Print",
     "signOut": "Sign out",
+    "accountMenu": "Account menu",
     "signIn": "Sign in",
     "language": "Language",
     "actions": "Actions",
@@ -56,7 +57,6 @@
     "paidRepair": "paid repair",
     "geoUnavailable": "Location is not available in this browser",
     "geoFailed": "Could not read your location",
-    "nextOccurrence": "Next maintenance occurrence created",
     "jobPhoto": "Job photo",
     "takePhoto": "Take photo",
     "removePhoto": "Remove photo",
@@ -74,7 +74,7 @@
     "service": "RIZO Service",
     "staff": "Service staff",
     "portal": "Customer portal",
-    "tagline": "After-sales installation, repair, and maintenance for products from RIZO market."
+    "tagline": "After-sales installation and repair for products from RIZO market."
   },
   "home": {
     "staff": "Staff sign in",
@@ -144,11 +144,20 @@
     "boardTitle": "Dispatch board",
     "boardBody": "Live Kanban with drag-and-drop status changes and technician availability.",
     "newTitle": "New request",
-    "newBody": "Create installation, repair, or maintenance with warranty check and auto-assign.",
+    "newBody": "Create installation or repair with warranty check and auto-assign.",
     "catalogTitle": "Catalog",
     "catalogBody": "Products, services, and spare parts by category.",
     "reportsTitle": "Reports",
-    "reportsBody": "Status mix, resolution time, defect mix, warranty vs paid revenue, and ratings."
+    "reportsBody": "Product, parts, expense, profit, technician, warranty, and source reports."
+  },
+  "dashboard": {
+    "intro": "Live service volume, revenue, and profit for the selected period. Change the date range to refresh every chart.",
+    "trend": "Revenue, costs, and profit",
+    "topProducts": "Top products by service volume",
+    "topParts": "Top spare parts used",
+    "defects": "Most common defects by device type",
+    "status": "Request status overview",
+    "warranty": "Warranty vs paid repair"
   },
   "shell": {
     "adminRole": "Admin / dispatcher",
@@ -156,7 +165,6 @@
     "busy": "Busy"
   },
   "status": {
-    "due": "Due",
     "scheduled": "Scheduled",
     "received": "Received",
     "diagnosing": "Diagnosing",
@@ -177,8 +185,7 @@
   },
   "type": {
     "installation": "Installation",
-    "repair": "Repair",
-    "maintenance": "Maintenance"
+    "repair": "Repair"
   },
   "priority": {
     "low": "Low",
@@ -401,7 +408,7 @@
     "addSale": "Add sale",
     "noPurchasesBody": "Record a sale to calculate warranty expiry automatically.",
     "historyHint": "Every job for this customer is kept permanently — dates, type, and outcome stay on the profile.",
-    "noJobsBody": "Installations, repairs, and maintenance for this customer will stay on this profile.",
+    "noJobsBody": "Installations and repairs for this customer will stay on this profile.",
     "outcome": "Outcome"
   },
   "sales": {
@@ -433,7 +440,7 @@
   },
   "requests": {
     "title": "Service requests",
-    "intro": "Every installation, repair, and maintenance job.",
+    "intro": "Every installation and repair job.",
     "new": "New request",
     "emptyTitle": "No requests yet",
     "emptyBody": "Create a job from a customer sale or as a new RIZO Service request.",
@@ -459,11 +466,10 @@
     "type": "Service type",
     "hint": {
       "installation": "Set up a newly purchased product",
-      "repair": "Fix a defective or broken product",
-      "maintenance": "Periodic technical servicing"
+      "repair": "Fix a defective or broken product"
     },
     "issue": "Issue description",
-    "issueHint": "What needs to be installed, repaired, or serviced?",
+    "issueHint": "What needs to be installed or repaired?",
     "defect": "Defect type",
     "selectDefect": "Select if this is a repair",
     "location": "Location",
@@ -471,8 +477,6 @@
     "addressPlaceholder": "Street, building, landmark",
     "priority": "Priority",
     "technicianType": "Technician type required",
-    "recurring": "Recurring maintenance",
-    "interval": "Repeat every (months)",
     "submit": "Create request",
     "created": "Request created",
     "failed": "Could not create request",
@@ -515,7 +519,6 @@
     "defect": "Defect",
     "source": "Source",
     "payment": "Payment",
-    "recurring": "Recurring",
     "required": "Required",
     "address": "Address",
     "services": "Services",
@@ -535,8 +538,6 @@
     "warrantyPays": "In warranty — customer pays {{amount}}",
     "customerPays": "Customer pays {{amount}}",
     "saleLine": "{{invoice}} · expires {{date}}",
-    "everyMonths": "Every {{count}} months",
-    "nextDue": "next {{date}}",
     "notLinked": "Not linked",
     "location": "Location"
   },
@@ -661,6 +662,11 @@
   "reports": {
     "title": "Reports",
     "intro": "Workload, resolution time, defects, revenue, and technician ratings.",
+    "hubIntro": "Admin-only analytics. Each report uses the same date range and can be exported as CSV for Excel.",
+    "export": "Export CSV / Excel",
+    "from": "From",
+    "to": "To",
+    "paused": "Paused",
     "rangeAll": "All time",
     "range30": "Last 30 days",
     "range90": "Last 90 days",
@@ -672,8 +678,10 @@
     "avgRating": "Avg. rating",
     "byType": "By type",
     "byStatus": "By status",
+    "byTechnician": "By technician",
+    "byProduct": "By product",
     "revenue": "Revenue",
-    "revenueHint": "Revenue is counted when a job is completed, closed, or replaced.",
+    "revenueHint": "Revenue is the final cost of completed paid jobs. In-warranty free repairs are not counted as revenue.",
     "inWarranty": "In warranty",
     "paid": "Paid jobs",
     "defects": "Defects",
@@ -684,24 +692,78 @@
     "jobsDone": "Jobs done",
     "noRatings": "No ratings",
     "empty": "No requests in this period.",
+    "emptyBody": "Widen the date range or wait until new jobs are created.",
     "jobsCount": "{{count}} jobs",
     "loadFailed": "Could not load reports",
     "loadFailedBody": "Try again in a moment. Figures refresh when jobs change.",
     "noCompleted": "No completed jobs in this period",
     "paidRevenue": "Paid repair revenue",
+    "costs": "Costs",
+    "profit": "Profit",
+    "profitTrend": "Profit over time",
+    "warrantyTrend": "Warranty vs paid over time",
+    "warrantyRatio": "Warranty vs paid",
+    "warrantyPaid": "{{warranty}} warranty / {{paid}} paid ({{ratio}}% warranty)",
+    "part": "Spare part",
+    "qtyUsed": "Qty used",
+    "partRevenue": "Parts revenue",
+    "allProducts": "All products",
+    "rank": "Rank",
+    "partsCost": "Parts cost",
+    "extras": "Additional expenses",
+    "running": "Running total",
+    "group": "Group",
+    "period": "Period",
+    "freeValue": "In-warranty cost",
+    "paidValue": "Paid revenue",
+    "sourceLabel": "Source",
     "ratingsCount": "{{count}} ratings",
     "noFeedback": "No feedback yet",
     "inWarrantyFree": "In warranty (free)",
-    "paidRepair": "Paid repair"
+    "paidRepair": "Paid repair",
+    "preset": {
+      "week": "This week",
+      "month": "This month",
+      "quarter": "This quarter",
+      "year": "This year",
+      "all": "All time",
+      "custom": "Custom"
+    },
+    "grain": {
+      "day": "Daily",
+      "week": "Weekly",
+      "month": "Monthly"
+    },
+    "nav": {
+      "products": "By product",
+      "productsBody": "Request volume, installation vs repair, paid revenue, and warranty ratio for each product.",
+      "parts": "By spare part",
+      "partsBody": "Quantity used, parts revenue, and most frequent parts. Filter by product.",
+      "expenses": "By expenses",
+      "expensesBody": "Additional expenses and parts cost, broken down by technician and product.",
+      "profit": "By profit",
+      "profitBody": "Paid repair revenue minus parts and extra expenses, with a daily, weekly, or monthly trend.",
+      "technicians": "By technician",
+      "techniciansBody": "Completed jobs, average resolution time, customer rating, and revenue per technician.",
+      "warranty": "By warranty status",
+      "warrantyBody": "Count and value of in-warranty (free) vs out-of-warranty (paid) jobs over time.",
+      "sources": "By request source",
+      "sourcesBody": "Requests from RIZO market versus jobs opened in RIZO Service or the customer portal."
+    },
+    "source": {
+      "rizo_market": "RIZO market",
+      "rizo_service": "RIZO Service (staff)",
+      "portal": "Customer portal"
+    }
   },
   "portal": {
     "homeTitle": "Your service requests",
-    "homeIntro": "Live status for every installation, repair, and maintenance job on your account.",
+    "homeIntro": "Live status for every installation and repair job on your account.",
     "hello": "Hello {{name}}",
     "waitingTech": "Waiting for a technician",
     "waitingAssignment": "Waiting for assignment",
     "emptyTitle": "No requests here",
-    "emptyBody": "Book installation, repair, or maintenance and live status will appear on this page.",
+    "emptyBody": "Book installation or repair and live status will appear on this page.",
     "newTitle": "Request a service",
     "newIntro": "Pick a past purchase or describe a new issue. On-site jobs capture your address.",
     "purchase": "Your purchase",
@@ -728,8 +790,7 @@
     "notFoundBody": "This job is not on your account.",
     "hint": {
       "repair": "Something is broken or not working",
-      "installation": "Set up a newly purchased product",
-      "maintenance": "Periodic technical servicing"
+      "installation": "Set up a newly purchased product"
     },
     "pendingFeedback_one": "A completed job is waiting for your rating.",
     "pendingFeedback_few": "{{count}} completed jobs are waiting for your rating.",

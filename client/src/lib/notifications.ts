@@ -3,7 +3,6 @@ import { localizedName } from "./localized";
 import type { PortalNotification } from "./types";
 
 const STATUS_FROM_EN: Record<string, string> = {
-  Due: "due",
   Scheduled: "scheduled",
   Received: "received",
   Diagnosing: "diagnosing",

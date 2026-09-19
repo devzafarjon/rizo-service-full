@@ -18,7 +18,6 @@ export function TypeBadge({ type }: { type: ServiceType }) {
   const styles: Record<ServiceType, string> = {
     installation: "bg-[#F3E8FF] text-[#B439FD]",
     repair: "bg-[#FFF4E5] text-[#C56A00]",
-    maintenance: "bg-sky-50 text-sky-700",
   };
   return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${styles[type]}`}>{t(`type.${type}`)}</span>;
 }

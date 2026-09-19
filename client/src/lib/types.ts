@@ -1,7 +1,7 @@
 export type StaffRole = "admin" | "technician";
 export type TechnicianType = "service_center" | "mobile";
 export type WarrantyStatus = "in_warranty" | "expired" | "not_applicable";
-export type ServiceType = "installation" | "repair" | "maintenance";
+export type ServiceType = "installation" | "repair";
 export type RequestStatus =
   | "scheduled"
   | "in_progress"
@@ -12,8 +12,7 @@ export type RequestStatus =
   | "repairing"
   | "ready_for_pickup"
   | "replaced"
-  | "closed"
-  | "due";
+  | "closed";
 export type Priority = "low" | "medium" | "high" | "urgent";
 export type LocationType = "in_shop" | "on_site";
 export type PaymentStatus = "not_required" | "pending" | "paid";
@@ -171,9 +170,6 @@ export type ServiceRequest = {
   estimatedCost: number | null;
   finalCost: number | null;
   paymentStatus: PaymentStatus;
-  isRecurring: boolean;
-  recurrenceIntervalMonths: number | null;
-  nextDueDate: string | null;
   receivedAt: string | null;
   acceptedAt: string | null;
   arrivedAt: string | null;
@@ -358,33 +354,104 @@ export type PortalSale = {
   product: Named & { id: string; sku: string; category: string };
 };
 
-export type ReportRangeKey = "all" | "30d" | "90d" | "year";
+export type ReportPreset = "week" | "month" | "quarter" | "year" | "all" | "custom";
+export type TrendGrain = "day" | "week" | "month";
 
-export type ReportsSummary = {
-  range: { key: ReportRangeKey; from: string | null; to: string };
+export type ReportWindow = {
+  preset: ReportPreset;
+  from: string | null;
+  to: string;
+};
+
+export type TrendPoint = {
+  key: string;
+  requests: number;
+  revenue: number;
+  costs: number;
+  profit: number;
+};
+
+export type DashboardReport = {
+  range: ReportWindow;
+  grain: TrendGrain;
   totals: {
     requests: number;
-    open: number;
-    done: number;
+    revenue: number;
+    profit: number;
+    costs: number;
     avgResolutionHours: number | null;
-    resolvedCount: number;
     avgRating: number | null;
     ratingCount: number;
   };
-  byType: Array<{ type: ServiceType; count: number }>;
-  byStatus: Array<{ status: RequestStatus; count: number }>;
-  defects: Array<{ type: "dead_on_arrival" | "failed_during_use" | "unspecified"; count: number }>;
-  products: Array<Named & { productId: string; sku: string; category: string; count: number }>;
-  revenue: {
-    inWarranty: { jobs: number; amount: number };
-    paid: { jobs: number; amount: number };
-  };
-  technicians: Array<{
+  trend: TrendPoint[];
+  topProducts: Array<Named & { id: string; sku: string; category: string; count: number }>;
+  topParts: Array<Named & { id: string; quantity: number }>;
+  defectsByCategory: Array<{ category: string; count: number }>;
+  byStatus: Array<{ status: RequestStatus | "paused"; count: number }>;
+  warrantySplit: { free: number; paid: number };
+};
+
+export type ProductReport = {
+  range: ReportWindow;
+  rows: Array<
+    Named & {
+      id: string;
+      sku: string;
+      category: string;
+      requests: number;
+      installation: number;
+      repair: number;
+      revenue: number;
+      warranty: number;
+      paid: number;
+      warrantyRatio: number;
+    }
+  >;
+};
+
+export type PartsReport = {
+  range: ReportWindow;
+  productId: string | null;
+  products: Array<Named & { id: string; sku: string }>;
+  rows: Array<Named & { id: string; quantity: number; revenue: number }>;
+};
+
+export type ExpensesReport = {
+  range: ReportWindow;
+  totals: { extras: number; parts: number; running: number };
+  byTechnician: Array<{ id: string; name: string; extras: number; parts: number; total: number }>;
+  byProduct: Array<Named & { id: string; sku: string; category: string; extras: number; parts: number; total: number }>;
+};
+
+export type ProfitReport = {
+  range: ReportWindow;
+  grain: TrendGrain;
+  totals: { revenue: number; parts: number; extras: number; costs: number; profit: number; done: number };
+  trend: TrendPoint[];
+};
+
+export type TechnicianReport = {
+  range: ReportWindow;
+  rows: Array<{
     id: string;
     name: string;
     technicianType: TechnicianType | null;
+    completed: number;
+    avgResolutionHours: number | null;
     avgRating: number | null;
     ratingCount: number;
-    jobsDone: number;
+    revenue: number;
   }>;
+};
+
+export type WarrantyReport = {
+  range: ReportWindow;
+  grain: TrendGrain;
+  totals: { freeCount: number; paidCount: number; freeValue: number; paidValue: number };
+  trend: Array<{ key: string; free: number; paid: number; freeValue: number; paidValue: number }>;
+};
+
+export type SourcesReport = {
+  range: ReportWindow;
+  rows: Array<{ source: "rizo_market" | "rizo_service" | "portal"; count: number }>;
 };

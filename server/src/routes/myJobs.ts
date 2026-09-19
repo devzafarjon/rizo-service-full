@@ -5,11 +5,11 @@ import { asyncHandler } from "../lib/asyncHandler.js";
 import { HttpError } from "../lib/httpError.js";
 import { completionGaps, computeJobCost, serializeJobWork, workInclude } from "../lib/jobWork.js";
 import { serializeNamed } from "../lib/named.js";
-import { notifyRequestCreated, notifyRequestStatus } from "../lib/notifyCustomer.js";
+import { notifyRequestStatus } from "../lib/notifyCustomer.js";
 import { parseBody } from "../lib/parse.js";
 import { prisma } from "../lib/prisma.js";
 import { publishRequest } from "../lib/realtime.js";
-import { maybeSpawnAfterComplete, statusPatch } from "../lib/requestLifecycle.js";
+import { statusPatch } from "../lib/requestLifecycle.js";
 import { buildTimeline, serializePauses } from "../lib/timeline.js";
 import { serializeRequest, type RequestRecord } from "../lib/serializeRequest.js";
 import {
@@ -122,7 +122,7 @@ myJobsRouter.patch(
       throw new HttpError(400, "Completed jobs cannot be moved on this board");
     }
     if (currentColumn === body.column) {
-      res.json({ job: serializeTechJob(existing), nextOccurrence: null });
+      res.json({ job: serializeTechJob(existing) });
       return;
     }
 
@@ -170,7 +170,7 @@ myJobsRouter.patch(
     if (nextStatus !== existing.status) {
       await notifyRequestStatus(fresh);
     }
-    res.json({ job: serializeTechJob(fresh), nextOccurrence: null });
+    res.json({ job: serializeTechJob(fresh) });
   }),
 );
 
@@ -436,7 +436,7 @@ async function finishJob(existing: OwnedJob, _technicianName: string) {
     existing.pauses.some((pause) => pause.resumedAt == null),
   );
   if (column === "completed") {
-    return { job: serializeTechJob(existing), nextOccurrence: null, ...serializeJobWork(existing) };
+    return { job: serializeTechJob(existing), ...serializeJobWork(existing) };
   }
 
   const gaps = completionGaps(existing);
@@ -475,18 +475,8 @@ async function finishJob(existing: OwnedJob, _technicianName: string) {
     await notifyRequestStatus(fresh);
   }
 
-  let spawned = null;
-  if (nextStatus !== existing.status) {
-    spawned = await maybeSpawnAfterComplete(existing as RequestRecord, nextStatus, fresh as RequestRecord, now);
-    if (spawned) {
-      publishRequest("request:created", serializeRequest(spawned));
-      await notifyRequestCreated(spawned);
-    }
-  }
-
   return {
     job: serializeTechJob(fresh),
-    nextOccurrence: spawned ? serializeRequest(spawned) : null,
     pauses: serializePauses(fresh.pauses),
     timeline: buildTimeline(fresh),
     ...serializeJobWork(fresh),

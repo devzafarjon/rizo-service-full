@@ -1,10 +1,11 @@
-import { ClipboardList, LogOut, Plus } from "lucide-react";
+import { ClipboardList, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useCustomerAuth } from "../../features/auth/CustomerAuthContext";
 import { NotificationBell } from "../../features/portal/NotificationBell";
 import { formatPhone } from "../../lib/format";
 import { useCustomerRealtime } from "../../lib/useCustomerRealtime";
+import { AccountMenu } from "../AccountMenu";
 import { LanguageSwitcher } from "../LanguageSwitcher";
 import { RizoLogo } from "../RizoLogo";
 
@@ -62,14 +63,7 @@ export function PortalShell() {
           </nav>
           <div className="flex items-center gap-1">
             <NotificationBell />
-            <button
-              type="button"
-              onClick={onLogout}
-              className="inline-flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-bold text-[#B439FD] hover:bg-[#F3E8FF]"
-            >
-              <LogOut size={16} />
-              <span className="hidden sm:inline">{t("common.signOut")}</span>
-            </button>
+            <AccountMenu name={user.name} detail={formatPhone(user.phone)} onLogout={onLogout} />
           </div>
         </div>
       </header>

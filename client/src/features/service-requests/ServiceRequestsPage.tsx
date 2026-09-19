@@ -15,9 +15,9 @@ import { localizedName } from "../../lib/localized";
 import type { RequestStatus, ServiceRequest, ServiceType } from "../../lib/types";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
 
-const TYPE_FILTERS: Array<"" | ServiceType> = ["", "installation", "repair", "maintenance"];
+const TYPE_FILTERS: Array<"" | ServiceType> = ["", "installation", "repair"];
 
-const STATUS_FILTERS: Array<"" | RequestStatus> = ["", "scheduled", "received", "due", "in_progress", "completed"];
+const STATUS_FILTERS: Array<"" | RequestStatus> = ["", "scheduled", "received", "in_progress", "completed"];
 
 export function ServiceRequestsPage() {
   const { t } = useTranslation();

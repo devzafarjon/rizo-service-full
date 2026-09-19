@@ -62,7 +62,7 @@ export function TechnicianKanbanPage() {
       pauseReason?: string;
       pauseHours?: number;
     }) =>
-      api<{ job: TechJob; nextOccurrence: TechJob | null }>(`/api/staff/my-jobs/${id}`, {
+      api<{ job: TechJob }>(`/api/staff/my-jobs/${id}`, {
         method: "PATCH",
         token,
         body: JSON.stringify({ column, pauseReason, pauseHours }),
@@ -92,11 +92,6 @@ export function TechnicianKanbanPage() {
         queryClient.setQueryData(["staff", "my-jobs"], context.previous);
       }
       notify(apiErrorMessage(error, t), "error");
-    },
-    onSuccess: (data) => {
-      if (data.nextOccurrence) {
-        notify(t("common.nextOccurrence"));
-      }
     },
     onSettled: async () => {
       await queryClient.invalidateQueries({ queryKey: ["staff", "my-jobs"] });

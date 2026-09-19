@@ -27,7 +27,7 @@ import { columnsForType, isAllowedStatus, statusLabel } from "../../lib/status";
 import type { Priority, RequestStatus, ServiceRequest, ServiceType, TechnicianSummary, WarrantyStatus } from "../../lib/types";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
 
-const TYPE_TABS: Array<"" | ServiceType> = ["", "installation", "repair", "maintenance"];
+const TYPE_TABS: Array<"" | ServiceType> = ["", "installation", "repair"];
 const PRIORITIES: Priority[] = ["low", "medium", "high", "urgent"];
 const WARRANTY_FILTERS: WarrantyStatus[] = ["in_warranty", "expired", "not_applicable"];
 
@@ -59,7 +59,7 @@ export function AdminKanbanPage() {
 
   const move = useMutation({
     mutationFn: ({ id, status }: { id: string; status: RequestStatus }) =>
-      api<{ request: ServiceRequest; nextOccurrence: ServiceRequest | null }>(`/api/staff/requests/${id}`, {
+      api<{ request: ServiceRequest }>(`/api/staff/requests/${id}`, {
         method: "PATCH",
         token,
         body: JSON.stringify({ status }),
@@ -80,11 +80,6 @@ export function AdminKanbanPage() {
         queryClient.setQueryData(["staff", "requests", "board"], context.previous);
       }
       notify(apiErrorMessage(error, t), "error");
-    },
-    onSuccess: (data) => {
-      if (data.nextOccurrence) {
-        notify(t("common.nextOccurrence"));
-      }
     },
     onSettled: async () => {
       await queryClient.invalidateQueries({ queryKey: ["staff", "requests"] });

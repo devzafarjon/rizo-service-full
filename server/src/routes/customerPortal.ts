@@ -34,7 +34,7 @@ const locationSchema = z.object({
 
 const createSchema = z
   .object({
-    type: z.enum(["installation", "repair", "maintenance"]),
+    type: z.enum(["installation", "repair"]),
     saleId: z
       .string()
       .trim()

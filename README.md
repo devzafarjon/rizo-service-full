@@ -1,6 +1,6 @@
 # RIZO Service
 
-After-sales field service for RIZO market. Staff dispatch jobs, technicians work them, and customers track them. Covers **installation**, **repair**, and **maintenance**, either **in shop** or **on site**.
+After-sales field service for RIZO market. Staff dispatch jobs, technicians work them, and customers track them. Covers **installation** and **repair**, either **in shop** or **on site**.
 
 Brand follows [rizo.uz](https://rizo.uz): Inter, white pages, black top bar, purple `#B439FD`, orange `#F6921E`.
 
@@ -24,7 +24,7 @@ Jobs can come from **RIZO market** (linked sale + warranty) or **RIZO Service** 
 
 | Layer | Tools |
 | --- | --- |
-| Client | React 19, Vite 7, TypeScript, Tailwind CSS 4, React Router 7, TanStack Query, Socket.io client, react-i18next, @dnd-kit, Headless UI |
+| Client | React 19, Vite 7, TypeScript, Tailwind CSS 4, React Router 7, TanStack Query, Socket.io client, react-i18next, Recharts, @dnd-kit, Headless UI |
 | Server | Node.js, Express 4, TypeScript, Prisma 6, JWT, bcrypt, Socket.io, Zod |
 | Database | PostgreSQL 16 |
 
@@ -114,7 +114,7 @@ Translation files: `client/src/i18n/locales/{uz,ru,en}.json`. Add keys there whe
 
 | Path | Screen |
 | --- | --- |
-| `/app` | Dashboard shortcuts |
+| `/app` | Analytics dashboard (charts + KPI cards) — first screen after admin login |
 | `/app/kanban` | Dispatch board — drag-and-drop status, live updates, technician load |
 | `/app/customers` | Customer list + create/edit |
 | `/app/customers/:id` | Profile, purchases, service history |
@@ -125,9 +125,18 @@ Translation files: `client/src/i18n/locales/{uz,ru,en}.json`. Add keys there whe
 | `/app/requests/:id` | Job detail, timeline, print |
 | `/app/receipts` | Completed / closed / replaced jobs |
 | `/app/receipts/:id` | Printable branded receipt + editable disclaimer |
-| `/app/reports` | Status mix, resolution time, defects, warranty vs paid revenue, ratings |
+| `/app/reports` | Reports hub (admin only) |
+| `/app/reports/products` | Volume, installation vs repair, paid revenue, warranty ratio |
+| `/app/reports/parts` | Quantity used, parts revenue, ranked; optional product filter |
+| `/app/reports/expenses` | Extra expenses + parts cost by technician and product, running total |
+| `/app/reports/profit` | Paid revenue − parts − extras, daily/weekly/monthly trend |
+| `/app/reports/technicians` | Jobs done, resolution time, rating, revenue |
+| `/app/reports/warranty` | In-warranty (free) vs paid count and value over time |
+| `/app/reports/sources` | RIZO market vs RIZO Service staff vs customer portal |
 
-Header search finds phone, name, invoice, or request ID.
+Dashboard and Reports are **admin / dispatcher only**. Technician and customer navigation do not show them; `RoleRoute` and `requireStaffRole("admin")` block the pages and APIs. Date filters: this week / month / quarter / year / all / custom. Each report exports CSV (opens in Excel). Dashboard date range is global and refreshes every chart from aggregated `/api/staff/reports/*` endpoints (not raw client-side job lists).
+
+Header search finds phone, name, invoice, or request ID. The top-right account menu signs out from every staff page (including request detail, receipts, and reports).
 
 ### Technician
 
@@ -137,7 +146,7 @@ Header search finds phone, name, invoice, or request ID.
 | `/app/my-jobs/:id/complete` | Services, parts (stock check), extras, photo, complete |
 | `/app/my-jobs/:id/receipt` | Print the same receipt |
 
-Phone-friendly. Desktop still uses the staff shell with a language switcher in the header.
+Phone-friendly. Desktop still uses the staff shell. The header account menu is on every technician page, including job complete and receipt print.
 
 ### Customer portal
 
@@ -147,7 +156,7 @@ Phone-friendly. Desktop still uses the staff shell with a language switcher in t
 | `/portal/new` | New request from a past purchase or catalog product |
 | `/portal/requests/:id` | Live status, timeline, notes visible to the customer |
 
-Notification bell translates from `code` + `params`. Socket room `customer:{id}`.
+Notification bell translates from `code` + `params`. Socket room `customer:{id}`. The header account menu signs out from every portal page.
 
 ---
 
@@ -175,9 +184,8 @@ Only statuses allowed for that type can be set (kanban drop is validated).
 | --- | --- |
 | Installation | scheduled → in_progress → completed |
 | Repair | received → diagnosing → awaiting_parts → repairing → ready_for_pickup → replaced / closed |
-| Maintenance | due → scheduled → completed |
 
-On-site jobs record arrival. Pauses have a reason and a custom timer. Completing a recurring maintenance job can spawn the next occurrence.
+On-site jobs record arrival. Pauses have a reason and a custom timer.
 
 ---
 
@@ -211,7 +219,14 @@ Staff routes sit under `/api/staff/…` with a staff JWT. Customer routes sit un
 | `/api/staff/search` | Quick search |
 | `/api/staff/technicians` | Board + workload |
 | `/api/staff/requests` | Create / list / update jobs |
-| `/api/staff/reports` | Analytics |
+| `/api/staff/reports/dashboard` | Dashboard KPIs and chart series |
+| `/api/staff/reports/products` | Product report |
+| `/api/staff/reports/parts` | Spare-part report (`productId` optional) |
+| `/api/staff/reports/expenses` | Extra expenses + parts cost |
+| `/api/staff/reports/profit` | Profit summary and trend |
+| `/api/staff/reports/technicians` | Technician performance |
+| `/api/staff/reports/warranty` | Warranty vs paid |
+| `/api/staff/reports/sources` | Request source mix |
 | `/api/staff/my-jobs` | Technician jobs, complete, photos |
 | `/api/customer` | Portal requests, notifications, feedback |
 

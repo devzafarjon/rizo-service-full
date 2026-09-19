@@ -19,11 +19,7 @@ export function techColumn(
       return "in_progress";
     }
   }
-  if (type === "maintenance") {
-    if (status === "due") return "new";
-    if (status === "scheduled") return "in_progress";
-  }
-  if (status === "scheduled" || status === "received" || status === "due") return "new";
+  if (status === "scheduled" || status === "received") return "new";
   return "in_progress";
 }
 
@@ -33,8 +29,7 @@ export function isDoneStatus(status: RequestStatus) {
 
 export function inProgressStatusFor(type: ServiceType, current: RequestStatus): RequestStatus {
   if (type === "installation") return "in_progress";
-  if (type === "repair") return current === "received" ? "diagnosing" : current;
-  return "scheduled";
+  return current === "received" ? "diagnosing" : current;
 }
 
 export function completedStatusFor(type: ServiceType): RequestStatus {

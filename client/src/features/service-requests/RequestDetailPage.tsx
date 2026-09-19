@@ -116,15 +116,6 @@ export function RequestDetailPage() {
               {t(`payment.${request.paymentStatus}`)}
               {request.isPaidRepair ? ` · ${t("common.paidRepair")}` : ""}
             </dd>
-            {request.isRecurring ? (
-              <>
-                <dt className="text-neutral-500">{t("detail.recurring")}</dt>
-                <dd>
-                  {t("detail.everyMonths", { count: request.recurrenceIntervalMonths ?? 0 })}
-                  {request.nextDueDate ? ` · ${t("detail.nextDue", { date: formatDate(request.nextDueDate) })}` : ""}
-                </dd>
-              </>
-            ) : null}
             <dt className="text-neutral-500">{t("common.created")}</dt>
             <dd>{formatDateTime(request.createdAt)}</dd>
           </dl>

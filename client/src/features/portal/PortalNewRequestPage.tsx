@@ -15,7 +15,7 @@ import { localizedName } from "../../lib/localized";
 import type { LocationType, Named, PortalRequest, PortalSale, ServiceType } from "../../lib/types";
 import { portalInputClass, portalTextareaClass } from "./fields";
 
-const TYPES: ServiceType[] = ["repair", "installation", "maintenance"];
+const TYPES: ServiceType[] = ["repair", "installation"];
 
 export function PortalNewRequestPage() {
   const { t } = useTranslation();

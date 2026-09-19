@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   BarChart3,
@@ -12,6 +12,7 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
+import { REPORT_LINKS } from "../../features/reporting/reportNav";
 import type { StaffRole } from "../../lib/types";
 
 export type NavItem = {
@@ -47,28 +48,51 @@ export function StaffNavLinks({
   variant: "sidebar" | "mobile";
 }) {
   const { t } = useTranslation();
+  const location = useLocation();
   const items = navForRole(role);
+  const reportsActive = location.pathname.startsWith("/app/reports");
+
   return (
     <nav className={variant === "sidebar" ? "flex flex-col gap-1" : "flex flex-col gap-1 p-3"}>
       {items.map((item) => {
         const Icon = item.icon;
+        const isReports = item.to === "/app/reports";
         return (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === "/app"}
-            onClick={onNavigate}
-            className={({ isActive }) =>
-              `flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-semibold transition ${
-                isActive
-                  ? "bg-[#F3E8FF] text-[#B439FD]"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-black"
-              }`
-            }
-          >
-            <Icon className="shrink-0" size={18} />
-            {t(item.labelKey)}
-          </NavLink>
+          <div key={item.to}>
+            <NavLink
+              to={item.to}
+              end={item.to === "/app"}
+              onClick={onNavigate}
+              className={({ isActive }) =>
+                `flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-semibold transition ${
+                  isActive || (isReports && reportsActive)
+                    ? "bg-[#F3E8FF] text-[#B439FD]"
+                    : "text-gray-600 hover:bg-gray-100 hover:text-black"
+                }`
+              }
+            >
+              <Icon className="shrink-0" size={18} />
+              {t(item.labelKey)}
+            </NavLink>
+            {isReports ? (
+              <div className="mt-1 ml-8 flex flex-col gap-0.5 border-l border-gray-100 pl-3">
+                {REPORT_LINKS.map((link) => (
+                  <NavLink
+                    key={link.to}
+                    to={link.to}
+                    onClick={onNavigate}
+                    className={({ isActive }) =>
+                      `flex min-h-9 items-center rounded-md px-2 text-xs font-semibold transition ${
+                        isActive ? "bg-[#F3E8FF] text-[#B439FD]" : "text-gray-500 hover:bg-gray-50 hover:text-black"
+                      }`
+                    }
+                  >
+                    {t(link.labelKey)}
+                  </NavLink>
+                ))}
+              </div>
+            ) : null}
+          </div>
         );
       })}
     </nav>

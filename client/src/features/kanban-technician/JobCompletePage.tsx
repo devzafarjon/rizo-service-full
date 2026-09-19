@@ -110,15 +110,12 @@ export function JobCompletePage() {
 
   const completeMut = useMutation({
     mutationFn: () =>
-      api<JobWorkPayload & { nextOccurrence: JobWorkPayload["job"] | null }>(`/api/staff/my-jobs/${id}/complete`, {
+      api<JobWorkPayload>(`/api/staff/my-jobs/${id}/complete`, {
         method: "POST",
         token,
       }),
     onSuccess: async (data) => {
       notify(data.cost.coveredByWarranty ? t("job.completedCovered") : t("job.completed"));
-      if (data.nextOccurrence) {
-        notify(t("common.nextOccurrence"));
-      }
       await queryClient.invalidateQueries({ queryKey: ["staff", "my-jobs"] });
       await queryClient.invalidateQueries({ queryKey: ["staff", "requests"] });
       navigate("/app/my-jobs", { replace: true });

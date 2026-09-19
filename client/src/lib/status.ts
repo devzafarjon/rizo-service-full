@@ -4,11 +4,9 @@ import type { RequestStatus, ServiceType } from "./types";
 export const STATUSES_BY_TYPE: Record<ServiceType, RequestStatus[]> = {
   installation: ["scheduled", "in_progress", "completed"],
   repair: ["received", "diagnosing", "awaiting_parts", "repairing", "ready_for_pickup", "replaced", "closed"],
-  maintenance: ["due", "scheduled", "completed"],
 };
 
 export const KANBAN_COLUMNS: RequestStatus[] = [
-  "due",
   "scheduled",
   "received",
   "diagnosing",

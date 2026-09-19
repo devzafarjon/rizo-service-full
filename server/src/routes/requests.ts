@@ -9,12 +9,12 @@ import { notifyRequestCreated, notifyRequestStatus } from "../lib/notifyCustomer
 import { parseBody } from "../lib/parse.js";
 import { prisma } from "../lib/prisma.js";
 import { publishRequest } from "../lib/realtime.js";
-import { maybeSpawnAfterComplete, statusPatch } from "../lib/requestLifecycle.js";
+import { statusPatch } from "../lib/requestLifecycle.js";
 import { requestInclude, serializeRequest } from "../lib/serializeRequest.js";
 import { serializeJobWork, workInclude } from "../lib/jobWork.js";
 import { buildTimeline, serializePauses } from "../lib/timeline.js";
 import { isAllowedStatus } from "../lib/status.js";
-import { addMonths, computeWarrantyStatus, parseDateOnly } from "../lib/warranty.js";
+import { computeWarrantyStatus } from "../lib/warranty.js";
 import { allocateDisplayId, normalizeDisplayIdQuery } from "../lib/displayId.js";
 import { serializeNamed } from "../lib/named.js";
 import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
@@ -31,11 +31,10 @@ const patchSchema = z.object({
     "ready_for_pickup",
     "replaced",
     "closed",
-    "due",
   ]),
 });
 
-const SERVICE_TYPES: ServiceType[] = ["installation", "repair", "maintenance"];
+const SERVICE_TYPES: ServiceType[] = ["installation", "repair"];
 const STATUSES: RequestStatus[] = [
   "scheduled",
   "in_progress",
@@ -47,7 +46,6 @@ const STATUSES: RequestStatus[] = [
   "ready_for_pickup",
   "replaced",
   "closed",
-  "due",
 ];
 const LOCATIONS: LocationType[] = ["in_shop", "on_site"];
 
@@ -75,7 +73,7 @@ const locationSchema = z.object({
 
 const createSchema = z
   .object({
-    type: z.enum(["installation", "repair", "maintenance"]),
+    type: z.enum(["installation", "repair"]),
     customerId: z.string().min(1, "Customer is required"),
     saleId: optionalId,
     productId: z.string().min(1, "Product is required"),
@@ -87,17 +85,6 @@ const createSchema = z
     assignedTechnicianId: optionalId,
     autoAssign: z.boolean().optional(),
     priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
-    isRecurring: z.boolean().optional(),
-    recurrenceIntervalMonths: z.preprocess(
-      (value) => (value === "" || value == null ? undefined : value),
-      z.coerce.number().int().min(1).max(24).optional(),
-    ),
-    nextDueDate: z
-      .string()
-      .optional()
-      .nullable()
-      .transform((value) => (value ? value : undefined))
-      .pipe(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a valid next due date").optional()),
     source: z.enum(["rizo_market", "rizo_service"]).optional(),
   })
   .superRefine((data, ctx) => {
@@ -106,13 +93,6 @@ const createSchema = z
         code: "custom",
         message: "Customer location is required for on-site jobs",
         path: ["customerLocation"],
-      });
-    }
-    if (data.type === "maintenance" && data.isRecurring && !data.recurrenceIntervalMonths) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Set how often this maintenance repeats",
-        path: ["recurrenceIntervalMonths"],
       });
     }
   });
@@ -265,13 +245,6 @@ requestsRouter.post(
       assignmentMode = picked ? "auto" : "unassigned";
     }
 
-    const isRecurring = body.type === "maintenance" && Boolean(body.isRecurring);
-    const interval = isRecurring && typeof body.recurrenceIntervalMonths === "number" ? body.recurrenceIntervalMonths : null;
-    let nextDueDate: Date | null = null;
-    if (isRecurring && interval) {
-      nextDueDate = body.nextDueDate ? parseDateOnly(body.nextDueDate) : addMonths(now, interval);
-    }
-
     const customerLocation =
       body.locationType === "on_site" && body.customerLocation
         ? {
@@ -308,9 +281,6 @@ requestsRouter.post(
         warrantyStatus,
         isPaidRepair: payment.isPaidRepair,
         paymentStatus: payment.paymentStatus,
-        isRecurring,
-        recurrenceIntervalMonths: interval,
-        nextDueDate,
         receivedAt: now,
       },
         include: requestInclude,
@@ -369,15 +339,8 @@ requestsRouter.patch(
       await notifyRequestStatus(updated);
     }
 
-    const spawned = await maybeSpawnAfterComplete(existing, body.status, updated, now);
-    if (spawned) {
-      publishRequest("request:created", serializeRequest(spawned));
-      await notifyRequestCreated(spawned);
-    }
-
     res.json({
       request: serialized,
-      nextOccurrence: spawned ? serializeRequest(spawned) : null,
     });
   }),
 );

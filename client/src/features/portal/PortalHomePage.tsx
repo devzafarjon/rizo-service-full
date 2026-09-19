@@ -13,7 +13,7 @@ import { isDoneStatus } from "../../lib/status";
 import type { PortalRequest, ServiceType } from "../../lib/types";
 import { FeedbackForm } from "./FeedbackForm";
 
-const TYPE_FILTERS: Array<"" | ServiceType> = ["", "installation", "repair", "maintenance"];
+const TYPE_FILTERS: Array<"" | ServiceType> = ["", "installation", "repair"];
 const SCOPE_FILTERS = ["all", "open", "done"] as const;
 
 export function PortalHomePage() {

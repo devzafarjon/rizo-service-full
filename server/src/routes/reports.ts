@@ -1,224 +1,417 @@
 import { Router } from "express";
-import type { DefectType, RequestStatus, ServiceType, TechnicianType } from "@prisma/client";
+import type { TechnicianType } from "@prisma/client";
 import { asyncHandler } from "../lib/asyncHandler.js";
-import { HttpError } from "../lib/httpError.js";
-import { money } from "../lib/warranty.js";
 import { prisma } from "../lib/prisma.js";
+import {
+  average,
+  isFreeWarranty,
+  jobCost,
+  jobPartsCost,
+  jobRevenue,
+  loadReportJobs,
+  moneyTotals,
+  resolutionHours,
+  roundMoney,
+  trendSeries,
+} from "../lib/reportJobs.js";
+import { bucketKey, defaultGrain, parseReportRange, parseTrendGrain, serializeWindow } from "../lib/reportRange.js";
 import { isDoneStatus, KANBAN_COLUMNS } from "../lib/status.js";
 import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
-
-const RANGE_KEYS = ["all", "30d", "90d", "year"] as const;
-type RangeKey = (typeof RANGE_KEYS)[number];
-
-const TYPES: ServiceType[] = ["installation", "repair", "maintenance"];
-const DEFECTS: Array<DefectType | "unspecified"> = ["failed_during_use", "dead_on_arrival", "unspecified"];
-
-function parseRange(value: unknown): RangeKey {
-  if (typeof value !== "string" || value === "") return "all";
-  if ((RANGE_KEYS as readonly string[]).includes(value)) return value as RangeKey;
-  throw new HttpError(400, "Use all, 30d, 90d, or year");
-}
-
-function rangeFrom(key: RangeKey, now = new Date()): Date | null {
-  if (key === "30d") return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  if (key === "90d") return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-  if (key === "year") return new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
-  return null;
-}
-
-function average(values: number[]): number | null {
-  if (values.length === 0) return null;
-  return Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10;
-}
 
 export const reportsRouter = Router();
 reportsRouter.use(staffAuth, requireStaffRole("admin"));
 
+function productIdQuery(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
 reportsRouter.get(
-  "/",
+  "/dashboard",
   asyncHandler(async (req, res) => {
-    const range = parseRange(req.query.range);
-    const now = new Date();
-    const from = rangeFrom(range, now);
-    const createdAtFilter = from ? { gte: from } : undefined;
+    const window = parseReportRange(req.query);
+    const grain = parseTrendGrain(req.query.grain, defaultGrain(window.preset));
+    const jobs = await loadReportJobs(window);
+    const money = moneyTotals(jobs);
+    const hours = jobs.map(resolutionHours).filter((value): value is number => value != null);
+    const ratings = jobs.map((job) => job.rating).filter((value): value is number => value != null);
 
-    const [requests, feedback] = await Promise.all([
-      prisma.serviceRequest.findMany({
-        where: createdAtFilter ? { createdAt: createdAtFilter } : undefined,
-        select: {
-          id: true,
-          type: true,
-          status: true,
-          defectType: true,
-          warrantyStatus: true,
-          isPaidRepair: true,
-          finalCost: true,
-          createdAt: true,
-          receivedAt: true,
-          completedAt: true,
-          assignedTechnicianId: true,
-          product: { select: { id: true, name: true, nameUz: true, nameRu: true, nameEn: true, sku: true, category: true } },
-          assignedTechnician: { select: { id: true, name: true, technicianType: true } },
-        },
-      }),
-      prisma.feedback.findMany({
-        where: createdAtFilter ? { createdAt: createdAtFilter } : undefined,
-        select: {
-          rating: true,
-          serviceRequest: {
-            select: {
-              assignedTechnician: { select: { id: true, name: true, technicianType: true } },
-            },
-          },
-        },
-      }),
-    ]);
+    const statusCounts = new Map<string, number>();
+    for (const status of KANBAN_COLUMNS) statusCounts.set(status, 0);
+    let paused = 0;
+    for (const job of jobs) {
+      statusCounts.set(job.status, (statusCounts.get(job.status) ?? 0) + 1);
+      if (job.paused) paused += 1;
+    }
 
-    const typeCounts = Object.fromEntries(TYPES.map((type) => [type, 0])) as Record<ServiceType, number>;
-    const statusCounts = Object.fromEntries(KANBAN_COLUMNS.map((status) => [status, 0])) as Record<RequestStatus, number>;
-    const defectCounts: Record<DefectType | "unspecified", number> = {
-      dead_on_arrival: 0,
-      failed_during_use: 0,
-      unspecified: 0,
-    };
-    const productCounts = new Map<
+    const products = new Map<string, { product: (typeof jobs)[number]["product"]; count: number }>();
+    const parts = new Map<string, { name: string; nameUz: string; nameRu: string; nameEn: string; quantity: number }>();
+    const defects = new Map<string, number>();
+    let free = 0;
+    let paid = 0;
+
+    for (const job of jobs) {
+      const product = products.get(job.product.id) ?? { product: job.product, count: 0 };
+      product.count += 1;
+      products.set(job.product.id, product);
+
+      for (const line of job.partLines) {
+        const part = parts.get(line.sparePartId) ?? {
+          name: line.sparePart.name,
+          nameUz: line.sparePart.nameUz,
+          nameRu: line.sparePart.nameRu,
+          nameEn: line.sparePart.nameEn,
+          quantity: 0,
+        };
+        part.quantity += line.quantity;
+        parts.set(line.sparePartId, part);
+      }
+
+      if (job.type === "repair") {
+        const category = job.product.category || "Other";
+        defects.set(category, (defects.get(category) ?? 0) + 1);
+      }
+
+      if (isFreeWarranty(job)) free += 1;
+      else paid += 1;
+    }
+
+    res.json({
+      range: serializeWindow(window),
+      grain,
+      totals: {
+        requests: jobs.length,
+        revenue: money.revenue,
+        profit: money.profit,
+        costs: money.costs,
+        avgResolutionHours: average(hours),
+        avgRating: average(ratings),
+        ratingCount: ratings.length,
+      },
+      trend: trendSeries(jobs, grain),
+      topProducts: [...products.values()]
+        .sort((a, b) => b.count - a.count || a.product.name.localeCompare(b.product.name))
+        .slice(0, 8)
+        .map((row) => ({ ...row.product, count: row.count })),
+      topParts: [...parts.entries()]
+        .map(([id, row]) => ({ id, ...row }))
+        .sort((a, b) => b.quantity - a.quantity || a.name.localeCompare(b.name))
+        .slice(0, 8),
+      defectsByCategory: [...defects.entries()]
+        .map(([category, count]) => ({ category, count }))
+        .sort((a, b) => b.count - a.count || a.category.localeCompare(b.category)),
+      byStatus: [
+        ...KANBAN_COLUMNS.map((status) => ({ status, count: statusCounts.get(status) ?? 0 })).filter((row) => row.count > 0),
+        ...(paused ? [{ status: "paused" as const, count: paused }] : []),
+      ],
+      warrantySplit: { free, paid },
+    });
+  }),
+);
+
+reportsRouter.get(
+  "/products",
+  asyncHandler(async (req, res) => {
+    const window = parseReportRange(req.query);
+    const jobs = await loadReportJobs(window);
+    const rows = new Map<
       string,
-      { productId: string; name: string; nameUz: string; nameRu: string; nameEn: string; sku: string; category: string; count: number }
+      {
+        product: (typeof jobs)[number]["product"];
+        requests: number;
+        installation: number;
+        repair: number;
+        revenue: number;
+        warranty: number;
+        paid: number;
+      }
     >();
-    const technicians = new Map<
+
+    for (const job of jobs) {
+      const row = rows.get(job.product.id) ?? {
+        product: job.product,
+        requests: 0,
+        installation: 0,
+        repair: 0,
+        revenue: 0,
+        warranty: 0,
+        paid: 0,
+      };
+      row.requests += 1;
+      if (job.type === "installation") row.installation += 1;
+      if (job.type === "repair") row.repair += 1;
+      if (isDoneStatus(job.status)) {
+        row.revenue += jobRevenue(job);
+        if (isFreeWarranty(job)) row.warranty += 1;
+        else row.paid += 1;
+      }
+      rows.set(job.product.id, row);
+    }
+
+    res.json({
+      range: serializeWindow(window),
+      rows: [...rows.values()]
+        .map((row) => {
+          const finished = row.warranty + row.paid;
+          return {
+            ...row.product,
+            requests: row.requests,
+            installation: row.installation,
+            repair: row.repair,
+            revenue: roundMoney(row.revenue),
+            warranty: row.warranty,
+            paid: row.paid,
+            warrantyRatio: finished ? Math.round((row.warranty / finished) * 1000) / 10 : 0,
+          };
+        })
+        .sort((a, b) => b.requests - a.requests || a.name.localeCompare(b.name)),
+    });
+  }),
+);
+
+reportsRouter.get(
+  "/parts",
+  asyncHandler(async (req, res) => {
+    const window = parseReportRange(req.query);
+    const productId = productIdQuery(req.query.productId);
+    const jobs = await loadReportJobs(window, productId);
+    const rows = new Map<
+      string,
+      { id: string; name: string; nameUz: string; nameRu: string; nameEn: string; quantity: number; revenue: number }
+    >();
+
+    for (const job of jobs) {
+      for (const line of job.partLines) {
+        const row = rows.get(line.sparePartId) ?? {
+          id: line.sparePart.id,
+          name: line.sparePart.name,
+          nameUz: line.sparePart.nameUz,
+          nameRu: line.sparePart.nameRu,
+          nameEn: line.sparePart.nameEn,
+          quantity: 0,
+          revenue: 0,
+        };
+        row.quantity += line.quantity;
+        row.revenue += line.lineTotal;
+        rows.set(line.sparePartId, row);
+      }
+    }
+
+    const products = await prisma.product.findMany({
+      select: { id: true, name: true, nameUz: true, nameRu: true, nameEn: true, sku: true },
+      orderBy: { name: "asc" },
+    });
+
+    res.json({
+      range: serializeWindow(window),
+      productId: productId ?? null,
+      products,
+      rows: [...rows.values()]
+        .map((row) => ({ ...row, revenue: roundMoney(row.revenue) }))
+        .sort((a, b) => b.quantity - a.quantity || a.name.localeCompare(b.name)),
+    });
+  }),
+);
+
+reportsRouter.get(
+  "/expenses",
+  asyncHandler(async (req, res) => {
+    const window = parseReportRange(req.query);
+    const jobs = await loadReportJobs(window);
+    const byTechnician = new Map<string, { id: string; name: string; extras: number; parts: number }>();
+    const byProduct = new Map<string, { product: (typeof jobs)[number]["product"]; extras: number; parts: number }>();
+    let extras = 0;
+    let parts = 0;
+
+    for (const job of jobs) {
+      const extrasTotal = job.extrasTotal;
+      const partsTotal = jobPartsCost(job);
+      extras += extrasTotal;
+      parts += partsTotal;
+
+      const techId = job.assignedTechnician?.id ?? "unassigned";
+      const techName = job.assignedTechnician?.name ?? "Unassigned";
+      const tech = byTechnician.get(techId) ?? { id: techId, name: techName, extras: 0, parts: 0 };
+      tech.extras += extrasTotal;
+      tech.parts += partsTotal;
+      byTechnician.set(techId, tech);
+
+      const product = byProduct.get(job.product.id) ?? { product: job.product, extras: 0, parts: 0 };
+      product.extras += extrasTotal;
+      product.parts += partsTotal;
+      byProduct.set(job.product.id, product);
+    }
+
+    res.json({
+      range: serializeWindow(window),
+      totals: {
+        extras: roundMoney(extras),
+        parts: roundMoney(parts),
+        running: roundMoney(extras + parts),
+      },
+      byTechnician: [...byTechnician.values()]
+        .map((row) => ({
+          ...row,
+          extras: roundMoney(row.extras),
+          parts: roundMoney(row.parts),
+          total: roundMoney(row.extras + row.parts),
+        }))
+        .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name)),
+      byProduct: [...byProduct.values()]
+        .map((row) => ({
+          ...row.product,
+          extras: roundMoney(row.extras),
+          parts: roundMoney(row.parts),
+          total: roundMoney(row.extras + row.parts),
+        }))
+        .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name)),
+    });
+  }),
+);
+
+reportsRouter.get(
+  "/profit",
+  asyncHandler(async (req, res) => {
+    const window = parseReportRange(req.query);
+    const grain = parseTrendGrain(req.query.grain, defaultGrain(window.preset));
+    const jobs = await loadReportJobs(window);
+    const money = moneyTotals(jobs);
+    res.json({
+      range: serializeWindow(window),
+      grain,
+      totals: money,
+      trend: trendSeries(jobs, grain),
+    });
+  }),
+);
+
+reportsRouter.get(
+  "/technicians",
+  asyncHandler(async (req, res) => {
+    const window = parseReportRange(req.query);
+    const jobs = await loadReportJobs(window);
+    const rows = new Map<
       string,
       {
         id: string;
         name: string;
         technicianType: TechnicianType | null;
+        completed: number;
+        hours: number[];
         ratings: number[];
-        jobsDone: number;
+        revenue: number;
       }
     >();
 
-    let open = 0;
-    let done = 0;
-    const resolutionHours: number[] = [];
-    let inWarrantyJobs = 0;
-    let inWarrantyAmount = 0;
-    let paidJobs = 0;
-    let paidAmount = 0;
-
-    for (const request of requests) {
-      typeCounts[request.type] += 1;
-      statusCounts[request.status] += 1;
-
-      if (request.type === "repair") {
-        defectCounts[request.defectType ?? "unspecified"] += 1;
-      }
-
-      const product = productCounts.get(request.product.id) ?? {
-        productId: request.product.id,
-        name: request.product.name,
-        nameUz: request.product.nameUz,
-        nameRu: request.product.nameRu,
-        nameEn: request.product.nameEn,
-        sku: request.product.sku,
-        category: request.product.category,
-        count: 0,
-      };
-      product.count += 1;
-      productCounts.set(request.product.id, product);
-
-      const tech = request.assignedTechnician;
-      if (tech) {
-        const row = technicians.get(tech.id) ?? {
-          id: tech.id,
-          name: tech.name,
-          technicianType: tech.technicianType,
-          ratings: [],
-          jobsDone: 0,
-        };
-        technicians.set(tech.id, row);
-      }
-
-      if (isDoneStatus(request.status)) {
-        done += 1;
-        if (tech) {
-          const row = technicians.get(tech.id);
-          if (row) row.jobsDone += 1;
-        }
-        if (request.completedAt) {
-          const start = request.receivedAt ?? request.createdAt;
-          const hours = (request.completedAt.getTime() - start.getTime()) / 3_600_000;
-          if (hours >= 0) resolutionHours.push(hours);
-        }
-        const amount = request.finalCost ? money(request.finalCost) : 0;
-        if (request.warrantyStatus === "in_warranty" && !request.isPaidRepair) {
-          inWarrantyJobs += 1;
-          inWarrantyAmount += amount;
-        } else {
-          paidJobs += 1;
-          paidAmount += amount;
-        }
-      } else {
-        open += 1;
-      }
-    }
-
-    for (const item of feedback) {
-      const tech = item.serviceRequest.assignedTechnician;
+    for (const job of jobs) {
+      const tech = job.assignedTechnician;
       if (!tech) continue;
-      const row = technicians.get(tech.id) ?? {
+      const row = rows.get(tech.id) ?? {
         id: tech.id,
         name: tech.name,
         technicianType: tech.technicianType,
+        completed: 0,
+        hours: [],
         ratings: [],
-        jobsDone: 0,
+        revenue: 0,
       };
-      row.ratings.push(item.rating);
-      technicians.set(tech.id, row);
+      if (isDoneStatus(job.status)) {
+        row.completed += 1;
+        row.revenue += jobRevenue(job);
+        const hours = resolutionHours(job);
+        if (hours != null) row.hours.push(hours);
+      }
+      if (job.rating != null) row.ratings.push(job.rating);
+      rows.set(tech.id, row);
     }
 
-    const allRatings = feedback.map((item) => item.rating);
+    res.json({
+      range: serializeWindow(window),
+      rows: [...rows.values()]
+        .map((row) => ({
+          id: row.id,
+          name: row.name,
+          technicianType: row.technicianType,
+          completed: row.completed,
+          avgResolutionHours: average(row.hours),
+          avgRating: average(row.ratings),
+          ratingCount: row.ratings.length,
+          revenue: roundMoney(row.revenue),
+        }))
+        .sort((a, b) => b.revenue - a.revenue || b.completed - a.completed || a.name.localeCompare(b.name)),
+    });
+  }),
+);
+
+reportsRouter.get(
+  "/warranty",
+  asyncHandler(async (req, res) => {
+    const window = parseReportRange(req.query);
+    const grain = parseTrendGrain(req.query.grain, defaultGrain(window.preset));
+    const jobs = await loadReportJobs(window);
+    let freeCount = 0;
+    let paidCount = 0;
+    let freeValue = 0;
+    let paidValue = 0;
+    const trend = new Map<string, { key: string; free: number; paid: number; freeValue: number; paidValue: number }>();
+
+    for (const job of jobs) {
+      if (!isDoneStatus(job.status)) continue;
+      const key = bucketKey(job.createdAt, grain);
+      const row = trend.get(key) ?? { key, free: 0, paid: 0, freeValue: 0, paidValue: 0 };
+      if (isFreeWarranty(job)) {
+        freeCount += 1;
+        freeValue += jobCost(job);
+        row.free += 1;
+        row.freeValue += jobCost(job);
+      } else {
+        paidCount += 1;
+        paidValue += jobRevenue(job);
+        row.paid += 1;
+        row.paidValue += jobRevenue(job);
+      }
+      trend.set(key, row);
+    }
 
     res.json({
-      range: {
-        key: range,
-        from: from ? from.toISOString() : null,
-        to: now.toISOString(),
-      },
+      range: serializeWindow(window),
+      grain,
       totals: {
-        requests: requests.length,
-        open,
-        done,
-        avgResolutionHours: average(resolutionHours),
-        resolvedCount: resolutionHours.length,
-        avgRating: average(allRatings),
-        ratingCount: allRatings.length,
+        freeCount,
+        paidCount,
+        freeValue: roundMoney(freeValue),
+        paidValue: roundMoney(paidValue),
       },
-      byType: TYPES.map((type) => ({ type, count: typeCounts[type] })),
-      byStatus: KANBAN_COLUMNS.map((status) => ({ status, count: statusCounts[status] })).filter((row) => row.count > 0),
-      defects: DEFECTS.map((type) => ({ type, count: defectCounts[type] })),
-      products: [...productCounts.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)).slice(0, 8),
-      revenue: {
-        inWarranty: {
-          jobs: inWarrantyJobs,
-          amount: Math.round(inWarrantyAmount * 100) / 100,
-        },
-        paid: {
-          jobs: paidJobs,
-          amount: Math.round(paidAmount * 100) / 100,
-        },
-      },
-      technicians: [...technicians.values()]
-        .map((tech) => ({
-          id: tech.id,
-          name: tech.name,
-          technicianType: tech.technicianType,
-          avgRating: average(tech.ratings),
-          ratingCount: tech.ratings.length,
-          jobsDone: tech.jobsDone,
-        }))
-        .sort((a, b) => {
-          if ((b.avgRating ?? -1) !== (a.avgRating ?? -1)) return (b.avgRating ?? -1) - (a.avgRating ?? -1);
-          return a.name.localeCompare(b.name);
-        }),
+      trend: [...trend.values()]
+        .sort((a, b) => a.key.localeCompare(b.key))
+        .map((row) => ({
+          ...row,
+          freeValue: roundMoney(row.freeValue),
+          paidValue: roundMoney(row.paidValue),
+        })),
+    });
+  }),
+);
+
+reportsRouter.get(
+  "/sources",
+  asyncHandler(async (req, res) => {
+    const window = parseReportRange(req.query);
+    const jobs = await loadReportJobs(window);
+    const counts = { rizo_market: 0, rizo_service: 0, portal: 0 };
+
+    for (const job of jobs) {
+      if (job.source === "rizo_market") counts.rizo_market += 1;
+      else if (job.submittedByCustomer) counts.portal += 1;
+      else counts.rizo_service += 1;
+    }
+
+    res.json({
+      range: serializeWindow(window),
+      rows: [
+        { source: "rizo_market", count: counts.rizo_market },
+        { source: "rizo_service", count: counts.rizo_service },
+        { source: "portal", count: counts.portal },
+      ],
     });
   }),
 );

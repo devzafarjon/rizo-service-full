@@ -20,7 +20,6 @@ enum TechnicianType {
 enum ServiceType {
   installation
   repair
-  maintenance
 }
 
 enum RequestSource {
@@ -49,7 +48,6 @@ enum RequestStatus {
   ready_for_pickup
   replaced
   closed
-  due
 }
 
 enum Priority {
@@ -203,9 +201,6 @@ model ServiceRequest {
   finalCost              Decimal?          @map("final_cost") @db.Decimal(12, 2)
   paymentStatus          PaymentStatus     @default(not_required) @map("payment_status")
   customerApprovedAt     DateTime?         @map("customer_approved_at")
-  isRecurring            Boolean           @default(false) @map("is_recurring")
-  recurrenceIntervalMonths Int?            @map("recurrence_interval_months")
-  nextDueDate            DateTime?         @map("next_due_date") @db.Date
   receivedAt             DateTime?         @map("received_at")
   acceptedAt             DateTime?         @map("accepted_at")
   arrivedAt              DateTime?         @map("arrived_at")
