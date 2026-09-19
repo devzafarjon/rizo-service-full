@@ -124,7 +124,7 @@ export function ReceiptPage() {
                   <WarrantyBadge status={request.warrantyStatus} />
                 </Td>
                 <Td className="font-semibold">
-                  {request.warrantyStatus === "in_warranty" ? formatMoney(0) : formatMoney(request.finalCost ?? 0)}
+                  {formatMoney(request.finalCost ?? 0)}
                 </Td>
                 <Td>{formatDateTime(request.completedAt ?? request.createdAt)}</Td>
                 <Td>

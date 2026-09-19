@@ -22,11 +22,13 @@ export function useCustomerRealtime() {
     socket.on("request:created", refresh);
     socket.on("request:updated", refresh);
     socket.on("notification:created", refresh);
+    socket.io.on("reconnect", refresh);
 
     return () => {
       socket.off("request:created", refresh);
       socket.off("request:updated", refresh);
       socket.off("notification:created", refresh);
+      socket.io.off("reconnect", refresh);
       socket.disconnect();
     };
   }, [queryClient, token]);

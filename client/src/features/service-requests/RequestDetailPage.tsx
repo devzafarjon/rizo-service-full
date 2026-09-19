@@ -264,7 +264,9 @@ export function RequestDetailPage() {
           ) : null}
           {cost ? (
             <p className={`mt-4 rounded-xl px-4 py-3 text-sm font-extrabold ${cost.coveredByWarranty ? "bg-emerald-50 text-emerald-800" : "bg-[#FFF4E5] text-[#C56A00]"}`}>
-              {cost.coveredByWarranty ? t("detail.warrantyPays", { amount: formatMoney(0) }) : t("detail.customerPays", { amount: formatMoney(cost.chargedTotal) })}
+              {cost.coveredByWarranty
+                ? t("detail.warrantyPays", { amount: formatMoney(cost.chargedTotal) })
+                : t("detail.customerPays", { amount: formatMoney(cost.chargedTotal) })}
             </p>
           ) : null}
         </section>

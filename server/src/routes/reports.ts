@@ -358,16 +358,20 @@ reportsRouter.get(
       if (!isDoneStatus(job.status)) continue;
       const key = bucketKey(job.createdAt, grain);
       const row = trend.get(key) ?? { key, free: 0, paid: 0, freeValue: 0, paidValue: 0 };
+      const charged = jobRevenue(job);
+      const waived = Math.max(0, job.estimatedCost - job.finalCost);
       if (isFreeWarranty(job)) {
         freeCount += 1;
-        freeValue += jobCost(job);
+        freeValue += waived;
+        paidValue += charged;
         row.free += 1;
-        row.freeValue += jobCost(job);
+        row.freeValue += waived;
+        row.paidValue += charged;
       } else {
         paidCount += 1;
-        paidValue += jobRevenue(job);
+        paidValue += charged;
         row.paid += 1;
-        row.paidValue += jobRevenue(job);
+        row.paidValue += charged;
       }
       trend.set(key, row);
     }

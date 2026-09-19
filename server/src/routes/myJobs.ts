@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { HttpError } from "../lib/httpError.js";
-import { completionGaps, computeJobCost, serializeJobWork, workInclude } from "../lib/jobWork.js";
+import { completionGaps, resolveJobFinancials, serializeJobWork, workInclude } from "../lib/jobWork.js";
 import { serializeNamed } from "../lib/named.js";
 import { notifyRequestStatus } from "../lib/notifyCustomer.js";
 import { parseBody } from "../lib/parse.js";
@@ -238,18 +238,9 @@ myJobsRouter.post(
 
     const existingLine = job.partLines.find((line) => line.sparePartId === part.id);
     const nextQty = (existingLine?.quantity ?? 0) + quantity;
-    if (part.stockQuantity < quantity) {
-      throw new HttpError(400, `Only ${part.stockQuantity} ${part.name} in stock`, "stockInsufficient", {
-        count: part.stockQuantity,
-        ...serializeNamed(part),
-      });
-    }
 
     await prisma.$transaction(async (tx) => {
-      await tx.sparePart.update({
-        where: { id: part.id },
-        data: { stockQuantity: { decrement: quantity } },
-      });
+      await decrementStock(tx, part, quantity);
       if (existingLine) {
         await tx.requestPartLine.update({
           where: { id: existingLine.id },
@@ -300,17 +291,15 @@ myJobsRouter.patch(
     if (!part) {
       throw new HttpError(400, "Spare part not found");
     }
-    if (diff > 0 && part.stockQuantity < diff) {
-      throw new HttpError(400, `Only ${part.stockQuantity} ${part.name} in stock`, "stockInsufficient", {
-        count: part.stockQuantity,
-        ...serializeNamed(part),
-      });
-    }
     await prisma.$transaction(async (tx) => {
-      await tx.sparePart.update({
-        where: { id: line.sparePartId },
-        data: { stockQuantity: { decrement: diff } },
-      });
+      if (diff > 0) {
+        await decrementStock(tx, part, diff);
+      } else {
+        await tx.sparePart.update({
+          where: { id: line.sparePartId },
+          data: { stockQuantity: { increment: -diff } },
+        });
+      }
       await tx.requestPartLine.update({
         where: { id: line.id },
         data: { quantity: body.quantity },
@@ -436,10 +425,16 @@ async function finishJob(existing: OwnedJob, _technicianName: string) {
     existing.pauses.some((pause) => pause.resumedAt == null),
   );
   if (column === "completed") {
-    return { job: serializeTechJob(existing), ...serializeJobWork(existing) };
+    return {
+      job: serializeTechJob(existing),
+      ...serializeJobWork(existing, { requireService: false, type: existing.type, sale: existing.sale }),
+    };
   }
 
-  const gaps = completionGaps(existing);
+  const catalogServices = await prisma.serviceCatalogItem.count({
+    where: { productCategory: existing.product.category },
+  });
+  const gaps = completionGaps(existing, { requireService: catalogServices > 0 });
   if (gaps.length > 0) {
     throw new HttpError(400, `Add ${joinGaps(gaps)} before completing`, "jobIncomplete", { gaps });
   }
@@ -454,14 +449,16 @@ async function finishJob(existing: OwnedJob, _technicianName: string) {
   }
 
   const nextStatus = completedStatusFor(existing.type);
-  const cost = computeJobCost(existing);
+  const financials = resolveJobFinancials(existing, existing.type, existing.sale);
   await prisma.serviceRequest.update({
     where: { id: existing.id },
     data: {
       ...statusPatch(existing, nextStatus, now),
-      estimatedCost: cost.workTotal,
-      finalCost: cost.chargedTotal,
-      paymentStatus: cost.coveredByWarranty || cost.chargedTotal === 0 ? "not_required" : "pending",
+      warrantyStatus: financials.warrantyStatus,
+      isPaidRepair: financials.isPaidRepair,
+      estimatedCost: financials.estimatedCost,
+      finalCost: financials.finalCost,
+      paymentStatus: financials.paymentStatus,
     },
   });
 
@@ -479,7 +476,11 @@ async function finishJob(existing: OwnedJob, _technicianName: string) {
     job: serializeTechJob(fresh),
     pauses: serializePauses(fresh.pauses),
     timeline: buildTimeline(fresh),
-    ...serializeJobWork(fresh),
+    ...serializeJobWork(fresh, {
+      requireService: catalogServices > 0,
+      type: fresh.type,
+      sale: fresh.sale,
+    }),
   };
 }
 
@@ -498,7 +499,11 @@ async function jobWorkPayload(job: OwnedJob) {
     job: serializeTechJob(job),
     pauses: serializePauses(job.pauses),
     timeline: buildTimeline(job),
-    ...serializeJobWork(job),
+    ...serializeJobWork(job, {
+      requireService: services.length > 0,
+      type: job.type,
+      sale: job.sale,
+    }),
     catalog: {
       services: services.map((item) => ({
         id: item.id,
@@ -555,6 +560,25 @@ function timerFor(
     startsAt: (acceptedAt ?? createdAt).toISOString(),
     durationMs: PROGRESS_TIMER_MS,
   };
+}
+
+async function decrementStock(
+  tx: Prisma.TransactionClient,
+  part: { id: string; name: string; nameUz: string; nameRu: string; nameEn: string; stockQuantity: number },
+  quantity: number,
+) {
+  const updated = await tx.sparePart.updateMany({
+    where: { id: part.id, stockQuantity: { gte: quantity } },
+    data: { stockQuantity: { decrement: quantity } },
+  });
+  if (updated.count === 0) {
+    const latest = await tx.sparePart.findUnique({ where: { id: part.id } });
+    const count = latest?.stockQuantity ?? 0;
+    throw new HttpError(400, `Only ${count} ${part.name} in stock`, "stockInsufficient", {
+      count,
+      ...serializeNamed(part),
+    });
+  }
 }
 
 function joinGaps(gaps: Array<"service" | "part" | "photo">) {

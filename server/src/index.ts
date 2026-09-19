@@ -17,14 +17,13 @@ io.use((socket, next) => {
   try {
     const token = socket.handshake.auth?.token as string | undefined;
     if (!token) {
-      next();
+      next(new Error("Sign in required"));
       return;
     }
-    const payload = verifyToken(token);
-    socket.data.auth = payload;
+    socket.data.auth = verifyToken(token);
     next();
   } catch {
-    next();
+    next(new Error("Invalid or expired session"));
   }
 });
 

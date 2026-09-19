@@ -12,7 +12,8 @@
     "postinstall": "npm run prisma:generate -w server",
     "db:migrate": "npm run prisma:migrate -w server",
     "db:seed": "npm run prisma:seed -w server",
-    "db:reset": "npm run prisma:reset -w server"
+    "db:reset": "npm run prisma:reset -w server",
+    "smoke": "npm run smoke -w server"
   },
   "devDependencies": {
     "@types/multer": "^2.2.0",

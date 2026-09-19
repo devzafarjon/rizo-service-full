@@ -11,7 +11,8 @@ import { prisma } from "../lib/prisma.js";
 import { publishRequest } from "../lib/realtime.js";
 import { statusPatch } from "../lib/requestLifecycle.js";
 import { requestInclude, serializeRequest } from "../lib/serializeRequest.js";
-import { serializeJobWork, workInclude } from "../lib/jobWork.js";
+import { resolveJobFinancials, serializeJobWork, workInclude } from "../lib/jobWork.js";
+import { isDoneStatus } from "../lib/techBoard.js";
 import { buildTimeline, serializePauses } from "../lib/timeline.js";
 import { isAllowedStatus } from "../lib/status.js";
 import { computeWarrantyStatus } from "../lib/warranty.js";
@@ -173,7 +174,11 @@ requestsRouter.get(
       request: serializeRequest(request),
       pauses: serializePauses(request.pauses),
       timeline: buildTimeline(request),
-      ...serializeJobWork(request),
+      ...serializeJobWork(request, {
+        requireService: services.length > 0,
+        type: request.type,
+        sale: request.sale,
+      }),
       matchingServices: services.map((item) => ({
         id: item.id,
         ...serializeNamed(item),
@@ -316,7 +321,7 @@ requestsRouter.patch(
     const body = parseBody(patchSchema, req.body);
     const existing = await prisma.serviceRequest.findUnique({
       where: { id: req.params.id },
-      include: requestInclude,
+      include: { ...requestInclude, ...workInclude },
     });
     if (!existing) {
       throw new HttpError(404, "Service request not found");
@@ -328,9 +333,22 @@ requestsRouter.patch(
     }
 
     const now = new Date();
+    const becomingDone = isDoneStatus(body.status) && !isDoneStatus(existing.status);
+    const financials = becomingDone ? resolveJobFinancials(existing, existing.type, existing.sale) : null;
     const updated = await prisma.serviceRequest.update({
       where: { id: existing.id },
-      data: statusPatch(existing, body.status, now),
+      data: {
+        ...statusPatch(existing, body.status, now),
+        ...(financials
+          ? {
+              warrantyStatus: financials.warrantyStatus,
+              isPaidRepair: financials.isPaidRepair,
+              estimatedCost: financials.estimatedCost,
+              finalCost: financials.finalCost,
+              paymentStatus: financials.paymentStatus,
+            }
+          : {}),
+      },
       include: requestInclude,
     });
     const serialized = serializeRequest(updated);

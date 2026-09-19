@@ -8,6 +8,7 @@ const OPEN_STATUSES: RequestStatus[] = [
   "diagnosing",
   "awaiting_parts",
   "repairing",
+  "ready_for_pickup",
 ];
 
 export function initialStatusFor(type: ServiceType): RequestStatus {

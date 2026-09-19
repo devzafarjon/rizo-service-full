@@ -203,7 +203,7 @@ export function CustomerDetailPage() {
                     <WarrantyBadge status={request.warrantyStatus} />
                   </Td>
                   <Td className="font-semibold">
-                    {request.warrantyStatus === "in_warranty" ? formatMoney(0) : formatMoney(request.finalCost ?? 0)}
+                    {formatMoney(request.finalCost ?? 0)}
                   </Td>
                   <Td>{request.assignedTechnician?.name ?? t("common.unassigned")}</Td>
                 </tr>

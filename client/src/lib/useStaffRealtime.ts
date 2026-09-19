@@ -24,6 +24,7 @@ export function useStaffRealtime() {
 
     socket.on("request:created", refreshBoard);
     socket.on("request:updated", refreshBoard);
+    socket.io.on("reconnect", refreshBoard);
     socket.on("technician:updated", () => {
       void queryClient.invalidateQueries({ queryKey: ["staff", "technicians"] });
       void queryClient.invalidateQueries({ queryKey: ["staff", "me"] });
@@ -32,6 +33,7 @@ export function useStaffRealtime() {
     return () => {
       socket.off("request:created", refreshBoard);
       socket.off("request:updated", refreshBoard);
+      socket.io.off("reconnect", refreshBoard);
       socket.disconnect();
     };
   }, [queryClient, token]);

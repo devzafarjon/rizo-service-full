@@ -10,6 +10,7 @@ import { AccountMenu } from "../AccountMenu";
 import { LanguageSwitcher } from "../LanguageSwitcher";
 import { QuickSearch } from "../QuickSearch";
 import { RizoLogo } from "../RizoLogo";
+import { ShellLogoutProvider } from "../ShellLogoutContext";
 import { StaffNavLinks } from "./nav";
 
 export function StaffShell() {
@@ -32,6 +33,7 @@ export function StaffShell() {
   const fullBleed = location.pathname === "/app/kanban" || location.pathname === "/app/my-jobs";
 
   return (
+    <ShellLogoutProvider onLogout={onLogout}>
     <div className="min-h-dvh bg-white print:bg-white">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-gray-100 bg-white print:hidden lg:flex lg:flex-col">
         <Link to="/app" className="flex flex-col items-start gap-2 px-5 py-5">
@@ -55,7 +57,7 @@ export function StaffShell() {
       </aside>
 
       <div className="lg:pl-64 print:pl-0">
-        <header className="sticky top-0 z-20 border-b border-gray-100 bg-white/90 backdrop-blur print:hidden">
+        <header className="sticky top-0 z-[70] border-b border-gray-100 bg-white/90 backdrop-blur print:hidden">
           <div className="flex items-center gap-3 px-4 py-3 lg:px-6">
             <div className="flex items-center gap-2 lg:hidden">
               <RizoLogo className="h-8 w-auto" />
@@ -133,6 +135,7 @@ export function StaffShell() {
         </main>
       </div>
     </div>
+    </ShellLogoutProvider>
   );
 }
 

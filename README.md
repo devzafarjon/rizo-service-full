@@ -60,6 +60,7 @@ Other scripts:
 ```bash
 npm run db:reset     # wipe DB, remigrate, reseed
 npm run db:seed      # demo data only
+npm run smoke        # API + cost/warranty/display-id checks (needs API running)
 npm run dev:client
 npm run dev:server
 ```

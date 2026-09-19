@@ -623,7 +623,7 @@
     "warrantyCover": "Katalog bandlari kafolatda",
     "lineTotal": "Qator jami",
     "servicesHint": "Majburiy · {{category}} bo‘yicha filtrlangan",
-    "partsHint": "Majburiy · qo‘shish uchun bosing, keyin sonini belgilang",
+    "partsHint": "Ixtiyoriy · qo‘shish uchun bosing, keyin sonini belgilang",
     "saveExpense": "Xarajatni saqlash",
     "description": "Tavsif",
     "notFoundTitle": "Ish topilmadi",

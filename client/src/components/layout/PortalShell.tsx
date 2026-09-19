@@ -8,6 +8,7 @@ import { useCustomerRealtime } from "../../lib/useCustomerRealtime";
 import { AccountMenu } from "../AccountMenu";
 import { LanguageSwitcher } from "../LanguageSwitcher";
 import { RizoLogo } from "../RizoLogo";
+import { ShellLogoutProvider } from "../ShellLogoutContext";
 
 export function PortalShell() {
   const { t } = useTranslation();
@@ -30,13 +31,14 @@ export function PortalShell() {
   ];
 
   return (
+    <ShellLogoutProvider onLogout={onLogout}>
     <div className="flex min-h-dvh flex-col bg-white">
       <div className="bg-black">
         <div className="mx-auto flex h-10 max-w-3xl items-center justify-end px-4">
           <LanguageSwitcher variant="dark" />
         </div>
       </div>
-      <header className="sticky top-0 z-30 border-b border-gray-100 bg-white pt-[env(safe-area-inset-top)]">
+      <header className="sticky top-0 z-[70] border-b border-gray-100 bg-white pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
           <div className="flex min-w-0 items-center gap-3">
             <RizoLogo className="h-8 w-auto shrink-0" />
@@ -95,5 +97,6 @@ export function PortalShell() {
         </div>
       </nav>
     </div>
+    </ShellLogoutProvider>
   );
 }

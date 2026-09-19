@@ -2,6 +2,13 @@ import { localizedName, type Named } from "./localized";
 
 export const STAFF_TOKEN_KEY = "rizo_staff_token";
 export const CUSTOMER_TOKEN_KEY = "rizo_customer_token";
+export const AUTH_EXPIRED_EVENT = "rizo:auth-expired";
+
+function expireAuth(path: string) {
+  const scope = path.startsWith("/api/staff") ? "staff" : path.startsWith("/api/customer") ? "customer" : null;
+  if (!scope || typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(AUTH_EXPIRED_EVENT, { detail: { scope } }));
+}
 
 export class ApiError extends Error {
   status: number;
@@ -61,6 +68,9 @@ export async function api<T>(
   if (!res.ok) {
     const err = parseError(data, "Request failed");
     err.status = res.status;
+    if (token && res.status === 401 && (err.code === "invalidSession" || err.code === "accountGone" || err.code === "required")) {
+      expireAuth(path);
+    }
     throw err;
   }
   return data;
@@ -85,6 +95,9 @@ export async function apiForm<T>(
   if (!res.ok) {
     const err = parseError(data, "Request failed");
     err.status = res.status;
+    if (options.token && res.status === 401 && (err.code === "invalidSession" || err.code === "accountGone" || err.code === "required")) {
+      expireAuth(path);
+    }
     throw err;
   }
   return data;

@@ -5,6 +5,7 @@ import { HttpError } from "../lib/httpError.js";
 import { parseBody } from "../lib/parse.js";
 import { prisma } from "../lib/prisma.js";
 import { handlePrismaError } from "../lib/prismaErrors.js";
+import { paymentFor } from "../lib/assignment.js";
 import { computeWarrantyExpiry, computeWarrantyStatus, money, parseDateOnly, toDateOnly } from "../lib/warranty.js";
 import { optionalText } from "../lib/zodFields.js";
 import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
@@ -141,6 +142,22 @@ salesRouter.patch(
           _count: { select: { requests: true } },
         },
       });
+      const warrantyStatus = computeWarrantyStatus(sale.warrantyMonths, sale.warrantyExpiry);
+      const open = await prisma.serviceRequest.findMany({
+        where: { saleId: sale.id, status: { notIn: ["completed", "closed", "replaced"] } },
+        select: { id: true, type: true },
+      });
+      for (const request of open) {
+        const payment = paymentFor(request.type, warrantyStatus);
+        await prisma.serviceRequest.update({
+          where: { id: request.id },
+          data: {
+            warrantyStatus,
+            isPaidRepair: payment.isPaidRepair,
+            paymentStatus: payment.paymentStatus,
+          },
+        });
+      }
       res.json({ sale: serializeSale(sale) });
     } catch (error) {
       handlePrismaError(error, { invoice_number: "This invoice number is already in use", invoiceNumber: "This invoice number is already in use" });

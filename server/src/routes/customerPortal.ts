@@ -261,14 +261,18 @@ customerPortalRouter.post(
 customerPortalRouter.get(
   "/notifications",
   asyncHandler(async (req, res) => {
-    const notifications = await prisma.notification.findMany({
-      where: { customerId: req.customer!.sub },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-    });
+    const where = { customerId: req.customer!.sub };
+    const [notifications, unreadCount] = await Promise.all([
+      prisma.notification.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      }),
+      prisma.notification.count({ where: { ...where, isRead: false } }),
+    ]);
     res.json({
       notifications: notifications.map(serializeNotification),
-      unreadCount: notifications.filter((item) => !item.isRead).length,
+      unreadCount,
     });
   }),
 );
@@ -332,7 +336,9 @@ function serializePortalRequest(request: PortalRecord) {
     type: request.type,
     status: request.status,
     priority: request.priority,
-    warrantyStatus: request.warrantyStatus,
+    warrantyStatus: request.sale
+      ? computeWarrantyStatus(request.sale.warrantyMonths, request.sale.warrantyExpiry)
+      : request.warrantyStatus,
     locationType: request.locationType,
     issueDescription: request.issueDescription,
     createdAt: request.createdAt.toISOString(),

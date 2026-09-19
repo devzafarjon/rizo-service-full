@@ -8,13 +8,16 @@ export function addMonths(dateIso: string, months: number): string {
   return cursor.toISOString().slice(0, 10);
 }
 
-export function warrantyStatusFor(saleDate: string, warrantyMonths: number, expiry = addMonths(saleDate, warrantyMonths)): WarrantyStatus {
-  if (warrantyMonths <= 0) return "not_applicable";
-  const today = new Date();
-  const todayIso = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())).toISOString().slice(0, 10);
-  return expiry >= todayIso ? "in_warranty" : "expired";
+export function todayIso() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tashkent",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 }
 
-export function todayIso() {
-  return new Date().toISOString().slice(0, 10);
+export function warrantyStatusFor(saleDate: string, warrantyMonths: number, expiry = addMonths(saleDate, warrantyMonths)): WarrantyStatus {
+  if (warrantyMonths <= 0) return "not_applicable";
+  return expiry >= todayIso() ? "in_warranty" : "expired";
 }

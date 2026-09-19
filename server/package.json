@@ -10,7 +10,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "tsx prisma/seed.ts",
     "prisma:reset": "prisma migrate reset --force",
-    "prisma:generate": "prisma generate"
+    "prisma:generate": "prisma generate",
+    "smoke": "node --import tsx/esm scripts/smoke.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -15,7 +15,10 @@ export function emitToCustomer(customerId: string, event: string, payload: unkno
   io?.to(`customer:${customerId}`).emit(event, payload);
 }
 
-export function publishRequest(event: "request:created" | "request:updated", payload: { customerId: string }) {
+export function publishRequest(
+  event: "request:created" | "request:updated",
+  payload: { id: string; customerId: string },
+) {
   emitToStaff(event, payload);
-  emitToCustomer(payload.customerId, event, payload);
+  emitToCustomer(payload.customerId, event, { id: payload.id, customerId: payload.customerId });
 }

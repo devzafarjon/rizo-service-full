@@ -32,6 +32,9 @@ export function serializeLocation(value: Prisma.JsonValue | null): CustomerLocat
 }
 
 export function serializeRequest(request: RequestRecord) {
+  const warrantyStatus = request.sale
+    ? computeWarrantyStatus(request.sale.warrantyMonths, request.sale.warrantyExpiry)
+    : request.warrantyStatus;
   return {
     id: request.id,
     displayId: request.displayId,
@@ -49,7 +52,7 @@ export function serializeRequest(request: RequestRecord) {
     assignedTechnicianId: request.assignedTechnicianId,
     status: request.status,
     priority: request.priority,
-    warrantyStatus: request.warrantyStatus,
+    warrantyStatus,
     isPaidRepair: request.isPaidRepair,
     estimatedCost: request.estimatedCost == null ? null : money(request.estimatedCost),
     finalCost: request.finalCost == null ? null : money(request.finalCost),

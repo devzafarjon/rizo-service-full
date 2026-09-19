@@ -27,12 +27,22 @@ export function computeWarrantyExpiry(saleDate: Date, warrantyMonths: number): D
   return addMonths(saleDate, warrantyMonths);
 }
 
+export function tashkentDateOnly(now = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tashkent",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+}
+
 export function computeWarrantyStatus(warrantyMonths: number, expiry: Date, now = new Date()): WarrantyStatus {
   if (warrantyMonths <= 0) {
     return "not_applicable";
   }
-  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  return expiry.getTime() >= today.getTime() ? "in_warranty" : "expired";
+  const today = parseDateOnly(tashkentDateOnly(now));
+  const expiryDay = new Date(Date.UTC(expiry.getUTCFullYear(), expiry.getUTCMonth(), expiry.getUTCDate()));
+  return expiryDay.getTime() >= today.getTime() ? "in_warranty" : "expired";
 }
 
 export function money(value: { toString(): string } | number): number {

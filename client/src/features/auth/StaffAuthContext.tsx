@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { applyLocale, LOCALE_STORAGE_KEY, parseLocale, type AppLocale } from "../../i18n";
-import { api, ApiError, STAFF_TOKEN_KEY } from "../../lib/api";
+import { api, ApiError, AUTH_EXPIRED_EVENT, CUSTOMER_TOKEN_KEY, STAFF_TOKEN_KEY } from "../../lib/api";
 import type { StaffUser } from "../../lib/types";
 
 type StaffAuthContextValue = {
@@ -30,12 +30,26 @@ export function StaffAuthProvider({ children }: { children: ReactNode }) {
     retry: false,
   });
 
+  const logout = useCallback(() => {
+    localStorage.removeItem(STAFF_TOKEN_KEY);
+    setToken(null);
+    queryClient.removeQueries({ queryKey: ["staff"] });
+  }, [queryClient]);
+
   useEffect(() => {
     if (meQuery.error instanceof ApiError && meQuery.error.status === 401) {
-      localStorage.removeItem(STAFF_TOKEN_KEY);
-      setToken(null);
+      logout();
     }
-  }, [meQuery.error]);
+  }, [logout, meQuery.error]);
+
+  useEffect(() => {
+    function onExpired(event: Event) {
+      const scope = (event as CustomEvent<{ scope?: string }>).detail?.scope;
+      if (scope === "staff") logout();
+    }
+    window.addEventListener(AUTH_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, onExpired);
+  }, [logout]);
 
   useEffect(() => {
     if (!meQuery.data?.locale) return;
@@ -49,17 +63,13 @@ export function StaffAuthProvider({ children }: { children: ReactNode }) {
       method: "POST",
       body: JSON.stringify({ phone, password }),
     });
+    localStorage.removeItem(CUSTOMER_TOKEN_KEY);
+    queryClient.removeQueries({ queryKey: ["customer"] });
     localStorage.setItem(STAFF_TOKEN_KEY, data.token);
     setToken(data.token);
     queryClient.setQueryData(["staff", "me", data.token], data.user);
     await applyLocale(parseLocale(data.user.locale));
     return data.user;
-  }, [queryClient]);
-
-  const logout = useCallback(() => {
-    localStorage.removeItem(STAFF_TOKEN_KEY);
-    setToken(null);
-    queryClient.removeQueries({ queryKey: ["staff"] });
   }, [queryClient]);
 
   const setAvailability = useCallback(

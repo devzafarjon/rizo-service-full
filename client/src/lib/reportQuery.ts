@@ -1,4 +1,5 @@
 import type { ReportPreset, TrendGrain } from "./types";
+import { todayIso } from "./warranty";
 
 export type ReportQuery = {
   preset: ReportPreset;
@@ -8,11 +9,7 @@ export type ReportQuery = {
   productId?: string;
 };
 
-export function todayIso() {
-  const now = new Date();
-  const tashkent = new Date(now.getTime() + 5 * 60 * 60 * 1000);
-  return tashkent.toISOString().slice(0, 10);
-}
+export { todayIso };
 
 export function defaultGrain(preset: ReportPreset): TrendGrain {
   if (preset === "week" || preset === "month") return "day";

@@ -24,6 +24,7 @@ export type ReportJob = {
   isPaidRepair: boolean;
   defectType: DefectType | null;
   finalCost: number;
+  estimatedCost: number;
   createdAt: Date;
   receivedAt: Date | null;
   completedAt: Date | null;
@@ -54,7 +55,7 @@ export function isFreeWarranty(job: Pick<ReportJob, "warrantyStatus" | "isPaidRe
 }
 
 export function jobRevenue(job: ReportJob) {
-  if (!isDoneStatus(job.status) || isFreeWarranty(job)) return 0;
+  if (!isDoneStatus(job.status)) return 0;
   return job.finalCost;
 }
 
@@ -94,6 +95,7 @@ export async function loadReportJobs(window: ReportWindow, productId?: string): 
       isPaidRepair: true,
       defectType: true,
       finalCost: true,
+      estimatedCost: true,
       createdAt: true,
       receivedAt: true,
       completedAt: true,
@@ -123,6 +125,7 @@ export async function loadReportJobs(window: ReportWindow, productId?: string): 
     isPaidRepair: row.isPaidRepair,
     defectType: row.defectType,
     finalCost: row.finalCost == null ? 0 : money(row.finalCost),
+    estimatedCost: row.estimatedCost == null ? 0 : money(row.estimatedCost),
     createdAt: row.createdAt,
     receivedAt: row.receivedAt,
     completedAt: row.completedAt,

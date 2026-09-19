@@ -623,7 +623,7 @@
     "warrantyCover": "Warranty covers catalog items",
     "lineTotal": "Line total",
     "servicesHint": "Required · filtered to {{category}}",
-    "partsHint": "Required · tap to add, then set quantity",
+    "partsHint": "Optional · tap to add, then set quantity",
     "saveExpense": "Save expense",
     "description": "Description",
     "notFoundTitle": "Job not found",

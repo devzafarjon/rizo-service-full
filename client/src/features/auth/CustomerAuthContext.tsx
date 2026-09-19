@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { applyLocale, LOCALE_STORAGE_KEY, parseLocale, type AppLocale } from "../../i18n";
 import i18n from "../../i18n";
-import { api, ApiError, CUSTOMER_TOKEN_KEY } from "../../lib/api";
+import { api, ApiError, AUTH_EXPIRED_EVENT, CUSTOMER_TOKEN_KEY, STAFF_TOKEN_KEY } from "../../lib/api";
 import type { CustomerUser } from "../../lib/types";
 
 type CustomerAuthContextValue = {
@@ -32,12 +32,26 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     retry: false,
   });
 
+  const logout = useCallback(() => {
+    localStorage.removeItem(CUSTOMER_TOKEN_KEY);
+    setToken(null);
+    queryClient.removeQueries({ queryKey: ["customer"] });
+  }, [queryClient]);
+
   useEffect(() => {
     if (meQuery.error instanceof ApiError && meQuery.error.status === 401) {
-      localStorage.removeItem(CUSTOMER_TOKEN_KEY);
-      setToken(null);
+      logout();
     }
-  }, [meQuery.error]);
+  }, [logout, meQuery.error]);
+
+  useEffect(() => {
+    function onExpired(event: Event) {
+      const scope = (event as CustomEvent<{ scope?: string }>).detail?.scope;
+      if (scope === "customer") logout();
+    }
+    window.addEventListener(AUTH_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, onExpired);
+  }, [logout]);
 
   useEffect(() => {
     if (!meQuery.data?.locale) return;
@@ -51,6 +65,8 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
       method: "POST",
       body: JSON.stringify({ phone, password }),
     });
+    localStorage.removeItem(STAFF_TOKEN_KEY);
+    queryClient.removeQueries({ queryKey: ["staff"] });
     localStorage.setItem(CUSTOMER_TOKEN_KEY, data.token);
     setToken(data.token);
     queryClient.setQueryData(["customer", "me", data.token], data.user);
@@ -64,6 +80,8 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
         method: "POST",
         body: JSON.stringify({ ...values, locale: parseLocale(i18n.language) }),
       });
+      localStorage.removeItem(STAFF_TOKEN_KEY);
+      queryClient.removeQueries({ queryKey: ["staff"] });
       localStorage.setItem(CUSTOMER_TOKEN_KEY, data.token);
       setToken(data.token);
       queryClient.setQueryData(["customer", "me", data.token], data.user);
@@ -79,12 +97,6 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ phone }),
     });
   }, []);
-
-  const logout = useCallback(() => {
-    localStorage.removeItem(CUSTOMER_TOKEN_KEY);
-    setToken(null);
-    queryClient.removeQueries({ queryKey: ["customer"] });
-  }, [queryClient]);
 
   const saveLocale = useCallback(
     async (locale: AppLocale) => {

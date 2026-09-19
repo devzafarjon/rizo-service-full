@@ -1,6 +1,7 @@
-import type { WarrantyStatus } from "@prisma/client";
+import type { PaymentStatus, ServiceType, WarrantyStatus } from "@prisma/client";
 import { Prisma } from "@prisma/client";
-import { money } from "./warranty.js";
+import { paymentFor } from "./assignment.js";
+import { money, computeWarrantyStatus } from "./warranty.js";
 import { serializeNamed, type NamedRecord } from "./named.js";
 
 export const workInclude = Prisma.validator<Prisma.ServiceRequestInclude>()({
@@ -12,6 +13,7 @@ export const workInclude = Prisma.validator<Prisma.ServiceRequestInclude>()({
 
 export type JobWorkRecord = {
   warrantyStatus: WarrantyStatus;
+  isPaidRepair?: boolean;
   serviceLines: Array<{
     id: string;
     serviceCatalogItemId: string;
@@ -38,35 +40,68 @@ export type JobWorkRecord = {
   }>;
 };
 
-export function computeJobCost(work: Pick<JobWorkRecord, "warrantyStatus" | "serviceLines" | "partLines" | "extraExpenses">) {
+export function computeJobCost(
+  work: Pick<JobWorkRecord, "warrantyStatus" | "isPaidRepair" | "serviceLines" | "partLines" | "extraExpenses">,
+) {
   const servicesTotal = work.serviceLines.reduce((sum, line) => sum + money(line.priceAtTime), 0);
   const partsTotal = work.partLines.reduce((sum, line) => sum + money(line.priceAtTime) * line.quantity, 0);
   const extrasTotal = work.extraExpenses.reduce((sum, line) => sum + money(line.price), 0);
   const catalogTotal = servicesTotal + partsTotal;
   const workTotal = catalogTotal + extrasTotal;
-  const coveredByWarranty = work.warrantyStatus === "in_warranty";
+  const coveredByWarranty = work.warrantyStatus === "in_warranty" && !work.isPaidRepair;
   return {
     servicesTotal,
     partsTotal,
     extrasTotal,
     catalogTotal,
     workTotal,
-    chargedTotal: coveredByWarranty ? 0 : workTotal,
+    chargedTotal: coveredByWarranty ? extrasTotal : workTotal,
     coveredByWarranty,
   };
 }
 
-export function completionGaps(work: Pick<JobWorkRecord, "serviceLines" | "partLines" | "photos">) {
+export function completionGaps(
+  work: Pick<JobWorkRecord, "serviceLines" | "partLines" | "photos">,
+  options?: { requireService?: boolean },
+) {
   const gaps: Array<"service" | "part" | "photo"> = [];
-  if (work.serviceLines.length === 0) gaps.push("service");
-  if (work.partLines.length === 0) gaps.push("part");
+  if (options?.requireService !== false && work.serviceLines.length === 0) gaps.push("service");
   if (work.photos.length === 0) gaps.push("photo");
   return gaps;
 }
 
-export function serializeJobWork(work: JobWorkRecord) {
-  const cost = computeJobCost(work);
-  const gaps = completionGaps(work);
+export function resolveJobFinancials(
+  work: Pick<JobWorkRecord, "warrantyStatus" | "isPaidRepair" | "serviceLines" | "partLines" | "extraExpenses">,
+  type: ServiceType,
+  sale: { warrantyMonths: number; warrantyExpiry: Date } | null,
+) {
+  const warrantyStatus = sale
+    ? computeWarrantyStatus(sale.warrantyMonths, sale.warrantyExpiry)
+    : work.warrantyStatus;
+  const payment = paymentFor(type, warrantyStatus);
+  const cost = computeJobCost({ ...work, warrantyStatus, isPaidRepair: payment.isPaidRepair });
+  return {
+    warrantyStatus,
+    isPaidRepair: payment.isPaidRepair,
+    estimatedCost: cost.workTotal,
+    finalCost: cost.chargedTotal,
+    paymentStatus: (cost.chargedTotal === 0 ? "not_required" : "pending") as PaymentStatus,
+    cost,
+  };
+}
+
+export function serializeJobWork(
+  work: JobWorkRecord,
+  options?: {
+    requireService?: boolean;
+    type?: ServiceType;
+    sale?: { warrantyMonths: number; warrantyExpiry: Date } | null;
+  },
+) {
+  const cost = options?.type
+    ? resolveJobFinancials(work, options.type, options.sale ?? null).cost
+    : computeJobCost(work);
+  const gaps = completionGaps(work, { requireService: options?.requireService });
   return {
     serviceLines: work.serviceLines.map((line) => ({
       id: line.id,

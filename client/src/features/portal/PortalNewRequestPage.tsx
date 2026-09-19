@@ -298,7 +298,7 @@ export function PortalNewRequestPage() {
 
         <button
           type="submit"
-          disabled={create.isPending || (!useCatalog && !saleId) || (useCatalog && !productId)}
+          disabled={create.isPending || !issueDescription.trim() || (!useCatalog && !saleId) || (useCatalog && !productId)}
           className="btn-rizo h-12 w-full text-sm disabled:opacity-50"
         >
           {create.isPending ? <Spinner className="h-4 w-4" /> : null}

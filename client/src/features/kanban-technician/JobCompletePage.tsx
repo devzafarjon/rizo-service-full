@@ -153,7 +153,7 @@ export function JobCompletePage() {
   }
 
   return (
-    <div className="pb-28">
+    <div className="pb-[calc(9rem+env(safe-area-inset-bottom))]">
       <Link to="/app/my-jobs" className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-500 hover:text-[#B439FD]">
         <ArrowLeft size={16} />
         {t("tech.title")}
@@ -329,7 +329,7 @@ export function JobCompletePage() {
           <button
             type="button"
             onClick={() => setExtraOpen(true)}
-            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-neutral-100 text-sm font-bold"
+            className="mb-2 inline-flex min-h-12 w-full scroll-mb-40 items-center justify-center gap-2 rounded-2xl bg-neutral-100 text-sm font-bold"
           >
             <Plus size={16} />
             {t("detail.extras")}
@@ -395,7 +395,7 @@ export function JobCompletePage() {
         </dl>
         <p className={`mt-4 rounded-xl px-4 py-3 text-sm font-extrabold ${cost.coveredByWarranty ? "bg-emerald-50 text-emerald-800" : "bg-[#FFF4E5] text-[#C56A00]"}`}>
           {cost.coveredByWarranty
-            ? t("detail.warrantyPays", { amount: formatMoney(0) })
+            ? t("detail.warrantyPays", { amount: formatMoney(cost.chargedTotal) })
             : t("detail.customerPays", { amount: formatMoney(cost.chargedTotal) })}
         </p>
       </section>
