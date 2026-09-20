@@ -11,11 +11,12 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { GripVertical, MapPin, Navigation, Pause, Play, Printer, Store } from "lucide-react";
+import { CalendarDays, GripVertical, MapPin, Navigation, Pause, Play, Printer, QrCode, Store } from "lucide-react";
 import { useEffect, useMemo, useState, type FormEvent, type HTMLAttributes, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import { TypeBadge } from "../../components/Badges";
+import { OverflowLink, OverflowMenu } from "../../components/OverflowMenu";
 import { Field, inputClass, textareaClass } from "../../components/Field";
 import { Modal } from "../../components/Modal";
 import { PageSkeleton } from "../../components/PageSkeleton";
@@ -158,15 +159,27 @@ export function TechnicianKanbanPage() {
 
   return (
     <div>
-      <div className="mb-4">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-extrabold tracking-tight">{t("tech.title")}</h1>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            {t("common.live")}
-          </span>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-extrabold tracking-tight">{t("tech.title")}</h1>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              {t("common.live")}
+            </span>
+          </div>
+          <p className="mt-1 text-sm text-neutral-500">{t("tech.intro")}</p>
         </div>
-        <p className="mt-1 text-sm text-neutral-500">{t("tech.intro")}</p>
+        <OverflowMenu label={t("tech.moreActions")}>
+          <OverflowLink to="/app/scan">
+            <QrCode size={16} />
+            {t("nav.scan")}
+          </OverflowLink>
+          <OverflowLink to="/app/my-schedule">
+            <CalendarDays size={16} />
+            {t("nav.mySchedule")}
+          </OverflowLink>
+        </OverflowMenu>
       </div>
 
       <DndContext
@@ -305,14 +318,30 @@ function JobCard({
         ) : null}
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <p className="text-base font-extrabold text-neutral-900">{job.customer.name}</p>
-            {job.locationType === "on_site" ? (
-              <MapPin size={18} className="shrink-0 text-[#F6921E]" aria-label={t("location.on_site")} />
-            ) : (
-              <Store size={18} className="shrink-0 text-[#B439FD]" aria-label={t("location.in_shop")} />
-            )}
+            <p className="truncate text-base font-extrabold text-neutral-900">{job.customer.name}</p>
+            <div className="flex shrink-0 items-center gap-0.5">
+              {job.locationType === "on_site" ? (
+                <MapPin size={18} className="text-[#F6921E]" aria-label={t("location.on_site")} />
+              ) : (
+                <Store size={18} className="text-[#B439FD]" aria-label={t("location.in_shop")} />
+              )}
+              {!overlay ? (
+                <OverflowMenu label={t("tech.moreActions")}>
+                  <OverflowLink to="/app/scan">
+                    <QrCode size={16} />
+                    {t("nav.scan")}
+                  </OverflowLink>
+                  {job.column === "completed" ? (
+                    <OverflowLink to={`/app/my-jobs/${job.id}/receipt`}>
+                      <Printer size={16} />
+                      {t("detail.printReceipt")}
+                    </OverflowLink>
+                  ) : null}
+                </OverflowMenu>
+              ) : null}
+            </div>
           </div>
-          <p className="mt-0.5 text-sm text-neutral-500">{localizedName(job.product)}</p>
+          <p className="mt-0.5 truncate text-sm text-neutral-500">{localizedName(job.product)}</p>
           <p className="mt-0.5 font-mono text-xs font-semibold text-neutral-400">{formatRequestId(job.displayId)}</p>
           <a href={`tel:+${job.customer.phone.replace(/\D/g, "")}`} className="mt-1 inline-block text-sm font-semibold text-[#B439FD]">
             {formatPhone(job.customer.phone)}

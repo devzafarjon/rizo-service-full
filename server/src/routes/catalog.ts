@@ -8,6 +8,7 @@ import { handlePrismaError } from "../lib/prismaErrors.js";
 import { namedFromInput, namedSearch, serializeNamed } from "../lib/named.js";
 import { money } from "../lib/warranty.js";
 import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
+import { maybeAlertLowStock } from "../lib/stockAlerts.js";
 
 const namedFields = z.object({
   name: z.string().trim().optional(),
@@ -29,6 +30,7 @@ const partSchema = namedFields.extend({
   price: z.coerce.number().nonnegative("Price cannot be negative"),
   productCategory: z.string().trim().min(1, "Product category is required"),
   stockQuantity: z.coerce.number().int().min(0, "Stock cannot be negative"),
+  lowStockThreshold: z.coerce.number().int().min(0, "Threshold cannot be negative").optional(),
 }).superRefine((data, ctx) => {
   if (!(data.name || data.nameUz || data.nameRu || data.nameEn)) {
     ctx.addIssue({ code: "custom", message: "Name is required", path: ["name"] });
@@ -42,6 +44,7 @@ const servicePatchSchema = namedFields.extend({
 
 const partPatchSchema = servicePatchSchema.extend({
   stockQuantity: z.coerce.number().int().min(0, "Stock cannot be negative").optional(),
+  lowStockThreshold: z.coerce.number().int().min(0, "Threshold cannot be negative").optional(),
 });
 
 export const catalogRouter = Router();
@@ -167,6 +170,7 @@ catalogRouter.post(
         price: body.price,
         productCategory: body.productCategory,
         stockQuantity: body.stockQuantity,
+        lowStockThreshold: body.lowStockThreshold ?? 3,
       },
       include: { _count: { select: { requestLines: true } } },
     });
@@ -188,9 +192,11 @@ catalogRouter.patch(
           ...(body.price !== undefined ? { price: body.price } : {}),
           ...(body.productCategory !== undefined ? { productCategory: body.productCategory } : {}),
           ...(body.stockQuantity !== undefined ? { stockQuantity: body.stockQuantity } : {}),
+          ...(body.lowStockThreshold !== undefined ? { lowStockThreshold: body.lowStockThreshold } : {}),
         },
         include: { _count: { select: { requestLines: true } } },
       });
+      await maybeAlertLowStock(item.id);
       res.json({ part: serializePart(item) });
     } catch (error) {
       handlePrismaError(error);
@@ -246,6 +252,7 @@ function serializePart(item: {
   price: { toString(): string };
   productCategory: string;
   stockQuantity: number;
+  lowStockThreshold: number;
   createdAt: Date;
   _count: { requestLines: number };
 }) {
@@ -255,6 +262,8 @@ function serializePart(item: {
     price: money(item.price),
     productCategory: item.productCategory,
     stockQuantity: item.stockQuantity,
+    lowStockThreshold: item.lowStockThreshold,
+    lowStock: item.stockQuantity <= item.lowStockThreshold,
     createdAt: item.createdAt.toISOString(),
     usedCount: item._count.requestLines,
   };

@@ -63,7 +63,11 @@
     "decreaseQty": "Decrease quantity",
     "increaseQty": "Increase quantity",
     "removeNamed": "Remove {{name}}",
-    "comingSoon": "Coming in a later milestone"
+    "comingSoon": "Coming in a later milestone",
+    "next": "Next",
+    "skip": "Skip",
+    "moreInfo": "More information",
+    "stepOf": "Step {{current}} of {{total}}"
   },
   "languages": {
     "uz": "Oʻzbekcha",
@@ -108,6 +112,7 @@
     "accountCreated": "Account created",
     "signupFailed": "Could not create account",
     "haveAccount": "Already have an account?",
+    "phoneExistsSignIn": "This phone number already has an account. Sign in instead.",
     "forgotTitle": "Forgot password",
     "forgotHint": "We’ll create a new password for this phone number. Save it before you leave this page.",
     "newPassword": "Your new password",
@@ -129,7 +134,19 @@
     "reports": "Reports",
     "myJobs": "My jobs",
     "myRequests": "My requests",
-    "newRequest": "New request"
+    "newRequest": "New request",
+    "schedule": "Schedule",
+    "activity": "Activity",
+    "kiosk": "Counter",
+    "scan": "Scan tag",
+    "mySchedule": "My schedule",
+    "notifications": "Notifications",
+    "dailyUse": "Daily use",
+    "management": "Management",
+    "analytics": "Dashboard analytics",
+    "inventory": "Inventory",
+    "duplicates": "Duplicate customers",
+    "settings": "Backup settings"
   },
   "staffHome": {
     "welcome": "Welcome back",
@@ -152,12 +169,17 @@
   },
   "dashboard": {
     "intro": "Live service volume, revenue, and profit for the selected period. Change the date range to refresh every chart.",
+    "introShort": "Today’s volume, money, and how long jobs are taking.",
     "trend": "Revenue, costs, and profit",
     "topProducts": "Top products by service volume",
     "topParts": "Top spare parts used",
     "defects": "Most common defects by device type",
     "status": "Request status overview",
-    "warranty": "Warranty vs paid repair"
+    "warranty": "Warranty vs paid repair",
+    "viewFull": "View full analytics",
+    "viewSummary": "Back to summary",
+    "techPerformance": "Technician performance",
+    "techPerformanceBody": "Open the technician report for completed jobs, ratings, and time on job."
   },
   "shell": {
     "adminRole": "Admin / dispatcher",
@@ -309,7 +331,9 @@
   "notify": {
     "createdByCustomer": "We received your {{type}} request for {{product}}.",
     "createdByStaff": "A {{type}} request was created for your {{product}}.",
-    "status": "Your {{type}} for {{product}} is now {{status}}."
+    "status": "Your {{type}} for {{product}} is now {{status}}.",
+    "overdue": "{{id}} is overdue and needs attention.",
+    "lowStock": "{{product}} is low on stock ({{count}})."
   },
   "notifications": {
     "title": "Notifications",
@@ -343,6 +367,11 @@
     "productCategory": "Product category",
     "priceSom": "Price (so'm)",
     "stockQty": "Stock quantity",
+    "lowStock": "Low stock",
+    "lowStockThreshold": "Low-stock threshold",
+    "blockZeroStock": "Block selecting parts with 0 stock",
+    "blockZeroStockTip": "When on, technicians cannot add a spare part that has zero stock. Turn off only if you want to record a part that is already on back-order.",
+    "settingsSaved": "Stock setting saved",
     "deleteProductTitle": "Delete product?",
     "deleteProductBody": "{{name}} will be removed if it has no sales or service jobs.",
     "deleteServiceTitle": "Delete service?",
@@ -395,7 +424,17 @@
     "date": "Date",
     "passwordCreated": "Portal password created",
     "regionHint": "Used in the request ID. Unknown falls back to 00.",
+    "regionTip": "The two-digit region code is written into the request ID so staff can tell where the job came from. Leave Unknown if the customer has no region on file.",
     "internalNotes": "Internal notes",
+    "findDuplicates": "Find duplicates",
+    "duplicatesTitle": "Duplicate customers",
+    "duplicatesIntro": "Records that share the same last 9 phone digits. Keep one and merge the other.",
+    "noDuplicatesTitle": "No duplicates found",
+    "noDuplicatesBody": "Every phone number currently maps to a single customer.",
+    "keepAndMerge": "Keep {{name}}",
+    "merged": "Customers merged",
+    "existingHint": "{{name}} ({{phone}}) is already in the list.",
+    "useExisting": "Open existing customer",
     "portalPassword": "Portal password",
     "newPortalPassword": "New portal password",
     "passwordKeepHint": "Leave blank to keep the current password.",
@@ -485,6 +524,7 @@
     "lng": "Longitude (optional)",
     "useProfileAddress": "Use profile address",
     "useCoords": "Use my coordinates",
+    "assignAutoTip": "Auto-assign picks the available technician of the required type with the fewest open jobs. Use manual if a specific person should take it, or leave it unassigned for the board.",
     "assign": {
       "auto": "Auto-assign next available",
       "manual": "Choose a technician",
@@ -553,7 +593,9 @@
     "openJobs": "{{count}} open",
     "searchPlaceholder": "Search customer or request ID",
     "drag": "Drag {{name}}",
-    "updateFailed": "Could not update status"
+    "updateFailed": "Could not update status",
+    "overdue": "Overdue",
+    "overdueList": "Overdue requests"
   },
   "tech": {
     "title": "My jobs",
@@ -582,7 +624,8 @@
     "moveFailed": "Could not update this job",
     "stayCompleted": "Completed jobs stay in Completed",
     "drag": "Drag {{name}}",
-    "hoursShort": "{{count}}h"
+    "hoursShort": "{{count}}h",
+    "moreActions": "More actions"
   },
   "job": {
     "timeline": "Timeline",
@@ -628,7 +671,9 @@
     "description": "Description",
     "notFoundTitle": "Job not found",
     "notFoundBody": "This job is not assigned to you.",
-    "stockLine": "{{price}} · {{count}} in stock"
+    "stockLine": "{{price}} · {{count}} in stock",
+    "zeroStockWarn": "This part has 0 stock. You can still add it.",
+    "zeroStockBlock": "This part is out of stock"
   },
   "receipt": {
     "title": "Receipts",
@@ -795,7 +840,54 @@
     "pendingFeedback_one": "A completed job is waiting for your rating.",
     "pendingFeedback_few": "{{count}} completed jobs are waiting for your rating.",
     "pendingFeedback_many": "{{count}} completed jobs are waiting for your rating.",
-    "pendingFeedback_other": "{{count}} completed jobs are waiting for your rating."
+    "pendingFeedback_other": "{{count}} completed jobs are waiting for your rating.",
+    "step1Title": "Product",
+    "step2Title": "What is wrong",
+    "step3Title": "Location and review",
+    "addPhotos": "Photos",
+    "addPhotosHint": "Optional. Add pictures of the product or the issue.",
+    "noWarrantyAuto": "No purchase on file — warranty does not apply automatically.",
+    "inShopReview": "We will handle this at the service center.",
+    "review": "Review",
+    "photoCount_one": "{{count}} photo attached",
+    "photoCount_other": "{{count}} photos attached"
+  },
+  "tour": {
+    "skip": "Skip tour",
+    "kanban": {
+      "title": "Start on the board",
+      "body": "The Kanban board is the daily dispatch view. Drag cards or open a request to assign work."
+    },
+    "new-request": {
+      "title": "Create a request",
+      "body": "New request walks through the customer, product, warranty, and technician assignment."
+    },
+    "notifications": {
+      "title": "Stay on alerts",
+      "body": "Notifications collect overdue jobs, low stock, and assignment notes. The bell in the header is the same inbox."
+    },
+    "reports": {
+      "title": "Reports live here",
+      "body": "Open Management when you need profit, parts, warranty, or technician reports."
+    },
+    "management": {
+      "title": "Management tools",
+      "body": "Inventory, technician schedule, audit log, duplicate customers, and backup settings stay in this lower section so the daily list stays short."
+    }
+  },
+  "settings": {
+    "title": "Backup settings",
+    "intro": "Daily database dumps are configured on the server. This page only explains how they work — nothing here changes live data.",
+    "backupTitle": "Automatic backups",
+    "backupBody": "When BACKUP_ENABLED is true, the API writes a daily pg_dump into BACKUP_DIR.",
+    "backupEnv": "Set BACKUP_ENABLED, BACKUP_DIR, and BACKUP_RETAIN_DAYS in server/.env.",
+    "backupManual": "Run npm run db:backup from the repo root to take a dump by hand.",
+    "backupRetain": "Dumps older than BACKUP_RETAIN_DAYS (default 30) are removed after a successful run.",
+    "restoreTitle": "Restore",
+    "restoreBody": "Stop the API, restore the .sql file with psql into DATABASE_URL, then start the API again. Do not run db:reset after a restore.",
+    "stockTitle": "Inventory setting",
+    "stockBody": "The block-zero-stock toggle lives with spare parts in Inventory.",
+    "openCatalog": "Open inventory"
   },
   "feedback": {
     "thanks": "Thanks for the feedback",
@@ -807,6 +899,69 @@
     "send": "Send feedback",
     "star": "{{count}} star",
     "stars": "{{count}} stars"
+  },
+  "alerts": {
+    "title": "Staff alerts",
+    "empty": "No alerts yet.",
+    "emptyBody": "Overdue jobs, low stock, and assignment notes will appear here.",
+    "lowStock": "Low stock",
+    "pageIntro": "The same inbox as the header bell — overdue jobs, stock, and assignment notes.",
+    "viewAll": "View all",
+    "loadFailed": "Could not load alerts",
+    "loadFailedBody": "Try again in a moment."
+  },
+  "tag": {
+    "print": "Print tag",
+    "scanTitle": "Scan device tag",
+    "scanHint": "Point the camera at the sticker, or type the request ID.",
+    "manualPlaceholder": "Request ID",
+    "open": "Open",
+    "invalid": "That is not a valid request tag",
+    "cameraDenied": "Camera access was denied",
+    "openDetail": "Open request",
+    "openJob": "Open job",
+    "notYours": "This job is assigned to another technician."
+  },
+  "pickup": {
+    "title": "Pickup confirmation",
+    "hint": "Confirm the customer received the device. Add a signature if you have a tablet at the counter.",
+    "tap": "I confirm receipt",
+    "sign": "Signature",
+    "confirm": "Confirm pickup",
+    "clearSignature": "Clear signature",
+    "saved": "Pickup confirmed",
+    "already": "Pickup already confirmed"
+  },
+  "kiosk": {
+    "title": "Counter pickup",
+    "hint": "Enter or scan the request ID, then confirm the customer received the device."
+  },
+  "schedule": {
+    "title": "Technician schedule",
+    "intro": "Tap a day to mark a technician as working or off. Auto-assign skips off days.",
+    "mine": "My schedule",
+    "mineHint": "Mark days you are off. New jobs will not be auto-assigned to you that day.",
+    "on": "Working",
+    "off": "Off"
+  },
+  "audit": {
+    "title": "Activity log",
+    "intro": "Who changed request status, costs, roles, or merged customers.",
+    "requestOrEntity": "Request / entity ID",
+    "userId": "User ID",
+    "from": "From",
+    "to": "To",
+    "emptyTitle": "No activity in this filter",
+    "emptyBody": "Try a wider date range or clear the request filter.",
+    "outbound": "SMS / Telegram queue",
+    "action": {
+      "request.status": "Request status changed",
+      "request.cost": "Request cost edited",
+      "request.overdue": "Request flagged overdue",
+      "request.pickup": "Pickup confirmed",
+      "staff.role": "Staff role changed",
+      "customer.merge": "Customers merged"
+    }
   },
   "errors": {
     "generic": "Something went wrong",
@@ -869,6 +1024,9 @@
     "skuRequired": "SKU is required",
     "categoryRequired": "Category is required",
     "phoneRequired": "Phone is required",
-    "passwordRequired": "Password is required"
+    "passwordRequired": "Password is required",
+    "pickupNotReady": "This request is not waiting for pickup confirmation",
+    "invalidSignature": "Signature image is invalid",
+    "mergeSameCustomer": "Choose two different customers"
   }
 }

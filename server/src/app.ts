@@ -15,13 +15,18 @@ import { salesRouter } from "./routes/sales.js";
 import { searchRouter } from "./routes/search.js";
 import { staffAuthRouter } from "./routes/staffAuth.js";
 import { techniciansRouter } from "./routes/technicians.js";
+import { settingsRouter } from "./routes/settings.js";
+import { alertsRouter } from "./routes/alerts.js";
+import { auditRouter } from "./routes/audit.js";
+import { outboundRouter } from "./routes/outbound.js";
+import { tagsRouter } from "./routes/tags.js";
 import { ensureUploadsRoot, uploadsRoot } from "./lib/uploads.js";
 
 export function createApp() {
   const app = express();
   ensureUploadsRoot();
   app.use(cors({ origin: env.clientOrigin, credentials: true }));
-  app.use(express.json({ limit: "2mb" }));
+  app.use(express.json({ limit: "4mb" }));
   app.use("/uploads", express.static(uploadsRoot));
   app.use("/api/uploads", express.static(uploadsRoot));
 
@@ -38,6 +43,11 @@ export function createApp() {
   app.use("/api/staff/requests", requestsRouter);
   app.use("/api/staff/reports", reportsRouter);
   app.use("/api/staff/my-jobs", myJobsRouter);
+  app.use("/api/staff/settings", settingsRouter);
+  app.use("/api/staff/alerts", alertsRouter);
+  app.use("/api/staff/audit", auditRouter);
+  app.use("/api/staff/outbound", outboundRouter);
+  app.use("/api/staff/tags", tagsRouter);
 
   app.use(errorHandler);
   return app;

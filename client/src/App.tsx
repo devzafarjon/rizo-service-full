@@ -34,6 +34,16 @@ import { SalesPage } from "./features/sales/SalesPage";
 import { NewRequestPage } from "./features/service-requests/NewRequestPage";
 import { RequestDetailPage } from "./features/service-requests/RequestDetailPage";
 import { ServiceRequestsPage } from "./features/service-requests/ServiceRequestsPage";
+import { ActivityLogPage } from "./features/audit/ActivityLogPage";
+import { AlertsPage } from "./features/alerts/AlertsPage";
+import { CustomerDuplicatesPage } from "./features/customers/CustomerDuplicatesPage";
+import { KioskPickupPage } from "./features/pickup/KioskPickupPage";
+import { BackupSettingsPage } from "./features/settings/BackupSettingsPage";
+import { MySchedulePage } from "./features/schedule/MySchedulePage";
+import { ScheduleCalendarPage } from "./features/schedule/ScheduleCalendarPage";
+import { PrintTagPage } from "./features/tags/PrintTagPage";
+import { QrScanPage } from "./features/tags/QrScanPage";
+import { TagLandingPage } from "./features/tags/TagLandingPage";
 
 export default function App() {
   return (
@@ -50,12 +60,19 @@ export default function App() {
             <Route index element={<DashboardPage />} />
             <Route path="kanban" element={<AdminKanbanPage />} />
             <Route path="customers" element={<CustomersPage />} />
+            <Route path="customers/duplicates" element={<CustomerDuplicatesPage />} />
             <Route path="customers/:id" element={<CustomerDetailPage />} />
             <Route path="catalog" element={<CatalogPage />} />
             <Route path="sales" element={<SalesPage />} />
             <Route path="requests" element={<ServiceRequestsPage />} />
             <Route path="requests/new" element={<NewRequestPage />} />
             <Route path="requests/:id" element={<RequestDetailPage />} />
+            <Route path="requests/:id/tag" element={<PrintTagPage />} />
+            <Route path="schedule" element={<ScheduleCalendarPage />} />
+            <Route path="audit" element={<ActivityLogPage />} />
+            <Route path="alerts" element={<AlertsPage />} />
+            <Route path="settings" element={<BackupSettingsPage />} />
+            <Route path="kiosk" element={<KioskPickupPage />} />
             <Route path="receipts" element={<ReceiptPage />} />
             <Route path="receipts/:id" element={<ReceiptPrintPage />} />
             <Route path="reports" element={<ReportsIndexPage />} />
@@ -67,10 +84,13 @@ export default function App() {
             <Route path="reports/warranty" element={<WarrantyReportPage />} />
             <Route path="reports/sources" element={<SourcesReportPage />} />
           </Route>
+          <Route path="scan" element={<QrScanPage />} />
+          <Route path="tag/:displayId" element={<TagLandingPage />} />
           <Route element={<RoleRoute roles={["technician"]} />}>
             <Route path="my-jobs" element={<TechnicianKanbanPage />} />
             <Route path="my-jobs/:id/complete" element={<JobCompletePage />} />
             <Route path="my-jobs/:id/receipt" element={<ReceiptPrintPage />} />
+            <Route path="my-schedule" element={<MySchedulePage />} />
           </Route>
         </Route>
       </Route>

@@ -19,6 +19,8 @@ import { computeWarrantyStatus } from "../lib/warranty.js";
 import { allocateDisplayId, normalizeDisplayIdQuery } from "../lib/displayId.js";
 import { serializeNamed } from "../lib/named.js";
 import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
+import { staffActor, writeAudit } from "../lib/audit.js";
+import { confirmPickup } from "../lib/pickup.js";
 
 const patchSchema = z.object({
   status: z.enum([
@@ -112,10 +114,12 @@ requestsRouter.get(
     const technicianId = typeof req.query.technicianId === "string" ? req.query.technicianId : "";
     const priority = typeof req.query.priority === "string" ? req.query.priority : "";
     const warrantyStatus = typeof req.query.warrantyStatus === "string" ? req.query.warrantyStatus : "";
+    const overdue = req.query.overdue === "1" || req.query.overdue === "true";
 
     const requests = await prisma.serviceRequest.findMany({
       where: {
         AND: [
+          overdue ? { overdueAt: { not: null }, status: { notIn: ["completed", "closed", "replaced"] } } : {},
           SERVICE_TYPES.includes(type as ServiceType) ? { type: type as ServiceType } : {},
           STATUSES.includes(status as RequestStatus) ? { status: status as RequestStatus } : {},
           LOCATIONS.includes(locationType as LocationType) ? { locationType: locationType as LocationType } : {},
@@ -139,10 +143,25 @@ requestsRouter.get(
             : {},
         ],
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: overdue ? { overdueAt: "asc" } : { createdAt: "desc" },
       include: requestInclude,
     });
     res.json({ requests: requests.map(serializeRequest) });
+  }),
+);
+
+requestsRouter.get(
+  "/lookup/:displayId",
+  asyncHandler(async (req, res) => {
+    const displayId = normalizeDisplayIdQuery(req.params.displayId);
+    const request = await prisma.serviceRequest.findUnique({
+      where: { displayId },
+      include: requestInclude,
+    });
+    if (!request) {
+      throw new HttpError(404, "Service request not found");
+    }
+    res.json({ request: serializeRequest(request) });
   }),
 );
 
@@ -315,6 +334,19 @@ requestsRouter.post(
   }),
 );
 
+requestsRouter.post(
+  "/:id/pickup",
+  asyncHandler(async (req, res) => {
+    const signature = typeof req.body?.signature === "string" ? req.body.signature : null;
+    const request = await confirmPickup({
+      requestId: req.params.id,
+      actor: staffActor(req.staff),
+      signatureDataUrl: signature,
+    });
+    res.json({ request });
+  }),
+);
+
 requestsRouter.patch(
   "/:id",
   asyncHandler(async (req, res) => {
@@ -355,6 +387,31 @@ requestsRouter.patch(
     publishRequest("request:updated", serialized);
     if (existing.status !== updated.status) {
       await notifyRequestStatus(updated);
+      await writeAudit({
+        actor: staffActor(req.staff),
+        action: "request.status",
+        entityType: "ServiceRequest",
+        entityId: updated.id,
+        oldValue: { status: existing.status },
+        newValue: { status: updated.status },
+      });
+    }
+    if (
+      financials &&
+      (existing.estimatedCost?.toString() !== String(financials.estimatedCost) ||
+        existing.finalCost?.toString() !== String(financials.finalCost))
+    ) {
+      await writeAudit({
+        actor: staffActor(req.staff),
+        action: "request.cost",
+        entityType: "ServiceRequest",
+        entityId: updated.id,
+        oldValue: {
+          estimatedCost: existing.estimatedCost == null ? null : Number(existing.estimatedCost),
+          finalCost: existing.finalCost == null ? null : Number(existing.finalCost),
+        },
+        newValue: { estimatedCost: financials.estimatedCost, finalCost: financials.finalCost },
+      });
     }
 
     res.json({

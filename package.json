@@ -13,13 +13,17 @@
     "db:migrate": "npm run prisma:migrate -w server",
     "db:seed": "npm run prisma:seed -w server",
     "db:reset": "npm run prisma:reset -w server",
-    "smoke": "npm run smoke -w server"
+    "smoke": "npm run smoke -w server",
+    "db:backup": "npm run backup -w server"
   },
   "devDependencies": {
     "@types/multer": "^2.2.0",
+    "@types/qrcode": "^1.5.6",
     "concurrently": "^9.2.1"
   },
   "dependencies": {
-    "multer": "^2.4.0"
+    "html5-qrcode": "^2.3.8",
+    "multer": "^2.4.0",
+    "qrcode": "^1.5.4"
   }
 }

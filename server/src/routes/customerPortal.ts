@@ -16,6 +16,9 @@ import { isDoneStatus } from "../lib/techBoard.js";
 import { computeWarrantyStatus, money, toDateOnly } from "../lib/warranty.js";
 import { allocateDisplayId } from "../lib/displayId.js";
 import { customerAuth } from "../middleware/customerAuth.js";
+import { confirmPickup } from "../lib/pickup.js";
+import { customerActor } from "../lib/audit.js";
+import { acceptJobPhotos, publicPhotoUrl } from "../lib/uploads.js";
 
 const optionalNumber = z
   .union([z.number(), z.string(), z.null()])
@@ -232,6 +235,30 @@ customerPortalRouter.post(
 );
 
 customerPortalRouter.post(
+  "/requests/:id/photos",
+  acceptJobPhotos,
+  asyncHandler(async (req, res) => {
+    const request = await loadOwnRequest(req.customer!.sub, req.params.id);
+    if (isDoneStatus(request.status)) {
+      throw new HttpError(400, "This request is already completed");
+    }
+    const files = (req.files as Express.Multer.File[] | undefined) ?? [];
+    if (files.length === 0) {
+      throw new HttpError(400, "Choose at least one photo");
+    }
+    await prisma.requestPhoto.createMany({
+      data: files.map((file) => ({
+        serviceRequestId: request.id,
+        photoUrl: publicPhotoUrl(request.id, file.filename),
+        uploadedBy: req.customer!.name,
+        customerId: req.customer!.sub,
+      })),
+    });
+    res.status(201).json({ request: serializePortalRequest(await loadOwnRequest(req.customer!.sub, request.id)) });
+  }),
+);
+
+customerPortalRouter.post(
   "/requests/:id/feedback",
   asyncHandler(async (req, res) => {
     const body = parseBody(feedbackSchema, req.body);
@@ -255,6 +282,20 @@ customerPortalRouter.post(
       handlePrismaError(error);
     }
     res.status(201).json({ request: serializePortalRequest(await loadOwnRequest(req.customer!.sub, request.id)) });
+  }),
+);
+
+customerPortalRouter.post(
+  "/requests/:id/pickup",
+  asyncHandler(async (req, res) => {
+    const request = await loadOwnRequest(req.customer!.sub, req.params.id);
+    const signature = typeof req.body?.signature === "string" ? req.body.signature : null;
+    await confirmPickup({
+      requestId: request.id,
+      actor: customerActor(req.customer),
+      signatureDataUrl: signature,
+    });
+    res.json({ request: serializePortalRequest(await loadOwnRequest(req.customer!.sub, request.id)) });
   }),
 );
 
@@ -361,5 +402,9 @@ function serializePortalRequest(request: PortalRecord) {
         }
       : null,
     canFeedback: done && !request.feedback,
+    pickupConfirmedAt: request.pickupConfirmedAt?.toISOString() ?? null,
+    canConfirmPickup:
+      !request.pickupConfirmedAt &&
+      (request.status === "ready_for_pickup" || request.status === "completed" || request.status === "closed"),
   };
 }

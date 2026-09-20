@@ -41,6 +41,7 @@ export function AdminKanbanPage() {
   const [technicianId, setTechnicianId] = useState("");
   const [priority, setPriority] = useState<"" | Priority>("");
   const [warranty, setWarranty] = useState<"" | WarrantyStatus>("");
+  const [overdueOnly, setOverdueOnly] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const debounced = useDebouncedValue(q, 250);
 
@@ -99,13 +100,14 @@ export function AdminKanbanPage() {
       if (technicianId && technicianId !== "unassigned" && request.assignedTechnicianId !== technicianId) return false;
       if (priority && request.priority !== priority) return false;
       if (warranty && request.warrantyStatus !== warranty) return false;
+      if (overdueOnly && !request.isOverdue) return false;
       if (needle) {
         const haystack = `${request.customer.name} ${request.displayId} ${formatRequestId(request.displayId)} ${request.id} ${nameSearchText(request.product)}`.toLowerCase();
         if (!haystack.includes(needle)) return false;
       }
       return true;
     });
-  }, [debounced, priority, requests, technicianId, type, warranty]);
+  }, [debounced, overdueOnly, priority, requests, technicianId, type, warranty]);
 
   const byStatus = useMemo(() => {
     const grouped: Record<string, ServiceRequest[]> = {};
@@ -116,6 +118,14 @@ export function AdminKanbanPage() {
     }
     return grouped;
   }, [columns, visible]);
+
+  const overdue = useMemo(
+    () =>
+      requests
+        .filter((request) => request.isOverdue)
+        .sort((a, b) => (a.overdueAt ?? "").localeCompare(b.overdueAt ?? "")),
+    [requests],
+  );
 
   const activeRequest = activeId ? requests.find((request) => request.id === activeId) ?? null : null;
 
@@ -212,7 +222,32 @@ export function AdminKanbanPage() {
             </option>
           ))}
         </select>
+        <button
+          type="button"
+          onClick={() => setOverdueOnly((value) => !value)}
+          className={`h-11 rounded-xl px-4 text-sm font-bold ${overdueOnly ? "bg-rose-600 text-white" : "bg-white text-rose-700 ring-1 ring-rose-200"}`}
+        >
+          {t("kanban.overdue")} ({overdue.length})
+        </button>
       </div>
+
+      {overdue.length > 0 && !overdueOnly ? (
+        <section className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 p-3">
+          <p className="mb-2 px-1 text-xs font-bold tracking-wide text-rose-700 uppercase">{t("kanban.overdueList")}</p>
+          <div className="flex gap-2 overflow-x-auto">
+            {overdue.map((request) => (
+              <Link
+                key={request.id}
+                to={`/app/requests/${request.id}`}
+                className="min-w-52 rounded-xl bg-white px-3 py-2 ring-1 ring-rose-100"
+              >
+                <p className="truncate text-sm font-bold">{request.customer.name}</p>
+                <p className="text-xs text-rose-700">{formatRequestId(request.displayId)}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <AvailabilityPanel technicians={technicians} />
 
@@ -324,6 +359,9 @@ function RequestCard({
             <TypeBadge type={request.type} />
             <PriorityBadge priority={request.priority} />
             <WarrantyBadge status={request.warrantyStatus} />
+            {request.isOverdue ? (
+              <span className="inline-flex rounded-full bg-rose-100 px-2.5 py-1 text-xs font-bold text-rose-700">{t("kanban.overdue")}</span>
+            ) : null}
             {request.submittedByCustomer ? (
               <span className="inline-flex rounded-full bg-[#FFF4E5] px-2.5 py-1 text-xs font-bold text-[#C56A00]">{t("requests.customerChip")}</span>
             ) : null}

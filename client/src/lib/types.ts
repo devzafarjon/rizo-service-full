@@ -78,6 +78,8 @@ export type SparePart = Named & {
   price: number;
   productCategory: string;
   stockQuantity: number;
+  lowStockThreshold: number;
+  lowStock?: boolean;
   createdAt: string;
   usedCount: number;
 };
@@ -174,6 +176,10 @@ export type ServiceRequest = {
   acceptedAt: string | null;
   arrivedAt: string | null;
   completedAt: string | null;
+  overdueAt: string | null;
+  isOverdue: boolean;
+  pickupConfirmedAt: string | null;
+  pickupSignatureUrl: string | null;
   createdAt: string;
   customer: { id: string; name: string; phone: string; address: string | null; regionCode?: string };
   product: Named & { id: string; sku: string; category: string };
@@ -251,6 +257,8 @@ export type CatalogChoice = Named & {
   price: number;
   productCategory: string;
   stockQuantity?: number;
+  lowStockThreshold?: number;
+  lowStock?: boolean;
 };
 
 export type JobWorkPayload = {
@@ -268,6 +276,7 @@ export type JobWorkPayload = {
     services: CatalogChoice[];
     parts: CatalogChoice[];
   };
+  settings?: { blockZeroStock: boolean };
 };
 
 export type RequestPauseRecord = {
@@ -330,6 +339,53 @@ export type PortalRequest = {
   sale: { invoiceNumber: string; warrantyExpiry: string; warrantyStatus: WarrantyStatus } | null;
   feedback: { rating: number; comment: string | null; createdAt: string } | null;
   canFeedback: boolean;
+  pickupConfirmedAt: string | null;
+  canConfirmPickup: boolean;
+};
+
+export type StaffAlert = {
+  id: string;
+  serviceRequestId: string | null;
+  sparePartId: string | null;
+  message: string;
+  code: string | null;
+  params: Record<string, unknown> | null;
+  isRead: boolean;
+  createdAt: string;
+};
+
+export type AuditLogEntry = {
+  id: string;
+  userId: string;
+  userType: string;
+  userName: string | null;
+  action: string;
+  entityType: string;
+  entityId: string;
+  oldValue: Record<string, unknown> | null;
+  newValue: Record<string, unknown> | null;
+  createdAt: string;
+};
+
+export type ScheduleDay = {
+  id: string;
+  technicianId: string;
+  date: string;
+  isWorking: boolean;
+  startTime: string | null;
+  endTime: string | null;
+};
+
+export type OutboundMessage = {
+  id: string;
+  channel: string;
+  to: string;
+  body: string;
+  status: string;
+  error: string | null;
+  code: string | null;
+  createdAt: string;
+  sentAt: string | null;
 };
 
 export type PortalNotification = {

@@ -14,6 +14,19 @@ export function ensureUploadsRoot() {
   fs.mkdirSync(uploadsRoot, { recursive: true });
 }
 
+export function savePickupSignature(requestId: string, dataUrl: string) {
+  const match = dataUrl.match(/^data:image\/(png|jpeg|jpg|webp);base64,(.+)$/i);
+  if (!match) {
+    throw new HttpError(400, "Signature image is invalid", "invalidSignature");
+  }
+  const ext = match[1].toLowerCase() === "jpeg" ? "jpg" : match[1].toLowerCase();
+  const dir = path.join(uploadsRoot, "pickup", requestId);
+  fs.mkdirSync(dir, { recursive: true });
+  const filename = `sign-${Date.now()}.${ext}`;
+  fs.writeFileSync(path.join(dir, filename), Buffer.from(match[2], "base64"));
+  return `/api/uploads/pickup/${requestId}/${filename}`;
+}
+
 export function publicPhotoUrl(requestId: string, filename: string) {
   return `/api/uploads/jobs/${requestId}/${filename}`;
 }

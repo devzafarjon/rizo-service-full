@@ -84,8 +84,12 @@ export function mapsUrl(location: { address: string; lat?: number | null; lng?: 
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location.address)}`;
 }
 
+export function normalizeDisplayId(displayId: string) {
+  return displayId.replace(/^#/, "").replace(/\s+/g, "");
+}
+
 export function formatRequestId(displayId: string) {
-  const raw = displayId.replace(/^#/, "").replace(/\s+/g, "");
+  const raw = normalizeDisplayId(displayId);
   return raw ? `#${raw}` : displayId;
 }
 

@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ArrowLeft, MapPin, Navigation } from "lucide-react";
+import { InfoTip } from "../../components/InfoTip";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { WarrantyBadge } from "../../components/Badges";
@@ -369,7 +370,10 @@ export function NewRequestPage() {
           </section>
 
           <section className="rounded-2xl border border-neutral-200 bg-white p-5">
-            <p className="mb-3 text-sm font-semibold text-neutral-700">{t("common.technician")}</p>
+            <p className="mb-3 flex items-center gap-1 text-sm font-semibold text-neutral-700">
+              {t("common.technician")}
+              <InfoTip text={t("newRequest.assignAutoTip")} />
+            </p>
             <Field label={t("newRequest.technicianType")}>
               <select
                 className={inputClass}

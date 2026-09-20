@@ -63,7 +63,11 @@
     "decreaseQty": "Sonini kamaytirish",
     "increaseQty": "Sonini oshirish",
     "removeNamed": "{{name}} ni o‘chirish",
-    "comingSoon": "Keyingi bosqichda paydo bo‘ladi"
+    "comingSoon": "Keyingi bosqichda paydo bo‘ladi",
+    "next": "Keyingi",
+    "skip": "O‘tkazib yuborish",
+    "moreInfo": "Qo‘shimcha ma’lumot",
+    "stepOf": "{{current}}-qadam / {{total}}"
   },
   "languages": {
     "uz": "Oʻzbekcha",
@@ -108,6 +112,7 @@
     "accountCreated": "Hisob yaratildi",
     "signupFailed": "Hisob ochib bo‘lmadi",
     "haveAccount": "Hisobingiz bormi?",
+    "phoneExistsSignIn": "Bu raqam allaqachon ro‘yxatdan o‘tgan. Kirish sahifasiga o‘ting.",
     "forgotTitle": "Parolni unutdingiz",
     "forgotHint": "Bu raqam uchun yangi parol yaratamiz. Sahifani tark etishdan oldin saqlab qoling.",
     "newPassword": "Yangi parolingiz",
@@ -129,7 +134,19 @@
     "reports": "Hisobotlar",
     "myJobs": "Mening ishlarim",
     "myRequests": "Mening so‘rovlarim",
-    "newRequest": "Yangi so‘rov"
+    "newRequest": "Yangi so‘rov",
+    "schedule": "Jadval",
+    "activity": "Faoliyat",
+    "kiosk": "Kassa",
+    "scan": "Tagni skanerlash",
+    "mySchedule": "Mening jadvalim",
+    "notifications": "Bildirishnomalar",
+    "dailyUse": "Kundalik",
+    "management": "Boshqaruv",
+    "analytics": "Analitika",
+    "inventory": "Ombor",
+    "duplicates": "Takroriy mijozlar",
+    "settings": "Zaxira sozlamalari"
   },
   "staffHome": {
     "welcome": "Xush kelibsiz",
@@ -152,12 +169,17 @@
   },
   "dashboard": {
     "intro": "Tanlangan davr uchun xizmat hajmi, tushum va foyda. Sana oralig‘ini o‘zgartirsangiz, barcha diagrammalar yangilanadi.",
+    "introShort": "Bugungi hajm, pul va ishlar qancha vaqt oladi.",
     "trend": "Tushum, xarajat va foyda",
     "topProducts": "Xizmat hajmi bo‘yicha mahsulotlar",
     "topParts": "Eng ko‘p ishlatilgan ehtiyot qismlar",
     "defects": "Qurilma turi bo‘yicha eng ko‘p nuqsonlar",
     "status": "So‘rov holatlari",
-    "warranty": "Kafolat va pullik ta’mirlash"
+    "warranty": "Kafolat va pullik ta’mirlash",
+    "viewFull": "To‘liq analitikani ko‘rish",
+    "viewSummary": "Qisqa ko‘rinishga qaytish",
+    "techPerformance": "Texniklar samaradorligi",
+    "techPerformanceBody": "Yakunlangan ishlar, baholar va vaqt uchun texnik hisobotini oching."
   },
   "shell": {
     "adminRole": "Admin / dispetcher",
@@ -309,7 +331,9 @@
   "notify": {
     "createdByCustomer": "{{product}} uchun {{type}} so‘rovingiz qabul qilindi.",
     "createdByStaff": "{{product}} uchun {{type}} so‘rovi yaratildi.",
-    "status": "{{product}} bo‘yicha {{type}} endi: {{status}}."
+    "status": "{{product}} bo‘yicha {{type}} endi: {{status}}.",
+    "overdue": "{{id}} muddati o‘tib ketdi.",
+    "lowStock": "{{product}} ombori kam ({{count}})."
   },
   "notifications": {
     "title": "Bildirishnomalar",
@@ -343,6 +367,11 @@
     "productCategory": "Mahsulot turkumi",
     "priceSom": "Narx (so‘m)",
     "stockQty": "Ombor soni",
+    "lowStock": "Kam qoldiq",
+    "lowStockThreshold": "Ogohlantirish chegarasi",
+    "blockZeroStock": "0 qoldiqli qismni tanlashni bloklash",
+    "blockZeroStockTip": "Yoqilganda, texnik omborda 0 bo‘lgan ehtiyot qismni qo‘sha olmaydi. Faqat oldindan buyurtma qilingan qismni yozish kerak bo‘lsa o‘chiring.",
+    "settingsSaved": "Sozlama saqlandi",
     "deleteProductTitle": "Mahsulot o‘chirilsinmi?",
     "deleteProductBody": "{{name}} sotuv yoki ishga bog‘lanmagan bo‘lsa o‘chiriladi.",
     "deleteServiceTitle": "Xizmat o‘chirilsinmi?",
@@ -395,7 +424,17 @@
     "date": "Sana",
     "passwordCreated": "Portal paroli yaratildi",
     "regionHint": "So‘rov ID da ishlatiladi. Noma’lum bo‘lsa 00 qo‘yiladi.",
+    "regionTip": "Ikki xonali viloyat kodi so‘rov ID ga yoziladi. Mijozda viloyat bo‘lmasa Noma’lum qoldiring.",
     "internalNotes": "Ichki izohlar",
+    "findDuplicates": "Dublikatlarni topish",
+    "duplicatesTitle": "Takroriy mijozlar",
+    "duplicatesIntro": "Oxirgi 9 ta raqami bir xil yozuvlar. Bittasini qoldiring, ikkinchisini birlashtiring.",
+    "noDuplicatesTitle": "Dublikat yo‘q",
+    "noDuplicatesBody": "Har bir telefon hozir bitta mijozga tegishli.",
+    "keepAndMerge": "{{name}} ni qoldirish",
+    "merged": "Mijozlar birlashtirildi",
+    "existingHint": "{{name}} ({{phone}}) allaqachon ro‘yxatda.",
+    "useExisting": "Mavjud mijozni ochish",
     "portalPassword": "Portal paroli",
     "newPortalPassword": "Yangi portal paroli",
     "passwordKeepHint": "Joriy parolni saqlash uchun bo‘sh qoldiring.",
@@ -485,6 +524,7 @@
     "lng": "Uzunlik (ixtiyoriy)",
     "useProfileAddress": "Profil manzilidan foydalanish",
     "useCoords": "Mening koordinatalarim",
+    "assignAutoTip": "Avtomatik tayinlash kerakli turdagi, ochiq ishi eng kam bo‘lgan texnikni tanlaydi. Aniq odam kerak bo‘lsa qo‘lda tanlang yoki doskaga qoldiring.",
     "assign": {
       "auto": "Keyingi bo‘sh texnikni avtomatik tayinlash",
       "manual": "Texnikni tanlash",
@@ -553,7 +593,9 @@
     "openJobs": "{{count}} ochiq",
     "searchPlaceholder": "Mijoz yoki so‘rov ID qidiring",
     "drag": "{{name}} ni sudrang",
-    "updateFailed": "Holatni yangilab bo‘lmadi"
+    "updateFailed": "Holatni yangilab bo‘lmadi",
+    "overdue": "Muddati o‘tgan",
+    "overdueList": "Muddati o‘tgan so‘rovlar"
   },
   "tech": {
     "title": "Mening ishlarim",
@@ -582,7 +624,8 @@
     "moveFailed": "Bu ishni yangilab bo‘lmadi",
     "stayCompleted": "Yakunlangan ishlar Yakunlanganda qoladi",
     "drag": "{{name}} ni sudrang",
-    "hoursShort": "{{count}} soat"
+    "hoursShort": "{{count}} soat",
+    "moreActions": "Yana amallar"
   },
   "job": {
     "timeline": "Vaqt chizig‘i",
@@ -628,7 +671,9 @@
     "description": "Tavsif",
     "notFoundTitle": "Ish topilmadi",
     "notFoundBody": "Bu ish sizga tayinlanmagan.",
-    "stockLine": "{{price}} · omborda {{count}}"
+    "stockLine": "{{price}} · omborda {{count}}",
+    "zeroStockWarn": "Bu qism omborda yo‘q. Baribir qo‘shishingiz mumkin.",
+    "zeroStockBlock": "Bu qism omborda yo‘q"
   },
   "receipt": {
     "title": "Kvitansiyalar",
@@ -795,7 +840,54 @@
     "pendingFeedback_one": "Yakunlangan ish bahongizni kutmoqda.",
     "pendingFeedback_few": "{{count}} ta yakunlangan ish bahongizni kutmoqda.",
     "pendingFeedback_many": "{{count}} ta yakunlangan ish bahongizni kutmoqda.",
-    "pendingFeedback_other": "{{count}} ta yakunlangan ish bahongizni kutmoqda."
+    "pendingFeedback_other": "{{count}} ta yakunlangan ish bahongizni kutmoqda.",
+    "step1Title": "Mahsulot",
+    "step2Title": "Nima bo‘ldi",
+    "step3Title": "Manzil va tekshiruv",
+    "addPhotos": "Rasmlar",
+    "addPhotosHint": "Ixtiyoriy. Mahsulot yoki muammo rasmini qo‘shing.",
+    "noWarrantyAuto": "Xarid topilmadi — kafolat avtomatik hisoblanmaydi.",
+    "inShopReview": "Bu ish xizmat markazida bajariladi.",
+    "review": "Tekshiruv",
+    "photoCount_one": "{{count}} ta rasm qo‘shildi",
+    "photoCount_other": "{{count}} ta rasm qo‘shildi"
+  },
+  "tour": {
+    "skip": "Ekskursiyani o‘tkazib yuborish",
+    "kanban": {
+      "title": "Doskadan boshlang",
+      "body": "Kanban — kundalik dispetcher ko‘rinishi. Kartani sudrang yoki so‘rovni oching."
+    },
+    "new-request": {
+      "title": "So‘rov yarating",
+      "body": "Yangi so‘rov mijoz, mahsulot, kafolat va texnik tayinlashni bosqichma-bosqich olib boradi."
+    },
+    "notifications": {
+      "title": "Ogohlantirishlar",
+      "body": "Muddati o‘tgan ishlar, kam qoldiq va tayinlashlar shu yerda. Yuqoridagi qo‘ng‘iroq ham shu quti."
+    },
+    "reports": {
+      "title": "Hisobotlar shu yerda",
+      "body": "Foyda, qismlar, kafolat yoki texnik hisobotlari uchun Boshqaruvni oching."
+    },
+    "management": {
+      "title": "Boshqaruv vositalari",
+      "body": "Ombor, texnik jadvali, audit, takroriy mijozlar va zaxira sozlamalari pastda — kundalik ro‘yxat qisqa qoladi."
+    }
+  },
+  "settings": {
+    "title": "Zaxira sozlamalari",
+    "intro": "Kunlik baza nusxalari serverda sozlanadi. Bu sahifa faqat tushuntiradi — jonli ma’lumot o‘zgarmaydi.",
+    "backupTitle": "Avtomatik zaxira",
+    "backupBody": "BACKUP_ENABLED yoqilganda API har kuni BACKUP_DIR ga pg_dump yozadi.",
+    "backupEnv": "server/.env da BACKUP_ENABLED, BACKUP_DIR va BACKUP_RETAIN_DAYS ni belgilang.",
+    "backupManual": "Qo‘lda nusxa olish uchun repo ildizida npm run db:backup ni ishga tushiring.",
+    "backupRetain": "BACKUP_RETAIN_DAYS (standart 30) dan eski fayllar muvaffaqiyatli yozuvdan keyin o‘chiriladi.",
+    "restoreTitle": "Qayta tiklash",
+    "restoreBody": "APIni to‘xtating, .sql faylni psql orqali DATABASE_URL ga tiklang, keyin APIni qayta ishga tushiring. Tiklashdan keyin db:reset qilmang.",
+    "stockTitle": "Ombor sozlamasi",
+    "stockBody": "Nol qoldiqni bloklash tugmasi ehtiyot qismlar bilan Ombor bo‘limida.",
+    "openCatalog": "Omborni ochish"
   },
   "feedback": {
     "thanks": "Fikr-mulohaza uchun rahmat",
@@ -807,6 +899,69 @@
     "send": "Fikr yuborish",
     "star": "{{count}} yulduz",
     "stars": "{{count}} yulduz"
+  },
+  "alerts": {
+    "title": "Xodim ogohlantirishlari",
+    "empty": "Hozircha ogohlantirish yo‘q.",
+    "emptyBody": "Muddati o‘tgan ishlar, kam qoldiq va tayinlashlar shu yerda chiqadi.",
+    "lowStock": "Kam qoldiq",
+    "pageIntro": "Sarlavhadagi qo‘ng‘iroq bilan bir xil quti — muddati o‘tgan ishlar, ombor va tayinlashlar.",
+    "viewAll": "Barchasi",
+    "loadFailed": "Ogohlantirishlarni yuklab bo‘lmadi",
+    "loadFailedBody": "Birozdan keyin qayta urinib ko‘ring."
+  },
+  "tag": {
+    "print": "Tagni chop etish",
+    "scanTitle": "Qurilma tegini skanerlash",
+    "scanHint": "Kamerani stikerga qarating yoki so‘rov ID sini yozing.",
+    "manualPlaceholder": "So‘rov ID",
+    "open": "Ochish",
+    "invalid": "Bu yaroqli teg emas",
+    "cameraDenied": "Kameraga ruxsat berilmadi",
+    "openDetail": "So‘rovni ochish",
+    "openJob": "Ishni ochish",
+    "notYours": "Bu ish boshqa texnikka biriktirilgan."
+  },
+  "pickup": {
+    "title": "Olib ketish tasdiqi",
+    "hint": "Mijoz qurilmani olganini tasdiqlang. Kassada planshet bo‘lsa, imzo qo‘shing.",
+    "tap": "Qurilmani oldim",
+    "sign": "Imzo",
+    "confirm": "Olib ketishni tasdiqlash",
+    "clearSignature": "Imzoni tozalash",
+    "saved": "Olib ketish tasdiqlandi",
+    "already": "Olib ketish allaqachon tasdiqlangan"
+  },
+  "kiosk": {
+    "title": "Kassa olib ketish",
+    "hint": "So‘rov ID sini kiriting yoki skanerlang, keyin tasdiqlang."
+  },
+  "schedule": {
+    "title": "Texniklar jadvali",
+    "intro": "Kunning ustiga bosing — ish kuni yoki dam. Avto-tayinlash dam kunini o‘tkazib yuboradi.",
+    "mine": "Mening jadvalim",
+    "mineHint": "Dam kunlaringizni belgilang. O‘sha kuni yangi ish avtomatik biriktirilmaydi.",
+    "on": "Ishda",
+    "off": "Dam"
+  },
+  "audit": {
+    "title": "Faoliyat jurnali",
+    "intro": "Kim holat, narx, rolni o‘zgartirgani yoki mijozlarni birlashtirgani.",
+    "requestOrEntity": "So‘rov / obyekt ID",
+    "userId": "Foydalanuvchi ID",
+    "from": "Dan",
+    "to": "Gacha",
+    "emptyTitle": "Bu filtrda yozuv yo‘q",
+    "emptyBody": "Sana oralig‘ini kengaytiring yoki filtrni tozalang.",
+    "outbound": "SMS / Telegram navbati",
+    "action": {
+      "request.status": "So‘rov holati o‘zgardi",
+      "request.cost": "So‘rov narxi tahrirlandi",
+      "request.overdue": "So‘rov muddati o‘tdi",
+      "request.pickup": "Olib ketish tasdiqlandi",
+      "staff.role": "Xodim roli o‘zgardi",
+      "customer.merge": "Mijozlar birlashtirildi"
+    }
   },
   "errors": {
     "generic": "Xatolik yuz berdi",
@@ -869,6 +1024,9 @@
     "skuRequired": "SKU shart",
     "categoryRequired": "Turkum shart",
     "phoneRequired": "Telefon shart",
-    "passwordRequired": "Parol shart"
+    "passwordRequired": "Parol shart",
+    "pickupNotReady": "Bu so‘rov olib ketish tasdiqini kutmayapti",
+    "invalidSignature": "Imzo rasmi noto‘g‘ri",
+    "mergeSameCustomer": "Ikkita turli mijozni tanlang"
   }
 }

@@ -3,12 +3,13 @@ import { prisma } from "./prisma.js";
 import { emitToCustomer } from "./realtime.js";
 import { serializeNamed, type NamedRecord } from "./named.js";
 import { statusLabel } from "./status.js";
+import { dispatchOutbound } from "./notifyDispatch.js";
 
 type NotificationParams = Record<string, unknown>;
 
 export function serializeNotification(row: {
   id: string;
-  serviceRequestId: string;
+  serviceRequestId: string | null;
   message: string;
   code: string | null;
   params: Prisma.JsonValue | null;
@@ -46,6 +47,18 @@ export async function createCustomerNotification(
   });
   const payload = serializeNotification(row);
   emitToCustomer(customerId, "notification:created", payload);
+  const customer = await prisma.customer.findUnique({
+    where: { id: customerId },
+    select: { phone: true, telegramChatId: true },
+  });
+  if (customer) {
+    await dispatchOutbound({
+      target: { phone: customer.phone, telegramChatId: customer.telegramChatId },
+      body: message,
+      code: code ?? "customer",
+      entityId: serviceRequestId,
+    });
+  }
   return payload;
 }
 
@@ -85,6 +98,7 @@ export async function backfillNotificationI18n() {
     include: { serviceRequest: { include: { product: true } } },
   });
   for (const row of rows) {
+    if (!row.serviceRequest) continue;
     const message = row.message;
     const code = message.startsWith("We received")
       ? "createdByCustomer"

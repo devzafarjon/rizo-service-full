@@ -67,6 +67,19 @@ npm run dev:server
 
 `server/.env` keys: `DATABASE_URL`, `JWT_SECRET`, optional `JWT_EXPIRES_IN` (default `7d`), `PORT` (default `4000`), `CLIENT_ORIGIN` (default `http://localhost:5173`).
 
+Optional notification and backup keys (see `server/.env.example`):
+
+| Key | Default | Purpose |
+| --- | --- | --- |
+| `SMS_PROVIDER` | `console` | `console` logs SMS; set `SMS_HTTP_URL` (+ optional `SMS_HTTP_TOKEN`) for a gateway |
+| `TELEGRAM_PROVIDER` | `console` | `console` logs Telegram; set `TELEGRAM_BOT_TOKEN` to use Bot API |
+| `TELEGRAM_ADMIN_CHAT_ID` | empty | Admin overdue / low-stock Telegram destination |
+| `BACKUP_ENABLED` | `false` | When `true`, API process runs `pg_dump` at 02:00 Asia/Tashkent |
+| `BACKUP_DIR` | `server/backups` | Where `.sql` dumps are written |
+| `BACKUP_RETAIN_DAYS` | `30` | Older daily dumps are deleted |
+
+Manual backup: `npm run db:backup` (needs `pg_dump` on PATH).
+
 ---
 
 ## Demo accounts
@@ -134,6 +147,12 @@ Translation files: `client/src/i18n/locales/{uz,ru,en}.json`. Add keys there whe
 | `/app/reports/technicians` | Jobs done, resolution time, rating, revenue |
 | `/app/reports/warranty` | In-warranty (free) vs paid count and value over time |
 | `/app/reports/sources` | RIZO market vs RIZO Service staff vs customer portal |
+| `/app/requests/:id/tag` | Printable QR sticker (request ID, customer, product) |
+| `/app/scan` | Camera / manual QR lookup |
+| `/app/schedule` | Technician working / off calendar (14 days) |
+| `/app/audit` | Activity log + SMS/Telegram send queue |
+| `/app/kiosk` | Counter pickup confirmation (tap or signature) |
+| `/app/customers/duplicates` | Merge customers that share a phone |
 
 Dashboard and Reports are **admin / dispatcher only**. Technician and customer navigation do not show them; `RoleRoute` and `requireStaffRole("admin")` block the pages and APIs. Date filters: this week / month / quarter / year / all / custom. Each report exports CSV (opens in Excel). Dashboard date range is global and refreshes every chart from aggregated `/api/staff/reports/*` endpoints (not raw client-side job lists).
 
@@ -146,6 +165,8 @@ Header search finds phone, name, invoice, or request ID. The top-right account m
 | `/app/my-jobs` | Personal kanban; availability toggle |
 | `/app/my-jobs/:id/complete` | Services, parts (stock check), extras, photo, complete |
 | `/app/my-jobs/:id/receipt` | Print the same receipt |
+| `/app/scan` | Scan a device tag and open the job |
+| `/app/my-schedule` | Mark working days / days off |
 
 Phone-friendly. Desktop still uses the staff shell. The header account menu is on every technician page, including job complete and receipt print.
 
@@ -155,7 +176,7 @@ Phone-friendly. Desktop still uses the staff shell. The header account menu is o
 | --- | --- |
 | `/portal` | My requests, filters, ratings after completion |
 | `/portal/new` | New request from a past purchase or catalog product |
-| `/portal/requests/:id` | Live status, timeline, notes visible to the customer |
+| `/portal/requests/:id` | Live status, pickup confirmation, feedback |
 
 Notification bell translates from `code` + `params`. Socket room `customer:{id}`. The header account menu signs out from every portal page.
 
@@ -200,7 +221,11 @@ On-site jobs record arrival. Pauses have a reason and a custom timer.
 - **ServiceRequest** — type, source, location, assignment, warranty, payment, display id
 - **Lines** — services, parts (qty + price at time), extra expenses, photos, notes, pauses
 - **Feedback** — one rating per completed job
-- **Notification** — English `message` fallback plus `code` / `params` for i18n
+- **Notification** — English `message` fallback plus `code` / `params` for i18n; staff alerts reuse the same table (`audience=staff`)
+- **TechnicianSchedule** — per-day working / off (+ optional hours); auto-assign skips off technicians
+- **AuditLog** — status, cost, role, pickup, merge
+- **OutboundMessage** — SMS / Telegram queue (`pending` / `sent` / `failed`)
+- **AppSetting** — `block_zero_stock` (admin catalog toggle)
 
 ---
 
@@ -228,8 +253,13 @@ Staff routes sit under `/api/staff/…` with a staff JWT. Customer routes sit un
 | `/api/staff/reports/technicians` | Technician performance |
 | `/api/staff/reports/warranty` | Warranty vs paid |
 | `/api/staff/reports/sources` | Request source mix |
-| `/api/staff/my-jobs` | Technician jobs, complete, photos |
-| `/api/customer` | Portal requests, notifications, feedback |
+| `/api/staff/my-jobs` | Technician jobs, complete, photos, own schedule |
+| `/api/staff/settings` | Admin flags (block zero-stock) |
+| `/api/staff/alerts` | Admin low-stock / overdue inbox |
+| `/api/staff/audit` | Activity log |
+| `/api/staff/outbound` | SMS / Telegram send log |
+| `/api/staff/tags/:displayId` | QR lookup for any staff role |
+| `/api/customer` | Portal requests, notifications, feedback, pickup |
 
 Errors return `{ error, code, details }`. The client maps `code` to `errors.*` translation keys.
 
@@ -251,6 +281,25 @@ server/
   src/routes/
   src/lib/              assignment, display id, warranty, i18n names, notify
 ```
+
+---
+
+## Database backups
+
+Daily dumps use `pg_dump --no-owner --no-acl`. Enable them with `BACKUP_ENABLED=true` in `server/.env`, or run `npm run db:backup` by hand. Files land in `BACKUP_DIR` (default `server/backups`) as `rizo-service-<ISO timestamp>.sql`. Dumps older than `BACKUP_RETAIN_DAYS` (default 30) are deleted after a successful run.
+
+### Restore
+
+1. Stop the API (`Ctrl+C` on `npm run dev` / the `server` process).
+2. Recreate an empty database if needed: `dropdb rizo_service && createdb rizo_service`.
+3. Restore the dump:
+
+```bash
+psql "$DATABASE_URL" < server/backups/rizo-service-YYYY-MM-DDTHH-mm-ss-sssZ.sql
+```
+
+4. Run `npm run prisma:generate -w server` if the Prisma client is stale, then start the API again.
+5. Do **not** run `db:reset` after a restore — that wipes the restored data and reseeds demo accounts.
 
 ---
 

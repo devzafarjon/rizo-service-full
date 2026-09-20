@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { EmptyState } from "../../components/EmptyState";
 import { inputClass } from "../../components/Field";
@@ -11,7 +11,7 @@ import { PageSkeleton } from "../../components/PageSkeleton";
 import { SurfaceTable, Td, Th } from "../../components/SurfaceTable";
 import { useToast } from "../../components/toast";
 import { useStaffAuth } from "../auth/StaffAuthContext";
-import { api, apiErrorMessage } from "../../lib/api";
+import { ApiError, api, apiErrorMessage } from "../../lib/api";
 import { formatPhone } from "../../lib/format";
 import type { StaffCustomer } from "../../lib/types";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
@@ -20,6 +20,7 @@ import { CustomerFormModal } from "./CustomerFormModal";
 export function CustomersPage() {
   const { t } = useTranslation();
   const { token } = useStaffAuth();
+  const navigate = useNavigate();
   const { notify } = useToast();
   const queryClient = useQueryClient();
   const [q, setQ] = useState("");
@@ -29,6 +30,7 @@ export function CustomersPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<StaffCustomer | null>(null);
+  const [existing, setExisting] = useState<StaffCustomer | null>(null);
 
   const list = useQuery({
     queryKey: ["staff", "customers", debounced],
@@ -73,6 +75,10 @@ export function CustomersPage() {
       notify(editing ? t("customers.updated") : t("customers.added"));
     },
     onError: (error) => {
+      if (error instanceof ApiError && error.code === "phoneExists") {
+        const customer = error.details?.customer as StaffCustomer | undefined;
+        if (customer) setExisting(customer);
+      }
       setFormError(apiErrorMessage(error, t));
     },
   });
@@ -102,18 +108,27 @@ export function CustomersPage() {
           <h1 className="text-2xl font-extrabold tracking-tight">{t("customers.title")}</h1>
           <p className="mt-1 text-sm text-neutral-500">{t("customers.intro")}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setEditing(null);
-            setFormError(null);
-            setFormOpen(true);
-          }}
-          className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#B439FD] px-4 text-sm font-bold text-white hover:bg-[#C45FFF]"
-        >
-          <Plus size={16} />
-          {t("customers.new")}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            to="/app/customers/duplicates"
+            className="inline-flex h-11 items-center rounded-xl bg-neutral-100 px-4 text-sm font-bold text-[#B439FD]"
+          >
+            {t("customers.findDuplicates")}
+          </Link>
+          <button
+            type="button"
+            onClick={() => {
+              setEditing(null);
+              setFormError(null);
+              setExisting(null);
+              setFormOpen(true);
+            }}
+            className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#B439FD] px-4 text-sm font-bold text-white hover:bg-[#C45FFF]"
+          >
+            <Plus size={16} />
+            {t("customers.new")}
+          </button>
+        </div>
       </div>
 
       <div className="relative mb-4 max-w-md">
@@ -181,10 +196,20 @@ export function CustomersPage() {
       <CustomerFormModal
         open={formOpen}
         customer={editing}
+        existing={existing}
         pending={save.isPending}
         error={formError}
-        onClose={() => setFormOpen(false)}
+        onClose={() => {
+          setFormOpen(false);
+          setExisting(null);
+        }}
+        onUseExisting={(customer) => {
+          setFormOpen(false);
+          setExisting(null);
+          navigate(`/app/customers/${customer.id}`);
+        }}
         onSubmit={async (values) => {
+          setExisting(null);
           await save.mutateAsync(values);
         }}
       />

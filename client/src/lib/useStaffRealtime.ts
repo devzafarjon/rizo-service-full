@@ -29,10 +29,17 @@ export function useStaffRealtime() {
       void queryClient.invalidateQueries({ queryKey: ["staff", "technicians"] });
       void queryClient.invalidateQueries({ queryKey: ["staff", "me"] });
     });
+    const refreshAlerts = () => {
+      void queryClient.invalidateQueries({ queryKey: ["staff", "alerts"] });
+      void queryClient.invalidateQueries({ queryKey: ["staff", "parts"] });
+    };
+
+    socket.on("alert:created", refreshAlerts);
 
     return () => {
       socket.off("request:created", refreshBoard);
       socket.off("request:updated", refreshBoard);
+      socket.off("alert:created", refreshAlerts);
       socket.io.off("reconnect", refreshBoard);
       socket.disconnect();
     };

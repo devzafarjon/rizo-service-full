@@ -11,7 +11,8 @@
     "prisma:seed": "tsx prisma/seed.ts",
     "prisma:reset": "prisma migrate reset --force",
     "prisma:generate": "prisma generate",
-    "smoke": "node --import tsx/esm scripts/smoke.ts"
+    "smoke": "node --import tsx/esm scripts/smoke.ts",
+    "backup": "node --import tsx/esm scripts/backup.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

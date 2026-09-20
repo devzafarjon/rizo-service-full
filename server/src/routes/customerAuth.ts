@@ -62,6 +62,13 @@ customerAuthRouter.post(
     const body = parseBody(registerSchema, req.body);
     const phone = normalizePhone(body.phone);
     assertPhone(phone);
+    const existing = await prisma.customer.findUnique({ where: { phone } });
+    if (existing) {
+      throw new HttpError(409, "An account with this phone number already exists", "phoneExists", {
+        name: existing.name,
+        phone: existing.phone,
+      });
+    }
     try {
       const user = await prisma.customer.create({
         data: {

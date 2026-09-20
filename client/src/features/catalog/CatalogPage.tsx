@@ -4,6 +4,7 @@ import { FormEvent, type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { EmptyState } from "../../components/EmptyState";
+import { InfoTip } from "../../components/InfoTip";
 import { Field, inputClass } from "../../components/Field";
 import { Modal } from "../../components/Modal";
 import { PageSkeleton } from "../../components/PageSkeleton";
@@ -312,7 +313,29 @@ function PartsPanel({ items, categories }: { items: SparePart[]; categories: str
   const [editing, setEditing] = useState<SparePart | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<SparePart | null>(null);
-  const [form, setForm] = useState({ nameUz: "", nameRu: "", nameEn: "", price: "", productCategory: "", stockQuantity: "0" });
+  const [form, setForm] = useState({
+    nameUz: "",
+    nameRu: "",
+    nameEn: "",
+    price: "",
+    productCategory: "",
+    stockQuantity: "0",
+    lowStockThreshold: "3",
+  });
+  const settings = useQuery({
+    queryKey: ["staff", "settings"],
+    enabled: Boolean(token),
+    queryFn: () => api<{ settings: { blockZeroStock: boolean } }>("/api/staff/settings", { token }),
+  });
+  const saveSettings = useMutation({
+    mutationFn: (blockZeroStock: boolean) =>
+      api("/api/staff/settings", { method: "PATCH", token, body: JSON.stringify({ blockZeroStock }) }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["staff", "settings"] });
+      notify(t("catalog.settingsSaved"));
+    },
+    onError: (err) => notify(apiErrorMessage(err, t), "error"),
+  });
 
   const save = useMutation({
     mutationFn: () => {
@@ -320,6 +343,7 @@ function PartsPanel({ items, categories }: { items: SparePart[]; categories: str
         ...form,
         price: Number(form.price),
         stockQuantity: Number(form.stockQuantity),
+        lowStockThreshold: Number(form.lowStockThreshold),
       });
       return editing
         ? api(`/api/staff/catalog/parts/${editing.id}`, { method: "PATCH", token, body })
@@ -351,13 +375,39 @@ function PartsPanel({ items, categories }: { items: SparePart[]; categories: str
       price: item ? String(item.price) : "",
       productCategory: item?.productCategory ?? "",
       stockQuantity: item ? String(item.stockQuantity) : "0",
+      lowStockThreshold: item ? String(item.lowStockThreshold ?? 3) : "3",
     });
     setError(null);
     setOpen(true);
   }
 
+  const low = items.filter((item) => item.stockQuantity <= (item.lowStockThreshold ?? 3));
+
   return (
     <CatalogSection actionLabel={t("catalog.newPart")} onCreate={() => start(null)}>
+      <label className="mb-4 flex items-center justify-between gap-3 rounded-2xl bg-neutral-50 px-4 py-3 text-sm">
+        <span className="flex items-center gap-1.5 font-semibold">
+          {t("catalog.blockZeroStock")}
+          <InfoTip text={t("catalog.blockZeroStockTip")} />
+        </span>
+        <input
+          type="checkbox"
+          checked={settings.data?.settings.blockZeroStock ?? true}
+          onChange={(event) => saveSettings.mutate(event.target.checked)}
+        />
+      </label>
+      {low.length > 0 ? (
+        <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <p className="text-xs font-bold tracking-wide text-amber-800 uppercase">{t("alerts.lowStock")}</p>
+          <ul className="mt-2 space-y-1 text-sm font-semibold text-amber-900">
+            {low.map((item) => (
+              <li key={item.id}>
+                {localizedName(item)} · {item.stockQuantity}/{item.lowStockThreshold ?? 3}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       {items.length === 0 ? (
         <EmptyState title={t("catalog.noPartsTitle")} body={t("catalog.noPartsBody")} />
       ) : (
@@ -377,7 +427,14 @@ function PartsPanel({ items, categories }: { items: SparePart[]; categories: str
                 <Td className="font-semibold">{localizedName(item)}</Td>
                 <Td>{categoryLabel(item.productCategory)}</Td>
                 <Td>{formatMoney(item.price)}</Td>
-                <Td>{item.stockQuantity}</Td>
+                <Td>
+                  <span className="font-semibold">{item.stockQuantity}</span>
+                  {item.stockQuantity <= (item.lowStockThreshold ?? 3) ? (
+                    <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-extrabold text-amber-800">
+                      {t("catalog.lowStock")}
+                    </span>
+                  ) : null}
+                </Td>
                 <Td className="text-right">
                   <button type="button" className="mr-2 text-sm font-semibold text-neutral-600 hover:text-[#B439FD]" onClick={() => start(item)}>
                     {t("common.edit")}
@@ -397,6 +454,7 @@ function PartsPanel({ items, categories }: { items: SparePart[]; categories: str
         form={form}
         categories={categories}
         stock={form.stockQuantity}
+        threshold={form.lowStockThreshold}
         error={error}
         pending={save.isPending}
         onClose={() => setOpen(false)}
@@ -408,9 +466,11 @@ function PartsPanel({ items, categories }: { items: SparePart[]; categories: str
             price: next.price,
             productCategory: next.productCategory,
             stockQuantity: next.stockQuantity ?? form.stockQuantity,
+            lowStockThreshold: next.lowStockThreshold ?? form.lowStockThreshold,
           })
         }
         onStock={(stockQuantity) => setForm({ ...form, stockQuantity })}
+        onThreshold={(lowStockThreshold) => setForm({ ...form, lowStockThreshold })}
         onSubmit={() => save.mutate()}
       />
       <ConfirmDialog
@@ -475,23 +535,27 @@ function CategoryFormModal({
   form,
   categories,
   stock,
+  threshold,
   error,
   pending,
   onClose,
   onChange,
   onStock,
+  onThreshold,
   onSubmit,
 }: {
   open: boolean;
   title: string;
-  form: { nameUz: string; nameRu: string; nameEn: string; price: string; productCategory: string; stockQuantity?: string };
+  form: { nameUz: string; nameRu: string; nameEn: string; price: string; productCategory: string; stockQuantity?: string; lowStockThreshold?: string };
   categories: string[];
   stock?: string;
+  threshold?: string;
   error: string | null;
   pending: boolean;
   onClose: () => void;
-  onChange: (value: { nameUz: string; nameRu: string; nameEn: string; price: string; productCategory: string; stockQuantity?: string }) => void;
+  onChange: (value: { nameUz: string; nameRu: string; nameEn: string; price: string; productCategory: string; stockQuantity?: string; lowStockThreshold?: string }) => void;
   onStock?: (value: string) => void;
+  onThreshold?: (value: string) => void;
   onSubmit: () => void;
 }) {
   const { t } = useTranslation();
@@ -519,6 +583,11 @@ function CategoryFormModal({
         {onStock ? (
           <Field label={t("catalog.stockQty")}>
             <input className={inputClass} type="number" min={0} value={stock} onChange={(event) => onStock(event.target.value)} required />
+          </Field>
+        ) : null}
+        {onThreshold ? (
+          <Field label={t("catalog.lowStockThreshold")}>
+            <input className={inputClass} type="number" min={0} value={threshold} onChange={(event) => onThreshold(event.target.value)} required />
           </Field>
         ) : null}
         {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}

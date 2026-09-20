@@ -1,13 +1,15 @@
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ExternalLink, Printer } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, ExternalLink, Printer, QrCode } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 import { LocationBadge, PriorityBadge, StatusBadge, TypeBadge, WarrantyBadge } from "../../components/Badges";
 import { EmptyState } from "../../components/EmptyState";
+import { PickupConfirm } from "../../components/PickupConfirm";
+import { useToast } from "../../components/toast";
 import { PageSkeleton } from "../../components/PageSkeleton";
 import { RequestTimeline } from "../../components/RequestTimeline";
 import { useStaffAuth } from "../auth/StaffAuthContext";
-import { api } from "../../lib/api";
+import { api, apiErrorMessage } from "../../lib/api";
 import { defectLabel, formatDate, formatDateTime, formatMoney, formatPhone, formatRequestId, mapsUrl, technicianTypeLabel } from "../../lib/format";
 import { categoryLabel, localizedName } from "../../lib/localized";
 import type { JobCost, JobExtraExpense, JobPartLine, JobPhoto, JobServiceLine, Named, ServiceRequest, TimelineEvent } from "../../lib/types";
@@ -16,6 +18,8 @@ export function RequestDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams();
   const { token } = useStaffAuth();
+  const { notify } = useToast();
+  const queryClient = useQueryClient();
   const detail = useQuery({
     queryKey: ["staff", "requests", id],
     enabled: Boolean(token && id),
@@ -33,6 +37,15 @@ export function RequestDetailPage() {
       }>(`/api/staff/requests/${id}`, {
         token,
       }),
+  });
+  const pickup = useMutation({
+    mutationFn: (signature: string | null) =>
+      api(`/api/staff/requests/${id}/pickup`, { method: "POST", token, body: JSON.stringify({ signature }) }),
+    onSuccess: async () => {
+      notify(t("pickup.saved"));
+      await queryClient.invalidateQueries({ queryKey: ["staff", "requests", id] });
+    },
+    onError: (error) => notify(apiErrorMessage(error, t), "error"),
   });
 
   if (detail.isLoading) {
@@ -81,6 +94,13 @@ export function RequestDetailPage() {
           <div className="flex flex-col gap-2 sm:items-end">
             <Link to={`/app/customers/${request.customer.id}`} className="inline-flex h-11 items-center justify-center rounded-xl bg-neutral-100 px-4 text-sm font-bold text-[#B439FD]">
               {t("common.customerProfile")}
+            </Link>
+            <Link
+              to={`/app/requests/${request.id}/tag`}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-neutral-100 px-4 text-sm font-bold text-[#B439FD]"
+            >
+              <QrCode size={16} />
+              {t("tag.print")}
             </Link>
             <Link
               to={`/app/receipts/${request.id}`}
@@ -270,6 +290,14 @@ export function RequestDetailPage() {
             </p>
           ) : null}
         </section>
+      ) : null}
+
+      {request.pickupConfirmedAt ? (
+        <p className="mt-4 text-sm font-bold text-emerald-700">{t("pickup.already")}</p>
+      ) : request.status === "ready_for_pickup" || request.status === "completed" || request.status === "closed" ? (
+        <div className="mt-4">
+          <PickupConfirm pending={pickup.isPending} onConfirm={(signature) => pickup.mutateAsync(signature)} />
+        </div>
       ) : null}
     </div>
   );

@@ -1,6 +1,7 @@
 import type { TFunction } from "i18next";
+import { formatRequestId } from "./format";
 import { localizedName } from "./localized";
-import type { PortalNotification } from "./types";
+import type { PortalNotification, StaffAlert } from "./types";
 
 const STATUS_FROM_EN: Record<string, string> = {
   Scheduled: "scheduled",
@@ -15,7 +16,7 @@ const STATUS_FROM_EN: Record<string, string> = {
   Closed: "closed",
 };
 
-function inferredFields(item: PortalNotification) {
+function inferredFields(item: { message: string }) {
   const message = item.message;
   const customer = message.match(/^We received your (\w+) request for (.+)\.$/);
   if (customer) {
@@ -37,7 +38,7 @@ function inferredFields(item: PortalNotification) {
   return null;
 }
 
-export function notificationText(item: PortalNotification, t: TFunction, language?: string) {
+export function notificationText(item: PortalNotification | StaffAlert, t: TFunction, language?: string) {
   const inferred = item.code ? null : inferredFields(item);
   const code = item.code || inferred?.code;
   const product = localizedName(
@@ -53,8 +54,10 @@ export function notificationText(item: PortalNotification, t: TFunction, languag
   const statusKey = typeof item.params?.status === "string" ? item.params.status : inferred?.status;
   const type = typeKey ? t(`type.${typeKey}`) : "";
   const status = statusKey ? t(`status.${statusKey}`) : "";
+  const displayId = typeof item.params?.displayId === "string" ? formatRequestId(item.params.displayId) : "";
+  const count = item.params?.stockQuantity ?? item.params?.count;
   if (code) {
-    return t(`notify.${code}`, { type, product, status, defaultValue: item.message });
+    return t(`notify.${code}`, { type, product, status, id: displayId, count, defaultValue: item.message });
   }
   return item.message;
 }

@@ -18,16 +18,20 @@ export type CustomerFormValues = {
 export function CustomerFormModal({
   open,
   customer,
+  existing,
   pending,
   error,
   onClose,
+  onUseExisting,
   onSubmit,
 }: {
   open: boolean;
   customer: StaffCustomer | null;
+  existing?: StaffCustomer | null;
   pending: boolean;
   error: string | null;
   onClose: () => void;
+  onUseExisting?: (customer: StaffCustomer) => void;
   onSubmit: (values: CustomerFormValues) => Promise<void>;
 }) {
   const { t } = useTranslation();
@@ -72,7 +76,7 @@ export function CustomerFormModal({
         <Field label={t("common.address")}>
           <input className={inputClass} value={address} onChange={(event) => setAddress(event.target.value)} />
         </Field>
-        <Field label={t("customers.region")} hint={t("customers.regionHint")}>
+        <Field label={t("customers.region")} hint={t("customers.regionHint")} tooltip={t("customers.regionTip")}>
           <select className={inputClass} value={regionCode} onChange={(event) => setRegionCode(event.target.value)}>
             <option value={FALLBACK_REGION_CODE}>{t("regions.unknownOption")}</option>
             {UZBEKISTAN_REGIONS.map((region) => (
@@ -98,6 +102,20 @@ export function CustomerFormModal({
           />
         </Field>
         {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
+        {existing ? (
+          <div className="rounded-xl bg-amber-50 px-4 py-3 text-sm">
+            <p className="font-semibold text-amber-900">{t("customers.existingHint", { name: existing.name, phone: existing.phone })}</p>
+            {onUseExisting ? (
+              <button
+                type="button"
+                onClick={() => onUseExisting(existing)}
+                className="mt-2 text-sm font-bold text-[#B439FD]"
+              >
+                {t("customers.useExisting")}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
         <div className="flex justify-end gap-2 pt-2">
           <button type="button" onClick={onClose} className="h-11 rounded-xl px-4 text-sm font-semibold text-neutral-600 hover:bg-neutral-100">
             {t("common.cancel")}

@@ -4,7 +4,7 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { BrandChrome } from "../../components/BrandChrome";
 import { Spinner } from "../../components/Spinner";
 import { useToast } from "../../components/toast";
-import { apiErrorMessage } from "../../lib/api";
+import { ApiError, apiErrorMessage } from "../../lib/api";
 import { useCustomerAuth } from "./CustomerAuthContext";
 
 const inputClass =
@@ -35,7 +35,11 @@ export function CustomerSignupPage() {
       notify(t("auth.accountCreated"));
       navigate("/portal", { replace: true });
     } catch (err) {
-      setError(apiErrorMessage(err, t));
+      if (err instanceof ApiError && err.code === "phoneExists") {
+        setError(t("auth.phoneExistsSignIn"));
+      } else {
+        setError(apiErrorMessage(err, t));
+      }
     } finally {
       setSubmitting(false);
     }

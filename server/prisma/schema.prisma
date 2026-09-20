@@ -87,6 +87,8 @@ model StaffUser {
   assignedRequests ServiceRequest[] @relation("AssignedTechnician")
   notes           RequestNote[]
   photos          RequestPhoto[]   @relation("StaffPhotoUploader")
+  schedules       TechnicianSchedule[]
+  alerts          Notification[]   @relation("StaffAlerts")
 
   @@map("staff_users")
 }
@@ -107,6 +109,7 @@ model Customer {
   notifications Notification[]
   requestNotes RequestNote[]
   photos       RequestPhoto[]   @relation("CustomerPhotoUploader")
+  telegramChatId String?        @map("telegram_chat_id")
 
   @@map("customers")
 }
@@ -170,9 +173,12 @@ model SparePart {
   nameEn          String            @default("") @map("name_en")
   price           Decimal           @db.Decimal(12, 2)
   productCategory String            @map("product_category")
-  stockQuantity   Int               @default(0) @map("stock_quantity")
-  createdAt       DateTime          @default(now()) @map("created_at")
-  requestLines    RequestPartLine[]
+  stockQuantity      Int               @default(0) @map("stock_quantity")
+  lowStockThreshold  Int               @default(3) @map("low_stock_threshold")
+  lowStockNotifiedAt DateTime?         @map("low_stock_notified_at")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  requestLines       RequestPartLine[]
+  alerts             Notification[]
 
   @@index([productCategory])
   @@map("spare_parts")
@@ -205,7 +211,12 @@ model ServiceRequest {
   acceptedAt             DateTime?         @map("accepted_at")
   arrivedAt              DateTime?         @map("arrived_at")
   completedAt            DateTime?         @map("completed_at")
-  createdAt              DateTime         @default(now()) @map("created_at")
+  overdueAt              DateTime?         @map("overdue_at")
+  overdueNotifiedAt      DateTime?         @map("overdue_notified_at")
+  pickupConfirmedAt      DateTime?         @map("pickup_confirmed_at")
+  pickupSignatureUrl     String?           @map("pickup_signature_url")
+  pickupConfirmedBy      String?           @map("pickup_confirmed_by")
+  createdAt              DateTime          @default(now()) @map("created_at")
 
   sale                 Sale?                @relation(fields: [saleId], references: [id], onDelete: Restrict)
   customer             Customer             @relation(fields: [customerId], references: [id], onDelete: Restrict)
@@ -334,17 +345,79 @@ model Feedback {
 }
 
 model Notification {
-  id               String         @id @default(cuid())
-  customerId       String         @map("customer_id")
-  serviceRequestId String         @map("service_request_id")
+  id               String          @id @default(cuid())
+  audience         String          @default("customer")
+  customerId       String?         @map("customer_id")
+  staffUserId      String?         @map("staff_user_id")
+  serviceRequestId String?         @map("service_request_id")
+  sparePartId      String?         @map("spare_part_id")
   message          String
   code             String?
   params           Json?
-  isRead           Boolean        @default(false) @map("is_read")
-  createdAt        DateTime       @default(now()) @map("created_at")
-  customer         Customer       @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  serviceRequest   ServiceRequest @relation(fields: [serviceRequestId], references: [id], onDelete: Restrict)
+  isRead           Boolean         @default(false) @map("is_read")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  customer         Customer?       @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  staffUser        StaffUser?      @relation("StaffAlerts", fields: [staffUserId], references: [id], onDelete: Cascade)
+  serviceRequest   ServiceRequest? @relation(fields: [serviceRequestId], references: [id], onDelete: Restrict)
+  sparePart        SparePart?      @relation(fields: [sparePartId], references: [id], onDelete: SetNull)
 
   @@index([customerId, isRead])
+  @@index([staffUserId, isRead])
   @@map("notifications")
+}
+
+model TechnicianSchedule {
+  id           String    @id @default(cuid())
+  technicianId String    @map("technician_id")
+  date         DateTime  @db.Date
+  isWorking    Boolean   @default(true) @map("is_working")
+  startTime    String?   @map("start_time") @db.VarChar(5)
+  endTime      String?   @map("end_time") @db.VarChar(5)
+  technician   StaffUser @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+
+  @@unique([technicianId, date])
+  @@index([date])
+  @@map("technician_schedules")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  userType   String   @map("user_type")
+  userName   String?  @map("user_name")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  oldValue   Json?    @map("old_value")
+  newValue   Json?    @map("new_value")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model OutboundMessage {
+  id        String    @id @default(cuid())
+  channel   String
+  to        String
+  body      String
+  status    String    @default("pending")
+  error     String?
+  code      String?
+  entityId  String?   @map("entity_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  sentAt    DateTime? @map("sent_at")
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("outbound_messages")
+}
+
+model AppSetting {
+  key   String @id
+  value String
+
+  @@map("app_settings")
 }

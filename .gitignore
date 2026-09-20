@@ -6,5 +6,6 @@ build
 *.log
 coverage
 server/uploads
+server/backups
 client/dist
 .prisma

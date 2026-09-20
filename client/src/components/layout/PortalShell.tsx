@@ -70,7 +70,7 @@ export function PortalShell() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-5 pb-24 sm:pb-8">
+      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-5 pb-32 sm:pb-8">
         <Outlet />
       </main>
 

@@ -1,12 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 import { LocationBadge, StatusBadge, TypeBadge, WarrantyBadge } from "../../components/Badges";
 import { EmptyState } from "../../components/EmptyState";
+import { PickupConfirm } from "../../components/PickupConfirm";
+import { useToast } from "../../components/toast";
 import { PageSkeleton } from "../../components/PageSkeleton";
 import { useCustomerAuth } from "../auth/CustomerAuthContext";
-import { api } from "../../lib/api";
+import { api, apiErrorMessage } from "../../lib/api";
 import { formatDate, formatDateTime, formatRequestId } from "../../lib/format";
 import { localizedName } from "../../lib/localized";
 import type { PortalRequest } from "../../lib/types";
@@ -16,10 +18,21 @@ export function PortalRequestDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams();
   const { token } = useCustomerAuth();
+  const { notify } = useToast();
+  const queryClient = useQueryClient();
   const detail = useQuery({
     queryKey: ["customer", "requests", id],
     enabled: Boolean(token && id),
     queryFn: () => api<{ request: PortalRequest }>(`/api/customer/requests/${id}`, { token }),
+  });
+  const pickup = useMutation({
+    mutationFn: (signature: string | null) =>
+      api(`/api/customer/requests/${id}/pickup`, { method: "POST", token, body: JSON.stringify({ signature }) }),
+    onSuccess: async () => {
+      notify(t("pickup.saved"));
+      await queryClient.invalidateQueries({ queryKey: ["customer", "requests", id] });
+    },
+    onError: (error) => notify(apiErrorMessage(error, t), "error"),
   });
 
   if (detail.isLoading) {
@@ -70,6 +83,14 @@ export function PortalRequestDetailPage() {
           ) : null}
         </div>
       </dl>
+
+      {request.canConfirmPickup ? (
+        <div className="mt-4">
+          <PickupConfirm pending={pickup.isPending} onConfirm={(signature) => pickup.mutateAsync(signature)} />
+        </div>
+      ) : request.pickupConfirmedAt ? (
+        <p className="mt-4 text-sm font-bold text-emerald-700">{t("pickup.already")}</p>
+      ) : null}
 
       <div className="mt-4">
         <FeedbackForm request={request} />

@@ -21,6 +21,11 @@ import {
 } from "../lib/techBoard.js";
 import { acceptJobPhotos, publicPhotoUrl, removeUploadedFile } from "../lib/uploads.js";
 import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
+import { getAppSettings, isBlockZeroStock } from "../lib/settings.js";
+import { maybeAlertLowStock } from "../lib/stockAlerts.js";
+import { normalizeDisplayIdQuery, tashkentCalendarDate } from "../lib/displayId.js";
+import { writeAudit } from "../lib/audit.js";
+import { parseDateOnly, toDateOnly } from "../lib/warranty.js";
 
 const jobInclude = Prisma.validator<Prisma.ServiceRequestInclude>()({
   customer: { select: { id: true, name: true, phone: true, address: true, regionCode: true } },
@@ -89,6 +94,66 @@ export const myJobsRouter = Router();
 myJobsRouter.use(staffAuth, requireStaffRole("technician"));
 
 myJobsRouter.get(
+  "/schedule",
+  asyncHandler(async (req, res) => {
+    const from = typeof req.query.from === "string" ? parseDateOnly(req.query.from) : parseDateOnly(tashkentCalendarDate(new Date()));
+    const to = typeof req.query.to === "string" ? parseDateOnly(req.query.to) : new Date(from.getTime() + 13 * 86400000);
+    const rows = await prisma.technicianSchedule.findMany({
+      where: { technicianId: req.staff!.sub, date: { gte: from, lte: to } },
+    });
+    res.json({
+      from: toDateOnly(from),
+      to: toDateOnly(to),
+      days: rows.map((row) => ({
+        id: row.id,
+        technicianId: row.technicianId,
+        date: toDateOnly(row.date),
+        isWorking: row.isWorking,
+        startTime: row.startTime,
+        endTime: row.endTime,
+      })),
+    });
+  }),
+);
+
+myJobsRouter.put(
+  "/schedule",
+  asyncHandler(async (req, res) => {
+    const body = parseBody(
+      z.object({
+        date: z.string(),
+        isWorking: z.boolean(),
+        startTime: z.string().regex(/^\d{2}:\d{2}$/).optional().nullable(),
+        endTime: z.string().regex(/^\d{2}:\d{2}$/).optional().nullable(),
+      }),
+      req.body,
+    );
+    const date = parseDateOnly(body.date);
+    const row = await prisma.technicianSchedule.upsert({
+      where: { technicianId_date: { technicianId: req.staff!.sub, date } },
+      update: { isWorking: body.isWorking, startTime: body.startTime ?? null, endTime: body.endTime ?? null },
+      create: {
+        technicianId: req.staff!.sub,
+        date,
+        isWorking: body.isWorking,
+        startTime: body.startTime ?? null,
+        endTime: body.endTime ?? null,
+      },
+    });
+    res.json({
+      day: {
+        id: row.id,
+        technicianId: row.technicianId,
+        date: toDateOnly(row.date),
+        isWorking: row.isWorking,
+        startTime: row.startTime,
+        endTime: row.endTime,
+      },
+    });
+  }),
+);
+
+myJobsRouter.get(
   "/",
   asyncHandler(async (req, res) => {
     const jobs = await prisma.serviceRequest.findMany({
@@ -97,6 +162,21 @@ myJobsRouter.get(
       include: jobInclude,
     });
     res.json({ jobs: jobs.map(serializeTechJob) });
+  }),
+);
+
+myJobsRouter.get(
+  "/lookup/:displayId",
+  asyncHandler(async (req, res) => {
+    const displayId = normalizeDisplayIdQuery(req.params.displayId);
+    const job = await prisma.serviceRequest.findFirst({
+      where: { displayId, assignedTechnicianId: req.staff!.sub },
+      include: jobDetailInclude,
+    });
+    if (!job) {
+      throw new HttpError(404, "Job not found");
+    }
+    res.json(await jobWorkPayload(job));
   }),
 );
 
@@ -257,6 +337,7 @@ myJobsRouter.post(
         });
       }
     });
+    await maybeAlertLowStock(part.id);
 
     res.status(201).json(await jobWorkPayload(await loadOwnedJob(req.staff!.sub, job.id)));
   }),
@@ -305,6 +386,7 @@ myJobsRouter.patch(
         data: { quantity: body.quantity },
       });
     });
+    await maybeAlertLowStock(line.sparePartId);
     res.json(await jobWorkPayload(await loadOwnedJob(req.staff!.sub, job.id)));
   }),
 );
@@ -470,6 +552,14 @@ async function finishJob(existing: OwnedJob, _technicianName: string) {
   publishRequest("request:updated", serialized);
   if (nextStatus !== existing.status) {
     await notifyRequestStatus(fresh);
+    await writeAudit({
+      actor: { id: existing.assignedTechnicianId ?? "technician", type: "staff", name: _technicianName },
+      action: "request.status",
+      entityType: "ServiceRequest",
+      entityId: fresh.id,
+      oldValue: { status: existing.status },
+      newValue: { status: nextStatus, finalCost: financials.finalCost },
+    });
   }
 
   return {
@@ -517,8 +607,11 @@ async function jobWorkPayload(job: OwnedJob) {
         price: Number(item.price),
         productCategory: item.productCategory,
         stockQuantity: item.stockQuantity,
+        lowStockThreshold: item.lowStockThreshold,
+        lowStock: item.stockQuantity <= item.lowStockThreshold,
       })),
     },
+    settings: await getAppSettings(),
   };
 }
 
@@ -574,10 +667,18 @@ async function decrementStock(
   if (updated.count === 0) {
     const latest = await tx.sparePart.findUnique({ where: { id: part.id } });
     const count = latest?.stockQuantity ?? 0;
-    throw new HttpError(400, `Only ${count} ${part.name} in stock`, "stockInsufficient", {
-      count,
-      ...serializeNamed(part),
-    });
+    if (await isBlockZeroStock()) {
+      throw new HttpError(400, `Only ${count} ${part.name} in stock`, "stockInsufficient", {
+        count,
+        ...serializeNamed(part),
+      });
+    }
+    if (count > 0) {
+      await tx.sparePart.update({
+        where: { id: part.id },
+        data: { stockQuantity: 0 },
+      });
+    }
   }
 }
 

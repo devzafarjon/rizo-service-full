@@ -12,6 +12,7 @@ import { computeWarrantyStatus, money, toDateOnly } from "../lib/warranty.js";
 import { isRegionCode, resolveRegionCode } from "../lib/regions.js";
 import { optionalText } from "../lib/zodFields.js";
 import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
+import { staffActor, writeAudit } from "../lib/audit.js";
 
 const createSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
@@ -28,6 +29,78 @@ const updateSchema = createSchema.partial().extend({
 
 export const customersRouter = Router();
 customersRouter.use(staffAuth, requireStaffRole("admin"));
+
+customersRouter.get(
+  "/lookup",
+  asyncHandler(async (req, res) => {
+    const phone = normalizePhone(typeof req.query.phone === "string" ? req.query.phone : "");
+    if (!phone) {
+      throw new HttpError(400, "Enter a valid phone number");
+    }
+    const customer = await prisma.customer.findUnique({
+      where: { phone },
+      include: { _count: { select: { sales: true, requests: true } } },
+    });
+    res.json({ customer: customer ? serializeCustomer(customer) : null });
+  }),
+);
+
+customersRouter.get(
+  "/duplicates",
+  asyncHandler(async (req, res) => {
+    const customers = await prisma.customer.findMany({
+      orderBy: { createdAt: "asc" },
+      include: { _count: { select: { sales: true, requests: true } } },
+    });
+    const groups = new Map<string, typeof customers>();
+    for (const row of customers) {
+      const key = row.phone.slice(-9);
+      const list = groups.get(key) ?? [];
+      list.push(row);
+      groups.set(key, list);
+    }
+    res.json({
+      groups: [...groups.values()]
+        .filter((list) => list.length > 1)
+        .map((list) => list.map(serializeCustomer)),
+    });
+  }),
+);
+
+customersRouter.post(
+  "/merge",
+  asyncHandler(async (req, res) => {
+    const body = parseBody(z.object({ keepId: z.string(), absorbId: z.string() }), req.body);
+    if (body.keepId === body.absorbId) {
+      throw new HttpError(400, "Choose two different customers");
+    }
+    const keep = await prisma.customer.findUnique({ where: { id: body.keepId } });
+    const absorb = await prisma.customer.findUnique({ where: { id: body.absorbId } });
+    if (!keep || !absorb) throw new HttpError(404, "Customer not found");
+    await prisma.$transaction(async (tx) => {
+      await tx.sale.updateMany({ where: { customerId: absorb.id }, data: { customerId: keep.id } });
+      await tx.serviceRequest.updateMany({ where: { customerId: absorb.id }, data: { customerId: keep.id } });
+      await tx.feedback.updateMany({ where: { customerId: absorb.id }, data: { customerId: keep.id } });
+      await tx.notification.updateMany({ where: { customerId: absorb.id }, data: { customerId: keep.id } });
+      await tx.requestNote.updateMany({ where: { customerId: absorb.id }, data: { customerId: keep.id } });
+      await tx.requestPhoto.updateMany({ where: { customerId: absorb.id }, data: { customerId: keep.id } });
+      await tx.customer.delete({ where: { id: absorb.id } });
+    });
+    const merged = await prisma.customer.findUniqueOrThrow({
+      where: { id: keep.id },
+      include: { _count: { select: { sales: true, requests: true } } },
+    });
+    await writeAudit({
+      actor: staffActor(req.staff),
+      action: "customer.merge",
+      entityType: "Customer",
+      entityId: keep.id,
+      oldValue: { absorbId: absorb.id, absorbPhone: absorb.phone },
+      newValue: { keepId: keep.id, keepPhone: keep.phone },
+    });
+    res.json({ customer: serializeCustomer(merged) });
+  }),
+);
 
 customersRouter.get(
   "/",
@@ -106,6 +179,15 @@ customersRouter.post(
     const body = parseBody(createSchema, req.body);
     const phone = normalizePhone(body.phone);
     assertPhone(phone);
+    const existing = await prisma.customer.findUnique({
+      where: { phone },
+      include: { _count: { select: { sales: true, requests: true } } },
+    });
+    if (existing) {
+      throw new HttpError(409, "A customer with this phone number already exists", "phoneExists", {
+        customer: serializeCustomer(existing),
+      });
+    }
     const generated = body.password ? null : crypto.randomBytes(4).toString("hex");
     if (body.password && body.password.length < 6) {
       throw new HttpError(400, "Password must be at least 6 characters");

@@ -132,7 +132,8 @@ export function JobCompletePage() {
     return <EmptyState title={t("job.notFoundTitle")} body={t("job.notFoundBody")} />;
   }
 
-  const { job, catalog, serviceLines, partLines, extraExpenses, photos, cost, canComplete, missing, timeline } = data;
+  const { job, catalog, serviceLines, partLines, extraExpenses, photos, cost, canComplete, missing, timeline, settings } = data;
+  const blockZero = settings?.blockZeroStock ?? true;
   const done = job.column === "completed";
   const busy = serviceMut.isPending || partMut.isPending || extraMut.isPending || photoMut.isPending || completeMut.isPending;
   const missingList = missing.map((code) => t(`job.gap.${code}`)).join(", ");
@@ -234,6 +235,8 @@ export function JobCompletePage() {
           <div className="space-y-2">
             {catalog.parts.map((item) => {
               const line = partLines.find((entry) => entry.sparePartId === item.id);
+              const out = (item.stockQuantity ?? 0) <= 0;
+              const blocked = out && blockZero && !line;
               return (
                 <div
                   key={item.id}
@@ -243,12 +246,21 @@ export function JobCompletePage() {
                 >
                   <button
                     type="button"
-                    disabled={done || busy || (!line && (item.stockQuantity ?? 0) <= 0)}
-                    onClick={() => (line ? undefined : partMut.mutate({ sparePartId: item.id }))}
+                    disabled={done || busy || blocked}
+                    onClick={() => {
+                      if (line) return;
+                      if (out && !blockZero) notify(t("job.zeroStockWarn"), "error");
+                      partMut.mutate({ sparePartId: item.id });
+                    }}
                     className="min-w-0 flex-1 py-3 text-left"
                   >
                     <p className="truncate font-semibold">{localizedName(item)}</p>
                     <p className="text-xs text-neutral-500">{t("job.stockLine", { price: formatMoney(item.price), count: item.stockQuantity ?? 0 })}</p>
+                    {out ? (
+                      <p className="text-[11px] font-bold text-amber-700">{blockZero ? t("job.zeroStockBlock") : t("job.zeroStockWarn")}</p>
+                    ) : item.lowStock ? (
+                      <p className="text-[11px] font-bold text-amber-700">{t("catalog.lowStock")}</p>
+                    ) : null}
                   </button>
                   {line ? (
                     <div className="flex items-center gap-2">
@@ -262,8 +274,11 @@ export function JobCompletePage() {
                       <span className="w-6 text-center text-sm font-extrabold">{line.quantity}</span>
                       <IconButton
                         label={t("common.increaseQty")}
-                        disabled={done || busy || (item.stockQuantity ?? 0) <= 0}
-                        onClick={() => partMut.mutate({ lineId: line.id, quantity: line.quantity + 1 })}
+                        disabled={done || busy || (out && blockZero)}
+                        onClick={() => {
+                          if (out && !blockZero) notify(t("job.zeroStockWarn"), "error");
+                          partMut.mutate({ lineId: line.id, quantity: line.quantity + 1 });
+                        }}
                       >
                         <Plus size={16} />
                       </IconButton>

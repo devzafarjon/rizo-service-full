@@ -42,6 +42,10 @@ export function normalizeDisplayIdQuery(value: string) {
   return value.trim().replace(/^#/, "").replace(/\s+/g, "");
 }
 
+export function formatRequestId(displayId: string) {
+  return displayId.startsWith("#") ? displayId : `#${displayId}`;
+}
+
 async function nextDailySequence(db: DbClient, at: Date): Promise<number> {
   const date = tashkentCalendarDate(at);
   const rows = await db.$queryRaw<Array<{ last_sequence: number | bigint }>>`
