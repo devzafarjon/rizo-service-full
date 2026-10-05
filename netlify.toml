@@ -1,0 +1,8 @@
+# Netlify builds only the React client. The API and database are hosted elsewhere:
+# set VITE_API_URL (Site configuration -> Environment variables) to the API's public URL.
+[build]
+  command = "npm install && npm run build -w client"
+  publish = "client/dist"
+
+[build.environment]
+  NODE_VERSION = "22"

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { io, type Socket } from "socket.io-client";
+import { API_BASE } from "./apiBase";
 import { useStaffAuth } from "../features/auth/StaffAuthContext";
 
 export function useStaffRealtime() {
@@ -10,7 +11,7 @@ export function useStaffRealtime() {
   useEffect(() => {
     if (!token) return;
 
-    const socket: Socket = io({
+    const socket: Socket = io(API_BASE || undefined, {
       auth: { token },
       transports: ["websocket", "polling"],
     });

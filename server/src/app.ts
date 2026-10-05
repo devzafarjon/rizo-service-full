@@ -24,6 +24,8 @@ import { ensureUploadsRoot, uploadsRoot } from "./lib/uploads.js";
 
 export function createApp() {
   const app = express();
+  // Behind a hosting proxy (Render, Fly…) the real client IP comes from X-Forwarded-For; the rate limiter needs it.
+  app.set("trust proxy", 1);
   ensureUploadsRoot();
   app.use(cors({ origin: env.clientOrigin, credentials: true }));
   app.use(express.json({ limit: "4mb" }));

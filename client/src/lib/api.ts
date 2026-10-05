@@ -1,3 +1,4 @@
+import { withApiBase } from "./apiBase";
 import { localizedName, type Named } from "./localized";
 
 export const STAFF_TOKEN_KEY = "rizo_staff_token";
@@ -54,7 +55,7 @@ export async function api<T>(
   options: RequestInit & { token?: string | null } = {},
 ): Promise<T> {
   const { token, headers, ...rest } = options;
-  const res = await fetch(path, {
+  const res = await fetch(withApiBase(path), {
     ...rest,
     headers: {
       ...(rest.body ? { "Content-Type": "application/json" } : {}),
@@ -83,7 +84,7 @@ export async function apiForm<T>(
   path: string,
   options: { token?: string | null; formData: FormData; method?: string } = { formData: new FormData() },
 ): Promise<T> {
-  const res = await fetch(path, {
+  const res = await fetch(withApiBase(path), {
     method: options.method ?? "POST",
     headers: {
       ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),

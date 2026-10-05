@@ -9,6 +9,7 @@ import { useToast } from "../../components/toast";
 import { PageSkeleton } from "../../components/PageSkeleton";
 import { RequestTimeline } from "../../components/RequestTimeline";
 import { useStaffAuth } from "../auth/StaffAuthContext";
+import { withApiBase } from "../../lib/apiBase";
 import { api, apiErrorMessage } from "../../lib/api";
 import { defectLabel, formatDate, formatDateTime, formatMoney, formatPhone, formatRequestId, mapsUrl, technicianTypeLabel } from "../../lib/format";
 import { categoryLabel, localizedName } from "../../lib/localized";
@@ -295,7 +296,7 @@ export function RequestDetailPage() {
           {photos.length > 0 ? (
             <div className="mt-4 grid grid-cols-3 gap-2">
               {photos.map((photo) => (
-                <img key={photo.id} src={photo.photoUrl} alt={t("common.jobPhoto")} className="h-24 w-full rounded-xl object-cover" />
+                <img key={photo.id} src={withApiBase(photo.photoUrl)} alt={t("common.jobPhoto")} className="h-24 w-full rounded-xl object-cover" />
               ))}
             </div>
           ) : null}

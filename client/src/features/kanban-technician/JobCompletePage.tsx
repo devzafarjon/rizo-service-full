@@ -11,6 +11,7 @@ import { RequestTimeline } from "../../components/RequestTimeline";
 import { Spinner } from "../../components/Spinner";
 import { useToast } from "../../components/toast";
 import { useStaffAuth } from "../auth/StaffAuthContext";
+import { withApiBase } from "../../lib/apiBase";
 import { api, apiErrorMessage, apiForm } from "../../lib/api";
 import { formatMoney, formatPhone, formatRequestId } from "../../lib/format";
 import { categoryLabel, localizedName } from "../../lib/localized";
@@ -208,7 +209,7 @@ export function JobCompletePage() {
           <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
             {photos.map((photo) => (
               <figure key={photo.id} className="relative overflow-hidden rounded-2xl bg-neutral-100">
-                <img src={photo.photoUrl} alt={t("common.jobPhoto")} className="h-32 w-full object-cover" />
+                <img src={withApiBase(photo.photoUrl)} alt={t("common.jobPhoto")} className="h-32 w-full object-cover" />
                 {done ? null : (
                   <button
                     type="button"
