@@ -93,7 +93,7 @@ export function DecisionPanel({
       {decision === "refund" ? (
         <div className="grid gap-3 sm:grid-cols-3">
           <Field label={t("decision.refundAmount")}>
-            <input className={inputClass} type="number" min={0} step={1000} value={amount} onChange={(event) => setAmount(event.target.value)} />
+            <input className={inputClass} type="number" min={0} step={1} value={amount} onChange={(event) => setAmount(event.target.value)} />
           </Field>
           <Field label={t("payments.method")}>
             <select className={`${inputClass} bg-white`} value={method} onChange={(event) => setMethod(event.target.value as PaymentMethod)}>

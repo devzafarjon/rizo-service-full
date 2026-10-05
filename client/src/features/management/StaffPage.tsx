@@ -208,7 +208,7 @@ export function StaffPage() {
                 <input className={inputClass} type="number" min={0} max={100} step="0.5" value={form.payPercent} onChange={(event) => setForm({ ...form, payPercent: event.target.value })} />
               </Field>
               <Field label={t("staffAdmin.payFixed")} hint={t("staffAdmin.payFixedHint")}>
-                <input className={inputClass} type="number" min={0} step={1000} value={form.payFixedPerJob} onChange={(event) => setForm({ ...form, payFixedPerJob: event.target.value })} />
+                <input className={inputClass} type="number" min={0} step={1} value={form.payFixedPerJob} onChange={(event) => setForm({ ...form, payFixedPerJob: event.target.value })} />
               </Field>
             </div>
           ) : null}

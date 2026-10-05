@@ -83,7 +83,7 @@ export function EstimateBuilder({
       </div>
       <div className="flex gap-2">
         <input className={`${inputClass} min-w-0 flex-1`} value={customName} onChange={(event) => setCustomName(event.target.value)} placeholder={t("estimate.customName")} />
-        <input className={`${inputClass} w-32`} type="number" min={0} step={1000} value={customPrice} onChange={(event) => setCustomPrice(event.target.value)} placeholder={t("common.price")} />
+        <input className={`${inputClass} w-32`} type="number" min={0} step={1} value={customPrice} onChange={(event) => setCustomPrice(event.target.value)} placeholder={t("common.price")} />
         <button
           type="button"
           disabled={!customName.trim()}
@@ -116,7 +116,7 @@ export function EstimateBuilder({
               {line.kind === "part" || line.kind === "labor" || line.kind === "other" ? (
                 <input className="h-10 w-20 rounded-lg border border-gray-300 px-2 text-sm font-semibold" type="number" min={1} max={99} value={line.quantity} onChange={(event) => patch(index, { quantity: Math.max(1, Number(event.target.value) || 1) })} aria-label={t("common.qty")} />
               ) : null}
-              <input className="h-10 w-32 rounded-lg border border-gray-300 px-2 text-sm font-semibold" type="number" min={0} step={1000} value={line.unitPrice} onChange={(event) => patch(index, { unitPrice: Math.max(0, Number(event.target.value) || 0) })} aria-label={t("common.price")} />
+              <input className="h-10 w-32 rounded-lg border border-gray-300 px-2 text-sm font-semibold" type="number" min={0} step={1} value={line.unitPrice} onChange={(event) => patch(index, { unitPrice: Math.max(0, Number(event.target.value) || 0) })} aria-label={t("common.price")} />
               <label className="ml-auto flex items-center gap-2 text-sm font-semibold text-neutral-700">
                 <input type="checkbox" checked={line.isOptional} onChange={(event) => patch(index, { isOptional: event.target.checked })} />
                 {t("estimate.optional")}

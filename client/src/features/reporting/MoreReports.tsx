@@ -400,7 +400,7 @@ export function PayrollReportPage() {
           >
             <p className="text-sm text-neutral-600">{adjust.name}</p>
             <Field label={t("payroll.amount")} hint={t("payroll.amountHint")}>
-              <input className={inputClass} type="number" step={1000} required value={adjust.amount} onChange={(event) => setAdjust({ ...adjust, amount: event.target.value })} />
+              <input className={inputClass} type="number" step={1} required value={adjust.amount} onChange={(event) => setAdjust({ ...adjust, amount: event.target.value })} />
             </Field>
             <Field label={t("payroll.reason")}>
               <input className={inputClass} required maxLength={200} value={adjust.reason} onChange={(event) => setAdjust({ ...adjust, reason: event.target.value })} />

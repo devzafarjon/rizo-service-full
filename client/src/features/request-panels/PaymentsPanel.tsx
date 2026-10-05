@@ -79,7 +79,7 @@ export function PaymentsPanel({
         }}
       >
         <Field label={t("payments.amount")}>
-          <input className={inputClass} type="number" min={1} step={1000} value={amount} onChange={(event) => setAmount(event.target.value)} placeholder={summary.balance > 0 ? String(summary.balance) : ""} />
+          <input className={inputClass} type="number" min={1} step={1} value={amount} onChange={(event) => setAmount(event.target.value)} placeholder={summary.balance > 0 ? String(summary.balance) : ""} />
         </Field>
         <Field label={t("payments.method")}>
           <select className={`${inputClass} bg-white`} value={method} onChange={(event) => setMethod(event.target.value as PaymentMethod)}>

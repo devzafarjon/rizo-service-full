@@ -14,7 +14,8 @@
     "prisma:generate": "prisma generate",
     "smoke": "node --import tsx/esm scripts/smoke.ts",
     "backup": "node --import tsx/esm scripts/backup.ts",
-    "set-password": "node --import tsx/esm scripts/set-password.ts"
+    "set-password": "node --import tsx/esm scripts/set-password.ts",
+    "add-demo-accounts": "node --import tsx/esm scripts/add-demo-accounts.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
