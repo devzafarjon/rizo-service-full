@@ -42,7 +42,7 @@ export function NotificationBell() {
       >
         <Bell size={20} />
         {unread > 0 ? (
-          <span className="absolute top-1.5 right-1.5 inline-flex min-w-4 items-center justify-center rounded-full bg-[#B439FD] px-1 text-[10px] font-extrabold text-white">
+          <span className="absolute top-1.5 right-1.5 inline-flex min-w-4 items-center justify-center rounded-full bg-[#7B00E0] px-1 text-[10px] font-extrabold text-white">
             {unread > 9 ? "9+" : unread}
           </span>
         ) : null}
@@ -54,7 +54,7 @@ export function NotificationBell() {
             <button
               type="button"
               onClick={() => markAll.mutate()}
-              className="text-xs font-bold text-[#B439FD]"
+              className="text-xs font-bold text-[#7B00E0]"
             >
               {t("notifications.markAll")}
             </button>
@@ -66,7 +66,7 @@ export function NotificationBell() {
           ) : (
             <ul>
               {notifications.map((item) => (
-                <li key={item.id} className={item.isRead ? "bg-white" : "bg-[#F3E8FF]"}>
+                <li key={item.id} className={item.isRead ? "bg-white" : "bg-[#F5EBFD]"}>
                   <Link
                     to={`/portal/requests/${item.serviceRequestId}`}
                     onClick={() => {

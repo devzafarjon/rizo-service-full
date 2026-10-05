@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   BarChart3,
@@ -34,6 +34,8 @@ export type NavItem = {
   tour?: string;
 };
 
+const ANALYTICS_PATH = "/app?view=full";
+
 export const ADMIN_DAILY: NavItem[] = [
   { to: "/app/kanban", labelKey: "nav.board", icon: Kanban, roles: ["admin"], tour: "kanban" },
   { to: "/app/requests/new", labelKey: "nav.newRequest", icon: Plus, roles: ["admin"], end: true, tour: "new-request" },
@@ -43,7 +45,7 @@ export const ADMIN_DAILY: NavItem[] = [
 
 export const ADMIN_MANAGEMENT: NavItem[] = [
   { to: "/app/reports", labelKey: "nav.reports", icon: BarChart3, roles: ["admin"], tour: "reports" },
-  { to: "/app?view=full", labelKey: "nav.analytics", icon: LayoutDashboard, roles: ["admin"] },
+  { to: ANALYTICS_PATH, labelKey: "nav.analytics", icon: LayoutDashboard, roles: ["admin"] },
   { to: "/app/catalog", labelKey: "nav.inventory", icon: Package, roles: ["admin"] },
   { to: "/app/schedule", labelKey: "nav.schedule", icon: CalendarDays, roles: ["admin"] },
   { to: "/app/audit", labelKey: "nav.activity", icon: ScrollText, roles: ["admin"] },
@@ -60,29 +62,23 @@ export const TECH_NAV: NavItem[] = [
   { to: "/app/my-jobs", labelKey: "nav.myJobs", icon: Wrench, roles: ["technician"] },
 ];
 
-const MGMT_PATHS = [
-  "/app/reports",
-  "/app/catalog",
-  "/app/schedule",
-  "/app/audit",
-  "/app/customers/duplicates",
-  "/app/settings",
-  "/app/sales",
-  "/app/requests",
-  "/app/receipts",
-  "/app/kiosk",
-  "/app/scan",
-];
+// Every management link except analytics, which lives on /app behind a query param.
+const MGMT_PATHS = ADMIN_MANAGEMENT.map((item) => item.to).filter((to) => to !== ANALYTICS_PATH);
+
+function isAnalyticsActive(pathname: string, search: string) {
+  return pathname === "/app" && new URLSearchParams(search).get("view") === "full";
+}
 
 function managementOpenByPath(pathname: string, search: string) {
   if (pathname === "/app/requests/new") return false;
-  if (pathname === "/app" && new URLSearchParams(search).get("view") === "full") return true;
+  if (isAnalyticsActive(pathname, search)) return true;
   return MGMT_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }
 
+// RizoPost sidebar: plain rows, the active one is brand-purple text and icon (no fill).
 function linkClass(active: boolean) {
-  return `flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-semibold transition ${
-    active ? "bg-[#F3E8FF] text-[#B439FD]" : "text-gray-600 hover:bg-gray-100 hover:text-black"
+  return `flex min-h-11 items-center gap-3 rounded-xl px-2 text-sm font-semibold transition lg:min-h-[33px] ${
+    active ? "text-[#7B00E0]" : "text-gray-700 hover:text-[#7B00E0]"
   }`;
 }
 
@@ -98,8 +94,22 @@ function NavItemLink({
   const Icon = item.icon;
   const isReports = item.to === "/app/reports";
   const reportsActive = location.pathname.startsWith("/app/reports");
-  const isAnalytics = item.to === "/app?view=full";
-  const analyticsActive = location.pathname === "/app" && new URLSearchParams(location.search).get("view") === "full";
+
+  if (item.to === ANALYTICS_PATH) {
+    const analyticsActive = isAnalyticsActive(location.pathname, location.search);
+    return (
+      <Link
+        to={item.to}
+        onClick={onNavigate}
+        data-tour={item.tour}
+        className={linkClass(analyticsActive)}
+        aria-current={analyticsActive ? "page" : undefined}
+      >
+        <Icon className="shrink-0" size={18} strokeWidth={1.75} />
+        {t(item.labelKey)}
+      </Link>
+    );
+  }
 
   return (
     <div>
@@ -109,22 +119,22 @@ function NavItemLink({
         onClick={onNavigate}
         data-tour={item.tour}
         className={({ isActive }) =>
-          linkClass(isAnalytics ? analyticsActive : isActive || (isReports && reportsActive))
+          linkClass(isActive || (isReports && reportsActive))
         }
       >
-        <Icon className="shrink-0" size={18} />
+        <Icon className="shrink-0" size={18} strokeWidth={1.75} />
         {t(item.labelKey)}
       </NavLink>
       {isReports ? (
-        <div className="mt-1 ml-8 flex flex-col gap-0.5 border-l border-gray-100 pl-3">
+        <div className="mt-0.5 mb-1 ml-[1.1rem] flex flex-col border-l border-gray-200 pl-4">
           {REPORT_LINKS.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
               onClick={onNavigate}
               className={({ isActive }) =>
-                `flex min-h-9 items-center rounded-md px-2 text-xs font-semibold transition ${
-                  isActive ? "bg-[#F3E8FF] text-[#B439FD]" : "text-gray-500 hover:bg-gray-50 hover:text-black"
+                `flex min-h-8 items-center rounded-md px-2 text-[13px] font-medium transition ${
+                  isActive ? "text-[#7B00E0]" : "text-gray-600 hover:text-[#7B00E0]"
                 }`
               }
             >
@@ -164,9 +174,11 @@ export function StaffNavLinks({
     return () => window.removeEventListener("rizo-expand-management", expand);
   }, []);
 
+  const navClass = variant === "sidebar" ? "flex flex-col gap-1" : "flex flex-col gap-1 p-3";
+
   if (role === "technician") {
     return (
-      <nav className={variant === "sidebar" ? "flex flex-col gap-1" : "flex flex-col gap-1 p-3"}>
+      <nav className={navClass}>
         {TECH_NAV.map((item) => (
           <NavItemLink key={item.to} item={item} onNavigate={onNavigate} />
         ))}
@@ -175,19 +187,19 @@ export function StaffNavLinks({
   }
 
   return (
-    <nav className={variant === "sidebar" ? "flex flex-col gap-1" : "flex flex-col gap-1 p-3"}>
-      <p className="px-3 pt-1 pb-1 text-[11px] font-bold tracking-wide text-neutral-400 uppercase">{t("nav.dailyUse")}</p>
+    <nav className={navClass}>
+      <p className="px-2 pt-1 pb-1 text-[11px] font-bold tracking-wide text-gray-500 uppercase">{t("nav.dailyUse")}</p>
       {ADMIN_DAILY.map((item) => (
         <NavItemLink key={item.to} item={item} onNavigate={onNavigate} />
       ))}
 
-      <div className="mx-3 mt-3 mb-2 border-t border-neutral-100" />
+      <div className="mx-2 mt-3 mb-2 border-t border-gray-200" />
 
       <button
         type="button"
         data-tour="management"
         onClick={() => setMgmtOpen((open) => !open)}
-        className="flex min-h-11 w-full items-center justify-between rounded-lg px-3 text-[11px] font-bold tracking-wide text-neutral-400 uppercase hover:bg-gray-50"
+        className="flex min-h-9 w-full items-center justify-between rounded-lg px-2 text-[11px] font-bold tracking-wide text-gray-500 uppercase hover:bg-gray-50"
       >
         <span>{t("nav.management")}</span>
         <ChevronDown size={16} className={`transition ${mgmtOpen ? "rotate-180" : ""}`} />

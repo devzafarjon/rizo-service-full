@@ -122,7 +122,8 @@ salesRouter.patch(
     await assertCustomerAndProduct(customerId, productId);
     const saleDate = body.saleDate ? parseDateOnly(body.saleDate) : existing.saleDate;
     const warrantyMonths = body.warrantyMonths ?? existing.warrantyMonths;
-    const warrantyExpiry = computeWarrantyExpiry(saleDate, warrantyMonths);
+    // Warranty runs from installation when the product has been installed, otherwise from the sale date.
+    const warrantyExpiry = computeWarrantyExpiry(existing.installationDate ?? saleDate, warrantyMonths);
     try {
       const sale = await prisma.sale.update({
         where: { id: existing.id },
@@ -144,7 +145,7 @@ salesRouter.patch(
       });
       const warrantyStatus = computeWarrantyStatus(sale.warrantyMonths, sale.warrantyExpiry);
       const open = await prisma.serviceRequest.findMany({
-        where: { saleId: sale.id, status: { notIn: ["completed", "closed", "replaced"] } },
+        where: { saleId: sale.id, status: { in: ["new", "in_progress", "paused"] } },
         select: { id: true, type: true },
       });
       for (const request of open) {
@@ -217,6 +218,7 @@ function serializeSale(sale: {
   pricePaid: { toString(): string };
   warrantyMonths: number;
   warrantyExpiry: Date;
+  installationDate: Date | null;
   invoiceNumber: string;
   createdAt: Date;
   customer: { id: string; name: string; phone: string };
@@ -232,6 +234,7 @@ function serializeSale(sale: {
     pricePaid: money(sale.pricePaid),
     warrantyMonths: sale.warrantyMonths,
     warrantyExpiry: toDateOnly(sale.warrantyExpiry),
+    installationDate: sale.installationDate ? toDateOnly(sale.installationDate) : null,
     warrantyStatus: computeWarrantyStatus(sale.warrantyMonths, sale.warrantyExpiry),
     invoiceNumber: sale.invoiceNumber,
     createdAt: sale.createdAt.toISOString(),

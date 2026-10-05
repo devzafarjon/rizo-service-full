@@ -11,7 +11,6 @@ import { api } from "../../lib/api";
 import type { JobCost, JobExtraExpense, JobPartLine, JobServiceLine, JobWorkPayload, ServiceRequest } from "../../lib/types";
 import { ReceiptDocument } from "./ReceiptDocument";
 import { loadDisclaimer, saveDisclaimer } from "./disclaimer";
-import { LanguageSwitcher } from "../../components/LanguageSwitcher";
 
 type ReceiptPayload = {
   request: ServiceRequest;
@@ -70,21 +69,18 @@ export function ReceiptPrintPage() {
   return (
     <div>
       <div className="no-print mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Link to={backTo} className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-500 hover:text-[#B439FD]">
+        <Link to={backTo} className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-500 hover:text-[#7B00E0]">
           <ArrowLeft size={16} />
           {t("common.back")}
         </Link>
-        <div className="flex flex-wrap items-center gap-2">
-          <LanguageSwitcher />
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#B439FD] px-4 text-sm font-bold text-white hover:bg-[#C45FFF]"
-          >
-            <Printer size={16} />
-            {t("receipt.printReceipt")}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-[#7B00E0] px-6 text-[12.8px] font-bold text-white hover:bg-[#6500BD]"
+        >
+          <Printer size={16} />
+          {t("receipt.printReceipt")}
+        </button>
       </div>
 
       <section className="no-print mb-4 rounded-2xl border border-neutral-200 bg-white p-5">

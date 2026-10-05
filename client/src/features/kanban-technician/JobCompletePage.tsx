@@ -108,6 +108,13 @@ export function JobCompletePage() {
     onError: (error) => notify(apiErrorMessage(error, t), "error"),
   });
 
+  const resolutionMut = useMutation({
+    mutationFn: (body: { resolutionType: "repair" | "replace"; productId?: string; serialNumber?: string }) =>
+      api<JobWorkPayload>(`/api/staff/my-jobs/${id}/resolution`, { method: "PUT", token, body: JSON.stringify(body) }),
+    onSuccess: replaceWork,
+    onError: (error) => notify(apiErrorMessage(error, t), "error"),
+  });
+
   const completeMut = useMutation({
     mutationFn: () =>
       api<JobWorkPayload>(`/api/staff/my-jobs/${id}/complete`, {
@@ -132,10 +139,16 @@ export function JobCompletePage() {
     return <EmptyState title={t("job.notFoundTitle")} body={t("job.notFoundBody")} />;
   }
 
-  const { job, catalog, serviceLines, partLines, extraExpenses, photos, cost, canComplete, missing, timeline, settings } = data;
+  const { job, catalog, serviceLines, partLines, extraExpenses, photos, cost, canComplete, missing, timeline, settings, replacement } = data;
   const blockZero = settings?.blockZeroStock ?? true;
   const done = job.column === "completed";
-  const busy = serviceMut.isPending || partMut.isPending || extraMut.isPending || photoMut.isPending || completeMut.isPending;
+  const busy =
+    serviceMut.isPending ||
+    partMut.isPending ||
+    extraMut.isPending ||
+    photoMut.isPending ||
+    resolutionMut.isPending ||
+    completeMut.isPending;
   const missingList = missing.map((code) => t(`job.gap.${code}`)).join(", ");
 
   function onFiles(event: ChangeEvent<HTMLInputElement>) {
@@ -155,14 +168,14 @@ export function JobCompletePage() {
 
   return (
     <div className="pb-[calc(9rem+env(safe-area-inset-bottom))]">
-      <Link to="/app/my-jobs" className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-500 hover:text-[#B439FD]">
+      <Link to="/app/my-jobs" className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-500 hover:text-[#7B00E0]">
         <ArrowLeft size={16} />
         {t("tech.title")}
       </Link>
 
       <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-5">
         <p className="font-mono text-xs font-bold tracking-wide text-neutral-400">{formatRequestId(job.displayId)}</p>
-        <h1 className="mt-1 text-2xl font-extrabold tracking-tight">{job.customer.name}</h1>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{job.customer.name}</h1>
         <p className="mt-1 text-sm text-neutral-500">
           {localizedName(job.product)} · {formatPhone(job.customer.phone)}
         </p>
@@ -174,7 +187,7 @@ export function JobCompletePage() {
         {done ? (
           <Link
             to={`/app/my-jobs/${job.id}/receipt`}
-            className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#B439FD] px-4 text-sm font-bold text-white hover:bg-[#C45FFF]"
+            className="mt-4 inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-[#7B00E0] px-6 text-[12.8px] font-bold text-white hover:bg-[#6500BD]"
           >
             <Printer size={16} />
             {t("detail.printReceipt")}
@@ -189,6 +202,55 @@ export function JobCompletePage() {
           <RequestTimeline events={timeline ?? []} />
         </div>
       </section>
+
+      <Section title={t("job.photos")} hint={t("job.photosHint")}>
+        {photos.length > 0 ? (
+          <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {photos.map((photo) => (
+              <figure key={photo.id} className="relative overflow-hidden rounded-2xl bg-neutral-100">
+                <img src={photo.photoUrl} alt={t("common.jobPhoto")} className="h-32 w-full object-cover" />
+                {done ? null : (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => photoMut.mutate({ photoId: photo.id })}
+                    className="absolute top-2 right-2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white"
+                    aria-label={t("common.removePhoto")}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </figure>
+            ))}
+          </div>
+        ) : (
+          <p className="mb-3 text-sm text-neutral-500">{t("job.noPhotos")}</p>
+        )}
+        {done ? null : (
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => cameraRef.current?.click()}
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#FFF4E5] text-sm font-bold text-[#C56A00]"
+            >
+              <Camera size={18} />
+              {t("common.takePhoto")}
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => galleryRef.current?.click()}
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-neutral-100 text-sm font-bold"
+            >
+              <ImagePlus size={18} />
+              {t("job.addPhotos")}
+            </button>
+          </div>
+        )}
+        <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFiles} />
+        <input ref={galleryRef} type="file" accept="image/*" multiple className="hidden" onChange={onFiles} />
+      </Section>
 
       <Section
         title={t("catalog.services")}
@@ -207,13 +269,13 @@ export function JobCompletePage() {
                   disabled={done || busy}
                   onClick={() => serviceMut.mutate(item.id)}
                   className={`flex min-h-14 w-full items-center justify-between gap-3 rounded-2xl px-4 text-left ring-1 ${
-                    selected ? "bg-[#F3E8FF] ring-[#B439FD]" : "bg-neutral-50 ring-neutral-200"
+                    selected ? "bg-[#F5EBFD] ring-[#7B00E0]" : "bg-neutral-50 ring-neutral-200"
                   }`}
                 >
                   <span className="flex min-w-0 items-center gap-3">
                     <span
                       className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
-                        selected ? "bg-[#B439FD] text-white" : "bg-white ring-1 ring-neutral-300"
+                        selected ? "bg-[#7B00E0] text-white" : "bg-white ring-1 ring-neutral-300"
                       }`}
                     >
                       {selected ? <Check size={14} /> : null}
@@ -241,7 +303,7 @@ export function JobCompletePage() {
                 <div
                   key={item.id}
                   className={`flex min-h-14 items-center justify-between gap-3 rounded-2xl px-4 ring-1 ${
-                    line ? "bg-[#FFF4E5] ring-[#F6921E]" : "bg-neutral-50 ring-neutral-200"
+                    line ? "bg-[#FFF4E5] ring-[#F7941E]" : "bg-neutral-50 ring-neutral-200"
                   }`}
                 >
                   <button
@@ -335,7 +397,7 @@ export function JobCompletePage() {
               <button type="button" onClick={() => setExtraOpen(false)} className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-white text-sm font-bold ring-1 ring-neutral-200">
                 {t("common.cancel")}
               </button>
-              <button type="submit" disabled={busy} className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-[#B439FD] text-sm font-extrabold text-white">
+              <button type="submit" disabled={busy} className="inline-flex min-h-11 flex-1 items-center justify-center rounded-lg bg-[#7B00E0] text-[12.8px] font-extrabold text-white">
                 {t("job.saveExpense")}
               </button>
             </div>
@@ -352,54 +414,14 @@ export function JobCompletePage() {
         )}
       </Section>
 
-      <Section title={t("job.photos")} hint={t("job.photosHint")}>
-        {photos.length > 0 ? (
-          <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {photos.map((photo) => (
-              <figure key={photo.id} className="relative overflow-hidden rounded-2xl bg-neutral-100">
-                <img src={photo.photoUrl} alt={t("common.jobPhoto")} className="h-32 w-full object-cover" />
-                {done ? null : (
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => photoMut.mutate({ photoId: photo.id })}
-                    className="absolute top-2 right-2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white"
-                    aria-label={t("common.removePhoto")}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                )}
-              </figure>
-            ))}
-          </div>
-        ) : (
-          <p className="mb-3 text-sm text-neutral-500">{t("job.noPhotos")}</p>
-        )}
-        {done ? null : (
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => cameraRef.current?.click()}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#FFF4E5] text-sm font-bold text-[#C56A00]"
-            >
-              <Camera size={18} />
-              {t("common.takePhoto")}
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => galleryRef.current?.click()}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-neutral-100 text-sm font-bold"
-            >
-              <ImagePlus size={18} />
-              {t("job.addPhotos")}
-            </button>
-          </div>
-        )}
-        <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFiles} />
-        <input ref={galleryRef} type="file" accept="image/*" multiple className="hidden" onChange={onFiles} />
-      </Section>
+      {job.type === "repair" ? (
+        <ResolutionSection
+          key={`${data.resolutionType ?? "none"}-${replacement?.serialNumber ?? ""}`}
+          data={data}
+          disabled={done || busy}
+          onSave={(body) => resolutionMut.mutate(body)}
+        />
+      ) : null}
 
       <section className="mt-4 rounded-2xl border border-neutral-200 bg-white p-5">
         <h2 className="text-sm font-bold tracking-wide text-neutral-500 uppercase">{t("job.cost")}</h2>
@@ -420,7 +442,7 @@ export function JobCompletePage() {
           <p className="text-sm font-semibold text-neutral-500">{t("job.alreadyDone")}</p>
           <Link
             to={`/app/my-jobs/${job.id}/receipt`}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#B439FD] px-4 text-sm font-bold text-white hover:bg-[#C45FFF]"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-[#7B00E0] px-6 text-[12.8px] font-bold text-white hover:bg-[#6500BD]"
           >
             <Printer size={16} />
             {t("detail.printReceipt")}
@@ -435,7 +457,7 @@ export function JobCompletePage() {
             type="button"
             disabled={busy || !canComplete}
             onClick={() => completeMut.mutate()}
-            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#B439FD] text-sm font-extrabold text-white disabled:opacity-50"
+            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#7B00E0] text-sm font-extrabold text-white disabled:opacity-50"
           >
             {completeMut.isPending ? <Spinner className="h-4 w-4" /> : null}
             {t("job.completeAmount", { amount: formatMoney(cost.chargedTotal) })}
@@ -443,6 +465,78 @@ export function JobCompletePage() {
         </div>
       )}
     </div>
+  );
+}
+
+function ResolutionSection({
+  data,
+  disabled,
+  onSave,
+}: {
+  data: JobWorkPayload;
+  disabled: boolean;
+  onSave: (body: { resolutionType: "repair" | "replace"; productId?: string; serialNumber?: string }) => void;
+}) {
+  const { t } = useTranslation();
+  const options = data.catalog.replacementProducts;
+  const [mode, setMode] = useState<"repair" | "replace">(data.resolutionType === "replace" ? "replace" : "repair");
+  const [productId, setProductId] = useState(data.replacement?.productId ?? options[0]?.id ?? data.job.productId);
+  const [serial, setSerial] = useState(data.replacement?.serialNumber ?? "");
+
+  function choose(next: "repair" | "replace") {
+    setMode(next);
+    // Switching back to a plain repair clears any recorded replacement.
+    if (next === "repair" && data.resolutionType === "replace") onSave({ resolutionType: "repair" });
+  }
+
+  return (
+    <Section title={t("job.resolution")} hint={t("job.resolutionHint")}>
+      <div className="grid grid-cols-2 gap-2">
+        {(["repair", "replace"] as const).map((kind) => (
+          <button
+            key={kind}
+            type="button"
+            disabled={disabled}
+            aria-pressed={mode === kind}
+            onClick={() => choose(kind)}
+            className={`min-h-12 rounded-2xl text-sm font-extrabold ring-1 disabled:opacity-60 ${
+              mode === kind ? "bg-[#F5EBFD] text-[#7B00E0] ring-[#7B00E0]" : "bg-neutral-50 text-neutral-700 ring-neutral-200"
+            }`}
+          >
+            {t(`resolution.${kind}`)}
+          </button>
+        ))}
+      </div>
+      {mode === "replace" ? (
+        <div className="mt-4 space-y-3 rounded-2xl bg-neutral-50 p-4">
+          <Field label={t("job.replacementProduct")}>
+            <select className={`${inputClass} bg-white`} value={productId} disabled={disabled} onChange={(event) => setProductId(event.target.value)}>
+              {options.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {localizedName(item)} · {item.sku}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={t("job.serialNumber")}>
+            <input className={inputClass} value={serial} disabled={disabled} onChange={(event) => setSerial(event.target.value)} />
+          </Field>
+          {data.replacement ? (
+            <p className="text-sm font-semibold text-emerald-700">
+              {t("job.replacementSaved", { product: localizedName(data.replacement), serial: data.replacement.serialNumber })}
+            </p>
+          ) : null}
+          <button
+            type="button"
+            disabled={disabled || !serial.trim() || !productId}
+            onClick={() => onSave({ resolutionType: "replace", productId, serialNumber: serial.trim() })}
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-[#7B00E0] text-[12.8px] font-extrabold text-white disabled:opacity-50"
+          >
+            {t("job.saveReplacement")}
+          </button>
+        </div>
+      ) : null}
+    </Section>
   );
 }
 

@@ -17,6 +17,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { StatCard, type StatAccent } from "../../components/StatCard";
 import { EmptyState } from "../../components/EmptyState";
 import { PageSkeleton } from "../../components/PageSkeleton";
 import { useStaffAuth } from "../auth/StaffAuthContext";
@@ -63,8 +64,8 @@ export function DashboardPage() {
 
   return (
     <div>
-      <p className="text-sm font-semibold text-[#B439FD]">{t("staffHome.welcome")}</p>
-      <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-black sm:text-3xl">{user?.name}</h1>
+      <p className="text-sm font-semibold text-[#7B00E0]">{t("staffHome.welcome")}</p>
+      <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{user?.name}</h1>
       <p className="mt-2 max-w-2xl text-sm text-gray-500">{full ? t("dashboard.intro") : t("dashboard.introShort")}</p>
 
       <div className="mt-5">
@@ -73,9 +74,9 @@ export function DashboardPage() {
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi label={t("reports.requests")} value={String(data.totals.requests)} />
-        <Kpi label={t("reports.paidRevenue")} value={formatMoney(data.totals.revenue)} accent="orange" />
+        <Kpi label={t("reports.paidRevenue")} value={formatMoney(data.totals.revenue)} accent="green" />
         <Kpi label={t("reports.profit")} value={formatMoney(data.totals.profit)} />
-        <Kpi label={t("reports.avgHours")} value={formatDurationHours(data.totals.avgResolutionHours)} />
+        <Kpi label={t("reports.avgHours")} value={formatDurationHours(data.totals.avgResolutionHours)} accent="orange" />
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -95,24 +96,28 @@ export function DashboardPage() {
         </ChartPanel>
 
         <ChartPanel title={t("dashboard.status")}>
-          <ResponsiveContainer>
-            <PieChart>
-              <Pie data={statuses} dataKey="count" nameKey="label" innerRadius={55} outerRadius={95} paddingAngle={2}>
-                {statuses.map((row, index) => (
-                  <Cell key={row.status} fill={STATUS_COLORS[index % STATUS_COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip content={<CountTooltip />} />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
+          {statuses.some((row) => row.count > 0) ? (
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie data={statuses} dataKey="count" nameKey="label" innerRadius={55} outerRadius={95} paddingAngle={2}>
+                  {statuses.map((row, index) => (
+                    <Cell key={row.status} fill={STATUS_COLORS[index % STATUS_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CountTooltip />} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="flex h-full items-center justify-center text-sm text-neutral-400">{t("reports.empty")}</p>
+          )}
         </ChartPanel>
       </div>
 
       {!full ? (
         <Link
           to="/app?view=full"
-          className="mt-5 inline-flex min-h-11 items-center rounded-xl bg-[#F3E8FF] px-4 text-sm font-bold text-[#B439FD]"
+          className="mt-5 inline-flex min-h-11 items-center rounded-xl bg-[#F5EBFD] px-4 text-sm font-bold text-[#7B00E0]"
         >
           {t("dashboard.viewFull")}
         </Link>
@@ -194,13 +199,6 @@ export function DashboardPage() {
   );
 }
 
-function Kpi({ label, value, accent = "purple" }: { label: string; value: string; accent?: "purple" | "orange" }) {
-  return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
-      <p className={`text-xs font-bold tracking-wide uppercase ${accent === "orange" ? "text-[#F6921E]" : "text-[#B439FD]"}`}>
-        {label}
-      </p>
-      <p className="mt-2 text-xl font-extrabold tracking-tight text-neutral-900">{value}</p>
-    </div>
-  );
+function Kpi({ label, value, accent = "purple" }: { label: string; value: string; accent?: StatAccent }) {
+  return <StatCard label={label} value={value} accent={accent} />;
 }

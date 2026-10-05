@@ -9,6 +9,7 @@ import { namedFromInput, namedSearch, serializeNamed } from "../lib/named.js";
 import { money } from "../lib/warranty.js";
 import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
 import { maybeAlertLowStock } from "../lib/stockAlerts.js";
+import { ensureCategories } from "../lib/categories.js";
 
 const namedFields = z.object({
   name: z.string().trim().optional(),
@@ -17,9 +18,13 @@ const namedFields = z.object({
   nameEn: z.string().trim().optional(),
 });
 
+const categoriesField = z
+  .array(z.string().trim().min(1))
+  .min(1, "Select at least one product category");
+
 const serviceSchema = namedFields.extend({
   price: z.coerce.number().nonnegative("Price cannot be negative"),
-  productCategory: z.string().trim().min(1, "Product category is required"),
+  productCategories: categoriesField,
 }).superRefine((data, ctx) => {
   if (!(data.name || data.nameUz || data.nameRu || data.nameEn)) {
     ctx.addIssue({ code: "custom", message: "Name is required", path: ["name"] });
@@ -28,7 +33,8 @@ const serviceSchema = namedFields.extend({
 
 const partSchema = namedFields.extend({
   price: z.coerce.number().nonnegative("Price cannot be negative"),
-  productCategory: z.string().trim().min(1, "Product category is required"),
+  costPrice: z.coerce.number().nonnegative("Cost price cannot be negative"),
+  productCategories: categoriesField,
   stockQuantity: z.coerce.number().int().min(0, "Stock cannot be negative"),
   lowStockThreshold: z.coerce.number().int().min(0, "Threshold cannot be negative").optional(),
 }).superRefine((data, ctx) => {
@@ -39,10 +45,11 @@ const partSchema = namedFields.extend({
 
 const servicePatchSchema = namedFields.extend({
   price: z.coerce.number().nonnegative("Price cannot be negative").optional(),
-  productCategory: z.string().trim().min(1, "Product category is required").optional(),
+  productCategories: categoriesField.optional(),
 });
 
 const partPatchSchema = servicePatchSchema.extend({
+  costPrice: z.coerce.number().nonnegative("Cost price cannot be negative").optional(),
   stockQuantity: z.coerce.number().int().min(0, "Stock cannot be negative").optional(),
   lowStockThreshold: z.coerce.number().int().min(0, "Threshold cannot be negative").optional(),
 });
@@ -53,19 +60,17 @@ catalogRouter.use(staffAuth, requireStaffRole("admin"));
 catalogRouter.get(
   "/categories",
   asyncHandler(async (_req, res) => {
-    const [products, services, parts] = await Promise.all([
-      prisma.product.findMany({ select: { category: true }, distinct: ["category"] }),
-      prisma.serviceCatalogItem.findMany({ select: { productCategory: true }, distinct: ["productCategory"] }),
-      prisma.sparePart.findMany({ select: { productCategory: true }, distinct: ["productCategory"] }),
-    ]);
-    const categories = [
-      ...new Set([
-        ...products.map((item) => item.category),
-        ...services.map((item) => item.productCategory),
-        ...parts.map((item) => item.productCategory),
-      ]),
-    ].sort((a, b) => a.localeCompare(b));
-    res.json({ categories });
+    const rows = await prisma.productCategory.findMany({ orderBy: { name: "asc" } });
+    res.json({ categories: rows.map((row) => row.name) });
+  }),
+);
+
+catalogRouter.post(
+  "/categories",
+  asyncHandler(async (req, res) => {
+    const body = parseBody(z.object({ name: z.string().trim().min(1, "Category name is required").max(60) }), req.body);
+    const [name] = await ensureCategories([body.name]);
+    res.status(201).json({ name });
   }),
 );
 
@@ -77,11 +82,11 @@ catalogRouter.get(
     const items = await prisma.serviceCatalogItem.findMany({
       where: {
         AND: [
-          category ? { productCategory: category } : {},
+          category ? { productCategories: { has: category } } : {},
           q ? namedSearch(q) : {},
         ],
       },
-      orderBy: [{ productCategory: "asc" }, { name: "asc" }],
+      orderBy: { name: "asc" },
       include: { _count: { select: { requestLines: true } } },
     });
     res.json({ services: items.map(serializeService) });
@@ -92,8 +97,9 @@ catalogRouter.post(
   "/services",
   asyncHandler(async (req, res) => {
     const body = parseBody(serviceSchema, req.body);
+    await ensureCategories(body.productCategories);
     const item = await prisma.serviceCatalogItem.create({
-      data: { ...namedFromInput(body), price: body.price, productCategory: body.productCategory },
+      data: { ...namedFromInput(body), price: body.price, productCategories: body.productCategories },
       include: { _count: { select: { requestLines: true } } },
     });
     res.status(201).json({ service: serializeService(item) });
@@ -104,6 +110,7 @@ catalogRouter.patch(
   "/services/:id",
   asyncHandler(async (req, res) => {
     const body = parseBody(servicePatchSchema, req.body);
+    if (body.productCategories) await ensureCategories(body.productCategories);
     try {
       const item = await prisma.serviceCatalogItem.update({
         where: { id: req.params.id },
@@ -112,7 +119,7 @@ catalogRouter.patch(
             ? namedFromInput(body)
             : {}),
           ...(body.price !== undefined ? { price: body.price } : {}),
-          ...(body.productCategory !== undefined ? { productCategory: body.productCategory } : {}),
+          ...(body.productCategories !== undefined ? { productCategories: body.productCategories } : {}),
         },
         include: { _count: { select: { requestLines: true } } },
       });
@@ -149,11 +156,11 @@ catalogRouter.get(
     const items = await prisma.sparePart.findMany({
       where: {
         AND: [
-          category ? { productCategory: category } : {},
+          category ? { productCategories: { has: category } } : {},
           q ? namedSearch(q) : {},
         ],
       },
-      orderBy: [{ productCategory: "asc" }, { name: "asc" }],
+      orderBy: { name: "asc" },
       include: { _count: { select: { requestLines: true } } },
     });
     res.json({ parts: items.map(serializePart) });
@@ -164,11 +171,13 @@ catalogRouter.post(
   "/parts",
   asyncHandler(async (req, res) => {
     const body = parseBody(partSchema, req.body);
+    await ensureCategories(body.productCategories);
     const item = await prisma.sparePart.create({
       data: {
         ...namedFromInput(body),
         price: body.price,
-        productCategory: body.productCategory,
+        costPrice: body.costPrice,
+        productCategories: body.productCategories,
         stockQuantity: body.stockQuantity,
         lowStockThreshold: body.lowStockThreshold ?? 3,
       },
@@ -182,6 +191,7 @@ catalogRouter.patch(
   "/parts/:id",
   asyncHandler(async (req, res) => {
     const body = parseBody(partPatchSchema, req.body);
+    if (body.productCategories) await ensureCategories(body.productCategories);
     try {
       const item = await prisma.sparePart.update({
         where: { id: req.params.id },
@@ -190,7 +200,8 @@ catalogRouter.patch(
             ? namedFromInput(body)
             : {}),
           ...(body.price !== undefined ? { price: body.price } : {}),
-          ...(body.productCategory !== undefined ? { productCategory: body.productCategory } : {}),
+          ...(body.costPrice !== undefined ? { costPrice: body.costPrice } : {}),
+          ...(body.productCategories !== undefined ? { productCategories: body.productCategories } : {}),
           ...(body.stockQuantity !== undefined ? { stockQuantity: body.stockQuantity } : {}),
           ...(body.lowStockThreshold !== undefined ? { lowStockThreshold: body.lowStockThreshold } : {}),
         },
@@ -229,7 +240,7 @@ function serializeService(item: {
   nameRu: string;
   nameEn: string;
   price: { toString(): string };
-  productCategory: string;
+  productCategories: string[];
   createdAt: Date;
   _count: { requestLines: number };
 }) {
@@ -237,7 +248,7 @@ function serializeService(item: {
     id: item.id,
     ...serializeNamed(item),
     price: money(item.price),
-    productCategory: item.productCategory,
+    productCategories: item.productCategories,
     createdAt: item.createdAt.toISOString(),
     usedCount: item._count.requestLines,
   };
@@ -250,7 +261,8 @@ function serializePart(item: {
   nameRu: string;
   nameEn: string;
   price: { toString(): string };
-  productCategory: string;
+  costPrice: { toString(): string };
+  productCategories: string[];
   stockQuantity: number;
   lowStockThreshold: number;
   createdAt: Date;
@@ -260,7 +272,8 @@ function serializePart(item: {
     id: item.id,
     ...serializeNamed(item),
     price: money(item.price),
-    productCategory: item.productCategory,
+    costPrice: money(item.costPrice),
+    productCategories: item.productCategories,
     stockQuantity: item.stockQuantity,
     lowStockThreshold: item.lowStockThreshold,
     lowStock: item.stockQuantity <= item.lowStockThreshold,

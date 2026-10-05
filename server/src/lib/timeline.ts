@@ -15,15 +15,17 @@ export type TimelineSource = {
   status: RequestStatus;
   createdAt: Date;
   receivedAt: Date | null;
+  assignedAt?: Date | null;
   acceptedAt: Date | null;
   arrivedAt: Date | null;
   completedAt: Date | null;
+  pickupConfirmedAt?: Date | null;
   pauses: PauseRecord[];
 };
 
 export type TimelineEvent = {
   key: string;
-  kind: "created" | "received" | "accepted" | "arrived" | "paused" | "resumed" | "completed";
+  kind: "created" | "received" | "assigned" | "accepted" | "arrived" | "paused" | "resumed" | "completed" | "picked_up";
   at: string;
   title: string;
   detail: string | null;
@@ -47,59 +49,19 @@ export function serializePauses(pauses: PauseRecord[]) {
 
 export function buildTimeline(request: TimelineSource): TimelineEvent[] {
   const events: TimelineEvent[] = [];
-  const receivedAt = request.receivedAt;
-  const mergeReceived = Boolean(receivedAt && closeInTime(request.createdAt, receivedAt));
-  const createdReceived = mergeReceived && request.type === "repair";
+  const simple = (
+    key: string,
+    kind: TimelineEvent["kind"],
+    at: Date,
+    title: string,
+    titleKey: string,
+    params: Record<string, unknown> | null = null,
+  ) => events.push({ key, kind, at: at.toISOString(), title, detail: null, titleKey, detailKey: null, params });
 
-  events.push({
-    key: "created",
-    kind: "created",
-    at: request.createdAt.toISOString(),
-    title: createdReceived ? "Created · received" : "Request created",
-    detail: null,
-    titleKey: createdReceived ? "timeline.createdReceived" : "timeline.created",
-    detailKey: null,
-    params: null,
-  });
-
-  if (receivedAt && !mergeReceived) {
-    events.push({
-      key: "received",
-      kind: "received",
-      at: receivedAt.toISOString(),
-      title: "Received",
-      detail: null,
-      titleKey: "timeline.received",
-      detailKey: null,
-      params: null,
-    });
-  }
-
-  if (request.acceptedAt) {
-    events.push({
-      key: "accepted",
-      kind: "accepted",
-      at: request.acceptedAt.toISOString(),
-      title: "Work started",
-      detail: null,
-      titleKey: "timeline.accepted",
-      detailKey: null,
-      params: null,
-    });
-  }
-
-  if (request.arrivedAt) {
-    events.push({
-      key: "arrived",
-      kind: "arrived",
-      at: request.arrivedAt.toISOString(),
-      title: "Arrived on site",
-      detail: null,
-      titleKey: "timeline.arrived",
-      detailKey: null,
-      params: null,
-    });
-  }
+  simple("created", "created", request.createdAt, "Request created", "timeline.created");
+  if (request.assignedAt) simple("assigned", "assigned", request.assignedAt, "Assigned to technician", "timeline.assigned");
+  if (request.acceptedAt) simple("accepted", "accepted", request.acceptedAt, "Work started", "timeline.accepted");
+  if (request.arrivedAt) simple("arrived", "arrived", request.arrivedAt, "Arrived on site", "timeline.arrived");
 
   for (const pause of serializePauses(request.pauses)) {
     const planned = formatDurationHours(pause.customTimerHours);
@@ -120,32 +82,11 @@ export function buildTimeline(request: TimelineSource): TimelineEvent[] {
         durationMs: pause.durationMs,
       },
     });
-    if (pause.resumedAt) {
-      events.push({
-        key: `resumed-${pause.id}`,
-        kind: "resumed",
-        at: pause.resumedAt,
-        title: "Resumed",
-        detail: null,
-        titleKey: "timeline.resumed",
-        detailKey: null,
-        params: null,
-      });
-    }
+    if (pause.resumedAt) simple(`resumed-${pause.id}`, "resumed", new Date(pause.resumedAt), "Resumed", "timeline.resumed");
   }
 
-  if (request.completedAt) {
-    events.push({
-      key: "completed",
-      kind: "completed",
-      at: request.completedAt.toISOString(),
-      title: completedTitle(request.status),
-      detail: null,
-      titleKey: completedKey(request.status),
-      detailKey: null,
-      params: { status: request.status },
-    });
-  }
+  if (request.completedAt) simple("completed", "completed", request.completedAt, "Completed", "timeline.completed");
+  if (request.pickupConfirmedAt) simple("picked_up", "picked_up", request.pickupConfirmedAt, "Picked up", "timeline.pickedUp");
 
   return events.sort((a, b) => {
     const diff = a.at.localeCompare(b.at);
@@ -154,31 +95,17 @@ export function buildTimeline(request: TimelineSource): TimelineEvent[] {
   });
 }
 
-function completedTitle(status: RequestStatus) {
-  if (status === "replaced") return "Replaced";
-  if (status === "closed") return "Closed";
-  return "Completed";
-}
-
-function completedKey(status: RequestStatus) {
-  if (status === "replaced") return "timeline.replaced";
-  if (status === "closed") return "timeline.closed";
-  return "timeline.completed";
-}
-
-function closeInTime(a: Date, b: Date) {
-  return Math.abs(a.getTime() - b.getTime()) < 2000;
-}
-
 function kindOrder(kind: TimelineEvent["kind"]) {
   const order: Record<TimelineEvent["kind"], number> = {
     created: 0,
     received: 1,
-    accepted: 2,
-    arrived: 3,
-    paused: 4,
-    resumed: 5,
-    completed: 6,
+    assigned: 2,
+    accepted: 3,
+    arrived: 4,
+    paused: 5,
+    resumed: 6,
+    completed: 7,
+    picked_up: 8,
   };
   return order[kind];
 }

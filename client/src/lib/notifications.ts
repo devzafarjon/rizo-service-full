@@ -3,16 +3,32 @@ import { formatRequestId } from "./format";
 import { localizedName } from "./localized";
 import type { PortalNotification, StaffAlert } from "./types";
 
+// Notifications written before the status model was simplified carry the old status names.
+const LEGACY_STATUS: Record<string, string> = {
+  scheduled: "new",
+  received: "new",
+  diagnosing: "in_progress",
+  awaiting_parts: "in_progress",
+  repairing: "in_progress",
+  ready_for_pickup: "completed",
+  replaced: "completed",
+  closed: "completed",
+};
+
 const STATUS_FROM_EN: Record<string, string> = {
+  New: "new",
   Scheduled: "scheduled",
   Received: "received",
   Diagnosing: "diagnosing",
   "Awaiting parts": "awaiting_parts",
   Repairing: "repairing",
   "In progress": "in_progress",
+  Paused: "paused",
   "Ready for pickup": "ready_for_pickup",
   Replaced: "replaced",
   Completed: "completed",
+  "Picked up": "picked_up",
+  Cancelled: "cancelled",
   Closed: "closed",
 };
 
@@ -53,7 +69,7 @@ export function notificationText(item: PortalNotification | StaffAlert, t: TFunc
   const typeKey = typeof item.params?.type === "string" ? item.params.type : inferred?.type;
   const statusKey = typeof item.params?.status === "string" ? item.params.status : inferred?.status;
   const type = typeKey ? t(`type.${typeKey}`) : "";
-  const status = statusKey ? t(`status.${statusKey}`) : "";
+  const status = statusKey ? t(`customerStatus.${LEGACY_STATUS[statusKey] ?? statusKey}`) : "";
   const displayId = typeof item.params?.displayId === "string" ? formatRequestId(item.params.displayId) : "";
   const count = item.params?.stockQuantity ?? item.params?.count;
   if (code) {

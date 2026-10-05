@@ -105,13 +105,13 @@ export function CustomersPage() {
     <div>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">{t("customers.title")}</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{t("customers.title")}</h1>
           <p className="mt-1 text-sm text-neutral-500">{t("customers.intro")}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
             to="/app/customers/duplicates"
-            className="inline-flex h-11 items-center rounded-xl bg-neutral-100 px-4 text-sm font-bold text-[#B439FD]"
+            className="inline-flex h-11 items-center rounded-xl bg-neutral-100 px-4 text-sm font-bold text-[#7B00E0]"
           >
             {t("customers.findDuplicates")}
           </Link>
@@ -123,7 +123,7 @@ export function CustomersPage() {
               setExisting(null);
               setFormOpen(true);
             }}
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#B439FD] px-4 text-sm font-bold text-white hover:bg-[#C45FFF]"
+            className="inline-flex h-12 items-center gap-2 rounded-lg bg-[#7B00E0] px-6 text-[12.8px] font-bold text-white hover:bg-[#6500BD]"
           >
             <Plus size={16} />
             {t("customers.new")}
@@ -159,7 +159,7 @@ export function CustomersPage() {
             {customers.map((customer) => (
               <tr key={customer.id} className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50">
                 <Td>
-                  <Link to={`/app/customers/${customer.id}`} className="font-semibold text-[#B439FD] hover:underline">
+                  <Link to={`/app/customers/${customer.id}`} className="font-semibold text-[#7B00E0] hover:underline">
                     {customer.name}
                   </Link>
                 </Td>
@@ -170,7 +170,7 @@ export function CustomersPage() {
                 <Td className="text-right">
                   <button
                     type="button"
-                    className="mr-2 text-sm font-semibold text-neutral-600 hover:text-[#B439FD]"
+                    className="mr-2 text-sm font-semibold text-neutral-600 hover:text-[#7B00E0]"
                     onClick={() => {
                       setEditing(customer);
                       setFormError(null);
@@ -225,11 +225,11 @@ export function CustomersPage() {
 
       <Modal open={Boolean(tempPassword)} onClose={() => setTempPassword(null)} title={t("customers.passwordCreated")}>
         <p className="text-sm text-neutral-600">{t("customers.passwordShare")}</p>
-        <p className="mt-4 rounded-xl bg-[#F3E8FF] px-4 py-3 font-mono text-lg font-bold text-[#B439FD]">{tempPassword}</p>
+        <p className="mt-4 rounded-xl bg-[#F5EBFD] px-4 py-3 font-mono text-lg font-bold text-[#7B00E0]">{tempPassword}</p>
         <div className="mt-6 flex justify-end">
           <button
             type="button"
-            className="h-11 rounded-xl bg-[#B439FD] px-4 text-sm font-bold text-white"
+            className="h-12 rounded-lg bg-[#7B00E0] px-6 text-[12.8px] font-bold text-white"
             onClick={() => setTempPassword(null)}
           >
             {t("common.done")}

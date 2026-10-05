@@ -12,6 +12,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { StatCard, type StatAccent } from "../../components/StatCard";
 import { EmptyState } from "../../components/EmptyState";
 import { inputClass } from "../../components/Field";
 import { PageSkeleton } from "../../components/PageSkeleton";
@@ -42,9 +43,9 @@ export function ReportsIndexPage() {
   const { t } = useTranslation();
   return (
     <div>
-      <h1 className="text-2xl font-extrabold tracking-tight">{t("reports.title")}</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{t("reports.title")}</h1>
       <p className="mt-1 max-w-2xl text-sm text-neutral-500">{t("reports.hubIntro")}</p>
-      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {REPORT_LINKS.map((item) => (
           <Link
             key={item.to}
@@ -240,9 +241,9 @@ export function ExpensesReportPage() {
       }
     >
       <div className="mb-4 grid gap-4 sm:grid-cols-3">
-        <Summary label={t("reports.partsCost")} value={formatMoney(data.totals.parts)} />
-        <Summary label={t("reports.extras")} value={formatMoney(data.totals.extras)} />
-        <Summary label={t("reports.running")} value={formatMoney(data.totals.running)} />
+        <Summary label={t("reports.partsCost")} value={formatMoney(data.totals.parts)} accent="red" />
+        <Summary label={t("reports.extras")} value={formatMoney(data.totals.extras)} accent="red" />
+        <Summary label={t("reports.running")} value={formatMoney(data.totals.running)} accent="orange" />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <ReportPanel title={t("reports.byTechnician")}>
@@ -328,10 +329,10 @@ export function ProfitReportPage() {
       }
     >
       <div className="mb-4 grid gap-4 sm:grid-cols-4">
-        <Summary label={t("reports.paidRevenue")} value={formatMoney(data.totals.revenue)} />
-        <Summary label={t("reports.partsCost")} value={formatMoney(data.totals.parts)} />
-        <Summary label={t("reports.extras")} value={formatMoney(data.totals.extras)} />
-        <Summary label={t("reports.profit")} value={formatMoney(data.totals.profit)} />
+        <Summary label={t("reports.paidRevenue")} value={formatMoney(data.totals.revenue)} accent="green" />
+        <Summary label={t("reports.partsCost")} value={formatMoney(data.totals.parts)} accent="red" />
+        <Summary label={t("reports.extras")} value={formatMoney(data.totals.extras)} accent="red" />
+        <Summary label={t("reports.profit")} value={formatMoney(data.totals.profit)} accent="purple" />
       </div>
       <ChartPanel title={t("reports.profitTrend")}>
         <ResponsiveContainer>
@@ -443,10 +444,10 @@ export function WarrantyReportPage() {
       }
     >
       <div className="mb-4 grid gap-4 sm:grid-cols-4">
-        <Summary label={t("reports.inWarranty")} value={String(data.totals.freeCount)} />
-        <Summary label={t("reports.freeValue")} value={formatMoney(data.totals.freeValue)} />
-        <Summary label={t("reports.paid")} value={String(data.totals.paidCount)} />
-        <Summary label={t("reports.paidValue")} value={formatMoney(data.totals.paidValue)} />
+        <Summary label={t("reports.inWarranty")} value={String(data.totals.freeCount)} accent="purple" />
+        <Summary label={t("reports.freeValue")} value={formatMoney(data.totals.freeValue)} accent="orange" />
+        <Summary label={t("reports.paid")} value={String(data.totals.paidCount)} accent="green" />
+        <Summary label={t("reports.paidValue")} value={formatMoney(data.totals.paidValue)} accent="green" />
       </div>
       <ChartPanel title={t("reports.warrantyTrend")}>
         <ResponsiveContainer>
@@ -528,11 +529,6 @@ function withRunning<T extends { total: number }>(rows: T[]) {
   });
 }
 
-function Summary({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
-      <p className="text-xs font-bold tracking-wide text-[#B439FD] uppercase">{label}</p>
-      <p className="mt-2 text-xl font-extrabold text-neutral-900">{value}</p>
-    </div>
-  );
+function Summary({ label, value, accent }: { label: string; value: string; accent?: StatAccent }) {
+  return <StatCard label={label} value={value} accent={accent} />;
 }

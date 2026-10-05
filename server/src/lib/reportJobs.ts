@@ -34,6 +34,7 @@ export type ReportJob = {
     sparePartId: string;
     quantity: number;
     lineTotal: number;
+    costTotal: number;
     sparePart: { id: string; name: string; nameUz: string; nameRu: string; nameEn: string };
   }>;
   extrasTotal: number;
@@ -60,7 +61,8 @@ export function jobRevenue(job: ReportJob) {
 }
 
 export function jobPartsCost(job: ReportJob) {
-  return job.partLines.reduce((sum, line) => sum + line.lineTotal, 0);
+  // Cost to RIZO (what the part cost when used), not what the customer paid.
+  return job.partLines.reduce((sum, line) => sum + line.costTotal, 0);
 }
 
 export function jobCost(job: ReportJob) {
@@ -74,7 +76,7 @@ export function jobProfit(job: ReportJob) {
 
 export function resolutionHours(job: ReportJob) {
   if (!job.completedAt || !isDoneStatus(job.status)) return null;
-  const start = job.receivedAt ?? job.createdAt;
+  const start = job.createdAt;
   const hours = (job.completedAt.getTime() - start.getTime()) / 3_600_000;
   return hours >= 0 ? hours : null;
 }
@@ -106,6 +108,7 @@ export async function loadReportJobs(window: ReportWindow, productId?: string): 
           sparePartId: true,
           quantity: true,
           priceAtTime: true,
+          costAtTime: true,
           sparePart: { select: { id: true, name: true, nameUz: true, nameRu: true, nameEn: true } },
         },
       },
@@ -135,6 +138,7 @@ export async function loadReportJobs(window: ReportWindow, productId?: string): 
       sparePartId: line.sparePartId,
       quantity: line.quantity,
       lineTotal: money(line.priceAtTime) * line.quantity,
+      costTotal: money(line.costAtTime) * line.quantity,
       sparePart: line.sparePart,
     })),
     extrasTotal: row.extraExpenses.reduce((sum, line) => sum + money(line.price), 0),

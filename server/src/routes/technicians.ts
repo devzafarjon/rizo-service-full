@@ -10,6 +10,7 @@ import { prisma } from "../lib/prisma.js";
 import { parseDateOnly, toDateOnly } from "../lib/warranty.js";
 import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
 import { staffActor, writeAudit } from "../lib/audit.js";
+import { forgetStaffActiveCache } from "../middleware/staffAuth.js";
 
 const TYPES: TechnicianType[] = ["service_center", "mobile"];
 
@@ -24,6 +25,7 @@ techniciansRouter.get(
     const technicians = await prisma.staffUser.findMany({
       where: {
         role: "technician",
+        ...(req.query.includeInactive === "1" ? {} : { isActive: true }),
         ...(TYPES.includes(type as TechnicianType) ? { technicianType: type as TechnicianType } : {}),
         ...(available === "true" ? { isAvailable: true } : {}),
         ...(available === "false" ? { isAvailable: false } : {}),
@@ -35,6 +37,7 @@ techniciansRouter.get(
         phone: true,
         technicianType: true,
         isAvailable: true,
+        isActive: true,
       },
     });
     const workload = await technicianWorkload(technicians.map((tech) => tech.id));
@@ -58,7 +61,7 @@ techniciansRouter.get(
     const from = typeof req.query.from === "string" ? parseDateOnly(req.query.from) : parseDateOnly(tashkentCalendarDate(new Date()));
     const to = typeof req.query.to === "string" ? parseDateOnly(req.query.to) : new Date(from.getTime() + 13 * 86400000);
     const technicians = await prisma.staffUser.findMany({
-      where: { role: "technician" },
+      where: { role: "technician", isActive: true },
       orderBy: { name: "asc" },
       select: { id: true, name: true, technicianType: true, isAvailable: true },
     });
@@ -132,17 +135,33 @@ techniciansRouter.patch(
         role: z.enum(["admin", "technician"]).optional(),
         technicianType: z.enum(["service_center", "mobile"]).optional().nullable(),
         isAvailable: z.boolean().optional(),
+        isActive: z.boolean().optional(),
       }),
       req.body,
     );
+    if (body.isActive === false && tech.id === req.staff!.sub) {
+      throw new HttpError(400, "You cannot deactivate your own account");
+    }
     const updated = await prisma.staffUser.update({
       where: { id: tech.id },
       data: {
         ...(body.role ? { role: body.role } : {}),
         ...(body.technicianType !== undefined ? { technicianType: body.technicianType } : {}),
         ...(body.isAvailable !== undefined ? { isAvailable: body.isAvailable } : {}),
+        ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
       },
     });
+    forgetStaffActiveCache(tech.id);
+    if (body.isActive !== undefined && body.isActive !== tech.isActive) {
+      await writeAudit({
+        actor: staffActor(req.staff),
+        action: "staff.active",
+        entityType: "StaffUser",
+        entityId: tech.id,
+        oldValue: { isActive: tech.isActive },
+        newValue: { isActive: body.isActive },
+      });
+    }
     if (body.role && body.role !== tech.role) {
       await writeAudit({
         actor: staffActor(req.staff),
@@ -161,6 +180,7 @@ techniciansRouter.patch(
         role: updated.role,
         technicianType: updated.technicianType,
         isAvailable: updated.isAvailable,
+        isActive: updated.isActive,
       },
     });
   }),

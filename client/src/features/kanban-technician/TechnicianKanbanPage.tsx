@@ -11,25 +11,24 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, GripVertical, MapPin, Navigation, Pause, Play, Printer, QrCode, Store } from "lucide-react";
-import { useEffect, useMemo, useState, type FormEvent, type HTMLAttributes, type ReactNode } from "react";
+import { CalendarDays, CheckCheck, GripVertical, MapPin, Navigation, Pause, Play, Printer, QrCode, Store } from "lucide-react";
+import { useMemo, useState, type HTMLAttributes, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import { TypeBadge } from "../../components/Badges";
 import { OverflowLink, OverflowMenu } from "../../components/OverflowMenu";
-import { Field, inputClass, textareaClass } from "../../components/Field";
-import { Modal } from "../../components/Modal";
+import { PauseDialog } from "../../components/PauseDialog";
 import { PageSkeleton } from "../../components/PageSkeleton";
 import { useToast } from "../../components/toast";
 import { useStaffAuth } from "../auth/StaffAuthContext";
 import { api, apiErrorMessage } from "../../lib/api";
-import { formatPhone, formatRequestId, mapsUrl } from "../../lib/format";
+import { formatPhone, formatRequestId, formatStamp, mapsUrl } from "../../lib/format";
 import { localizedName } from "../../lib/localized";
-import { TIMER_TONE_CLASS, formatCountdown, timerTone } from "../../lib/timer";
+import { JobTimerChip } from "../../components/JobTimer";
+import { useNow } from "../../lib/useNow";
 import type { TechColumn, TechJob } from "../../lib/types";
 
 const COLUMNS: TechColumn[] = ["new", "in_progress", "paused", "completed"];
-const PAUSE_PRESETS = [1, 4, 8, 24];
 
 export function TechnicianKanbanPage() {
   const { t } = useTranslation();
@@ -100,6 +99,16 @@ export function TechnicianKanbanPage() {
     },
   });
 
+  const arrive = useMutation({
+    mutationFn: (id: string) => api(`/api/staff/my-jobs/${id}/arrived`, { method: "POST", token }),
+    onSuccess: () => notify(t("tech.arrivedSaved")),
+    onError: (error) => notify(apiErrorMessage(error, t), "error"),
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["staff", "my-jobs"] });
+      await queryClient.invalidateQueries({ queryKey: ["staff", "requests"] });
+    },
+  });
+
   const jobs = board.data?.jobs ?? [];
   const byColumn = useMemo(() => {
     const grouped: Record<TechColumn, TechJob[]> = {
@@ -162,7 +171,7 @@ export function TechnicianKanbanPage() {
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-extrabold tracking-tight">{t("tech.title")}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{t("tech.title")}</h1>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
               {t("common.live")}
@@ -196,8 +205,9 @@ export function TechnicianKanbanPage() {
               column={column}
               jobs={byColumn[column]}
               now={now}
-              busyId={move.isPending ? move.variables?.id : null}
+              busyId={move.isPending ? move.variables?.id : arrive.isPending ? arrive.variables : null}
               onMove={moveJob}
+              onArrived={(job) => arrive.mutate(job.id)}
             />
           ))}
         </div>
@@ -205,7 +215,7 @@ export function TechnicianKanbanPage() {
       </DndContext>
 
       <PauseDialog
-        job={pauseJob}
+        name={pauseJob?.customer.name ?? null}
         busy={move.isPending}
         onClose={() => setPauseJob(null)}
         onSubmit={(pauseHours, pauseReason) => {
@@ -226,19 +236,21 @@ function TechColumnView({
   now,
   busyId,
   onMove,
+  onArrived,
 }: {
   column: TechColumn;
   jobs: TechJob[];
   now: number;
   busyId?: string | null;
   onMove: (job: TechJob, column: TechColumn) => void;
+  onArrived: (job: TechJob) => void;
 }) {
   const { t } = useTranslation();
   const { setNodeRef, isOver } = useDroppable({ id: `column:${column}` });
   return (
     <section
       ref={setNodeRef}
-      className={`flex h-[calc(100dvh-12.5rem)] w-[min(85vw,20.5rem)] shrink-0 flex-col rounded-2xl bg-neutral-200/70 ${isOver ? "ring-2 ring-[#B439FD]" : ""}`}
+      className={`flex h-[calc(100dvh-12.5rem)] w-[min(85vw,20.5rem)] shrink-0 flex-col rounded-2xl bg-neutral-200/70 ${isOver ? "ring-2 ring-[#7B00E0]" : ""}`}
     >
       <header className="flex items-center justify-between px-3 py-3">
         <h2 className="text-sm font-extrabold text-neutral-800">{t(`techColumn.${column}`)}</h2>
@@ -247,7 +259,7 @@ function TechColumnView({
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-2 pb-3">
         {jobs.length === 0 ? <p className="px-1 py-8 text-center text-sm text-neutral-400">{t("tech.noJobs")}</p> : null}
         {jobs.map((job) => (
-          <DraggableJobCard key={job.id} job={job} now={now} busy={busyId === job.id} onMove={onMove} />
+          <DraggableJobCard key={job.id} job={job} now={now} busy={busyId === job.id} onMove={onMove} onArrived={onArrived} />
         ))}
       </div>
     </section>
@@ -259,11 +271,13 @@ function DraggableJobCard({
   now,
   busy,
   onMove,
+  onArrived,
 }: {
   job: TechJob;
   now: number;
   busy: boolean;
   onMove: (job: TechJob, column: TechColumn) => void;
+  onArrived: (job: TechJob) => void;
 }) {
   const disabled = job.column === "completed";
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -278,6 +292,7 @@ function DraggableJobCard({
         now={now}
         busy={busy}
         onMove={onMove}
+        onArrived={onArrived}
         handleProps={disabled ? undefined : { ...listeners, ...attributes }}
       />
     </div>
@@ -290,6 +305,7 @@ function JobCard({
   overlay = false,
   busy = false,
   onMove,
+  onArrived,
   handleProps,
 }: {
   job: TechJob;
@@ -297,11 +313,11 @@ function JobCard({
   overlay?: boolean;
   busy?: boolean;
   onMove?: (job: TechJob, column: TechColumn) => void;
+  onArrived?: (job: TechJob) => void;
   handleProps?: HTMLAttributes<HTMLButtonElement>;
 }) {
   const { t } = useTranslation();
   const location = job.customerLocation;
-  const tone = job.timer ? timerTone(job.timer.startsAt, job.timer.durationMs, now) : null;
 
   return (
     <article className={`rounded-2xl border border-neutral-200 bg-white p-3 shadow-sm ${overlay ? "rotate-1 shadow-lg" : ""}`}>
@@ -321,9 +337,9 @@ function JobCard({
             <p className="truncate text-base font-extrabold text-neutral-900">{job.customer.name}</p>
             <div className="flex shrink-0 items-center gap-0.5">
               {job.locationType === "on_site" ? (
-                <MapPin size={18} className="text-[#F6921E]" aria-label={t("location.on_site")} />
+                <MapPin size={18} className="text-[#F7941E]" aria-label={t("location.on_site")} />
               ) : (
-                <Store size={18} className="text-[#B439FD]" aria-label={t("location.in_shop")} />
+                <Store size={18} className="text-[#7B00E0]" aria-label={t("location.in_shop")} />
               )}
               {!overlay ? (
                 <OverflowMenu label={t("tech.moreActions")}>
@@ -343,7 +359,7 @@ function JobCard({
           </div>
           <p className="mt-0.5 truncate text-sm text-neutral-500">{localizedName(job.product)}</p>
           <p className="mt-0.5 font-mono text-xs font-semibold text-neutral-400">{formatRequestId(job.displayId)}</p>
-          <a href={`tel:+${job.customer.phone.replace(/\D/g, "")}`} className="mt-1 inline-block text-sm font-semibold text-[#B439FD]">
+          <a href={`tel:+${job.customer.phone.replace(/\D/g, "")}`} className="mt-1 inline-block text-sm font-semibold text-[#7B00E0]">
             {formatPhone(job.customer.phone)}
           </a>
           <div className="mt-2">
@@ -352,10 +368,10 @@ function JobCard({
         </div>
       </div>
 
-      {job.timer && tone ? (
-        <p className={`mt-3 rounded-xl px-3 py-2 text-center text-sm font-extrabold tabular-nums ${TIMER_TONE_CLASS[tone]}`}>
-          {formatCountdown(job.timer.startsAt, job.timer.durationMs, now)}
-        </p>
+      {job.timer ? (
+        <div className="mt-3">
+          <JobTimerChip timer={job.timer} now={now} />
+        </div>
       ) : null}
 
       {job.activePause ? (
@@ -374,10 +390,29 @@ function JobCard({
         </a>
       ) : null}
 
+      {!overlay && onArrived && job.locationType === "on_site" && job.column !== "completed" ? (
+        job.arrivedAt ? (
+          <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700">
+            <CheckCheck size={14} />
+            {t("tech.arrivedAt", { time: formatStamp(job.arrivedAt) })}
+          </p>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onArrived(job)}
+            disabled={busy}
+            className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-neutral-100 text-sm font-bold text-neutral-800 hover:bg-neutral-200 disabled:opacity-50"
+          >
+            <CheckCheck size={16} />
+            {t("tech.arrived")}
+          </button>
+        )
+      ) : null}
+
       {!overlay && job.column === "completed" ? (
         <Link
           to={`/app/my-jobs/${job.id}/receipt`}
-          className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#F3E8FF] text-sm font-bold text-[#B439FD]"
+          className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#F5EBFD] text-sm font-bold text-[#7B00E0]"
         >
           <Printer size={16} />
           {t("detail.printReceipt")}
@@ -436,113 +471,10 @@ function ActionButton({
       disabled={disabled}
       className={`inline-flex min-h-12 items-center justify-center gap-1.5 rounded-xl text-sm font-extrabold disabled:opacity-50 ${
         wide ? "col-span-2" : ""
-      } ${primary ? "bg-[#B439FD] text-white hover:bg-[#C45FFF]" : "bg-neutral-100 text-neutral-800 hover:bg-neutral-200"}`}
+      } ${primary ? "bg-[#7B00E0] text-white hover:bg-[#6500BD]" : "bg-neutral-100 text-neutral-800 hover:bg-neutral-200"}`}
     >
       {icon}
       {label}
     </button>
   );
-}
-
-function PauseDialog({
-  job,
-  busy,
-  onClose,
-  onSubmit,
-}: {
-  job: TechJob | null;
-  busy: boolean;
-  onClose: () => void;
-  onSubmit: (hours: number, reason: string) => void;
-}) {
-  const { t } = useTranslation();
-  const [hours, setHours] = useState("4");
-  const [reason, setReason] = useState("");
-
-  useEffect(() => {
-    if (job) {
-      setHours("4");
-      setReason("");
-    }
-  }, [job]);
-
-  function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    const parsed = Number(hours);
-    const trimmed = reason.trim();
-    if (!Number.isFinite(parsed) || parsed <= 0) return;
-    if (!trimmed) return;
-    onSubmit(parsed, trimmed);
-  }
-
-  return (
-    <Modal open={Boolean(job)} onClose={onClose} title={t("tech.pauseTitle")}>
-      <form className="space-y-4" onSubmit={handleSubmit}>
-        <p className="text-sm text-neutral-500">
-          {job ? t("tech.pauseHint", { name: job.customer.name }) : null}
-        </p>
-        <Field label={t("tech.pauseHours")} hint={t("tech.pauseHoursHint")}>
-          <input
-            className={inputClass}
-            type="number"
-            min={0.25}
-            step={0.25}
-            max={336}
-            value={hours}
-            onChange={(event) => setHours(event.target.value)}
-            required
-          />
-        </Field>
-        <div className="flex flex-wrap gap-2">
-          {PAUSE_PRESETS.map((preset) => (
-            <button
-              key={preset}
-              type="button"
-              onClick={() => setHours(String(preset))}
-              className={`h-10 rounded-full px-3 text-sm font-bold ${
-                hours === String(preset) ? "bg-[#B439FD] text-white" : "bg-neutral-100 text-neutral-700"
-              }`}
-            >
-              {t("tech.hoursShort", { count: preset })}
-            </button>
-          ))}
-        </div>
-        <Field label={t("tech.pauseReason")} hint={t("tech.pauseReasonHint")}>
-          <textarea
-            className={textareaClass}
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-            placeholder={t("tech.pauseReasonPlaceholder")}
-            required
-          />
-        </Field>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-neutral-100 text-sm font-bold"
-          >
-            {t("common.cancel")}
-          </button>
-          <button
-            type="submit"
-            disabled={busy || !reason.trim() || Number(hours) <= 0}
-            className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-[#B439FD] text-sm font-extrabold text-white disabled:opacity-50"
-          >
-            {t("tech.pauseSubmit")}
-          </button>
-        </div>
-      </form>
-    </Modal>
-  );
-}
-
-function useNow(enabled: boolean) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!enabled) return;
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
-  }, [enabled]);
-  return now;
 }

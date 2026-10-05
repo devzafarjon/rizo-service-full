@@ -139,7 +139,7 @@ export function PortalNewRequestPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold tracking-tight">{t("portal.newTitle")}</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{t("portal.newTitle")}</h1>
       <p className="mt-1 text-sm text-neutral-500">{t("portal.newIntro")}</p>
 
       <div className="mt-5">
@@ -150,7 +150,7 @@ export function PortalNewRequestPage() {
           {Array.from({ length: STEPS }, (_, index) => (
             <span
               key={index}
-              className={`h-1.5 flex-1 rounded-full ${index < step ? "bg-[#B439FD]" : "bg-neutral-200"}`}
+              className={`h-1.5 flex-1 rounded-full ${index < step ? "bg-[#7B00E0]" : "bg-neutral-200"}`}
             />
           ))}
         </div>
@@ -165,9 +165,11 @@ export function PortalNewRequestPage() {
                 <button
                   key={item}
                   type="button"
-                  onClick={() => setType(item)}
+                  onClick={() => {
+                    setType(item);
+                  }}
                   className={`min-h-14 rounded-2xl px-4 py-3 text-left ring-1 ${
-                    type === item ? "bg-[#F3E8FF] ring-[#B439FD]" : "bg-white ring-neutral-200"
+                    type === item ? "bg-[#F5EBFD] ring-[#7B00E0]" : "bg-white ring-neutral-200"
                   }`}
                 >
                   <p className="font-extrabold">{t(`type.${item}`)}</p>
@@ -185,7 +187,7 @@ export function PortalNewRequestPage() {
                   setProductId("");
                 }}
                 className={`mb-2 min-h-12 w-full rounded-2xl px-4 py-3 text-left text-sm font-bold ring-1 ${
-                  !useCatalog ? "bg-[#F3E8FF] ring-[#B439FD]" : "bg-white ring-neutral-200"
+                  !useCatalog ? "bg-[#F5EBFD] ring-[#7B00E0]" : "bg-white ring-neutral-200"
                 }`}
               >
                 {t("portal.selectPurchase")}
@@ -201,7 +203,7 @@ export function PortalNewRequestPage() {
                         type="button"
                         onClick={() => setSaleId(sale.id)}
                         className={`w-full rounded-2xl px-4 py-3 text-left ring-1 ${
-                          saleId === sale.id ? "bg-[#F3E8FF] ring-[#B439FD]" : "bg-white ring-neutral-200"
+                          saleId === sale.id ? "bg-[#F5EBFD] ring-[#7B00E0]" : "bg-white ring-neutral-200"
                         }`}
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -228,7 +230,7 @@ export function PortalNewRequestPage() {
                   setSaleId("");
                 }}
                 className={`min-h-12 w-full rounded-2xl px-4 py-3 text-left text-sm font-bold ring-1 ${
-                  useCatalog ? "bg-[#F3E8FF] ring-[#B439FD]" : "bg-white ring-neutral-200"
+                  useCatalog ? "bg-[#F5EBFD] ring-[#7B00E0]" : "bg-white ring-neutral-200"
                 }`}
               >
                 {t("portal.otherProduct")}
@@ -283,7 +285,7 @@ export function PortalNewRequestPage() {
                     type="button"
                     onClick={() => setDefectType("failed_during_use")}
                     className={`min-h-14 rounded-2xl px-3 py-3 text-sm font-bold ring-1 ${
-                      defectType === "failed_during_use" ? "bg-[#F3E8FF] ring-[#B439FD]" : "bg-white ring-neutral-200"
+                      defectType === "failed_during_use" ? "bg-[#F5EBFD] ring-[#7B00E0]" : "bg-white ring-neutral-200"
                     }`}
                   >
                     {t("defect.failed_during_use")}
@@ -292,7 +294,7 @@ export function PortalNewRequestPage() {
                     type="button"
                     onClick={() => setDefectType("dead_on_arrival")}
                     className={`min-h-14 rounded-2xl px-3 py-3 text-sm font-bold ring-1 ${
-                      defectType === "dead_on_arrival" ? "bg-[#F3E8FF] ring-[#B439FD]" : "bg-white ring-neutral-200"
+                      defectType === "dead_on_arrival" ? "bg-[#F5EBFD] ring-[#7B00E0]" : "bg-white ring-neutral-200"
                     }`}
                   >
                     {t("defect.dead_on_arrival")}
@@ -354,26 +356,26 @@ export function PortalNewRequestPage() {
           <>
             <div>
               <p className="mb-2 text-sm font-semibold text-neutral-700">{t("portal.where")}</p>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setLocationType("on_site")}
-                  className={`min-h-14 rounded-2xl px-3 py-3 text-sm font-bold ring-1 ${
-                    locationType === "on_site" ? "bg-[#FFF4E5] ring-[#F6921E]" : "bg-white ring-neutral-200"
-                  }`}
-                >
-                  <MapPin size={16} className="mb-1 inline" /> {t("location.on_site")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLocationType("in_shop")}
-                  className={`min-h-14 rounded-2xl px-3 py-3 text-sm font-bold ring-1 ${
-                    locationType === "in_shop" ? "bg-[#F3E8FF] ring-[#B439FD]" : "bg-white ring-neutral-200"
-                  }`}
-                >
-                  <Store size={16} className="mb-1 inline" /> {t("location.in_shop")}
-                </button>
-              </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setLocationType("on_site")}
+                    className={`min-h-14 rounded-2xl px-3 py-3 text-sm font-bold ring-1 ${
+                      locationType === "on_site" ? "bg-[#FFF4E5] ring-[#F7941E]" : "bg-white ring-neutral-200"
+                    }`}
+                  >
+                    <MapPin size={16} className="mb-1 inline" /> {t("location.on_site")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLocationType("in_shop")}
+                    className={`min-h-14 rounded-2xl px-3 py-3 text-sm font-bold ring-1 ${
+                      locationType === "in_shop" ? "bg-[#F5EBFD] ring-[#7B00E0]" : "bg-white ring-neutral-200"
+                    }`}
+                  >
+                    <Store size={16} className="mb-1 inline" /> {t("location.in_shop")}
+                  </button>
+                </div>
             </div>
 
             {locationType === "on_site" ? (
@@ -442,7 +444,7 @@ export function PortalNewRequestPage() {
           <button
             type="submit"
             disabled={create.isPending || !canContinue()}
-            className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-[#B439FD] text-sm font-extrabold text-white disabled:opacity-50"
+            className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-[#7B00E0] text-sm font-extrabold text-white disabled:opacity-50"
           >
             {create.isPending ? <Spinner className="h-4 w-4" /> : null}
             {step < STEPS ? t("common.next") : t("portal.submit")}

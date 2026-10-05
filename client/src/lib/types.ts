@@ -2,17 +2,9 @@ export type StaffRole = "admin" | "technician";
 export type TechnicianType = "service_center" | "mobile";
 export type WarrantyStatus = "in_warranty" | "expired" | "not_applicable";
 export type ServiceType = "installation" | "repair";
-export type RequestStatus =
-  | "scheduled"
-  | "in_progress"
-  | "completed"
-  | "received"
-  | "diagnosing"
-  | "awaiting_parts"
-  | "repairing"
-  | "ready_for_pickup"
-  | "replaced"
-  | "closed";
+export type RequestStatus = "new" | "in_progress" | "paused" | "completed" | "picked_up" | "cancelled";
+export type ResolutionType = "repair" | "replace";
+export type PickupConfirmationType = "tap" | "signature";
 export type Priority = "low" | "medium" | "high" | "urgent";
 export type LocationType = "in_shop" | "on_site";
 export type PaymentStatus = "not_required" | "pending" | "paid";
@@ -33,6 +25,7 @@ export type StaffUser = {
   role: StaffRole;
   technicianType: TechnicianType | null;
   isAvailable: boolean;
+  isActive?: boolean;
   locale: AppLocale;
 };
 
@@ -68,7 +61,7 @@ export type Product = Named & {
 export type CatalogService = Named & {
   id: string;
   price: number;
-  productCategory: string;
+  productCategories: string[];
   createdAt: string;
   usedCount: number;
 };
@@ -76,7 +69,8 @@ export type CatalogService = Named & {
 export type SparePart = Named & {
   id: string;
   price: number;
-  productCategory: string;
+  costPrice: number;
+  productCategories: string[];
   stockQuantity: number;
   lowStockThreshold: number;
   lowStock?: boolean;
@@ -93,6 +87,7 @@ export type Sale = {
   pricePaid: number;
   warrantyMonths: number;
   warrantyExpiry: string;
+  installationDate?: string | null;
   warrantyStatus: WarrantyStatus;
   invoiceNumber: string;
   createdAt: string;
@@ -161,6 +156,7 @@ export type ServiceRequest = {
   productId: string;
   issueDescription: string;
   defectType: DefectType | null;
+  resolutionType: ResolutionType | null;
   locationType: LocationType;
   customerLocation: CustomerLocation | null;
   technicianTypeRequired: TechnicianType;
@@ -173,12 +169,16 @@ export type ServiceRequest = {
   finalCost: number | null;
   paymentStatus: PaymentStatus;
   receivedAt: string | null;
+  assignedAt: string | null;
   acceptedAt: string | null;
   arrivedAt: string | null;
   completedAt: string | null;
   overdueAt: string | null;
   isOverdue: boolean;
+  timer: TechJobTimer | null;
+  activePause: TechJobPause | null;
   pickupConfirmedAt: string | null;
+  pickupConfirmationType: PickupConfirmationType | null;
   pickupSignatureUrl: string | null;
   createdAt: string;
   customer: { id: string; name: string; phone: string; address: string | null; regionCode?: string };
@@ -211,8 +211,6 @@ export type TechJobTimer = {
 
 export type TechJob = ServiceRequest & {
   column: TechColumn;
-  activePause: TechJobPause | null;
-  timer: TechJobTimer | null;
 };
 
 export type JobServiceLine = Named & {
@@ -242,6 +240,13 @@ export type JobPhoto = {
   createdAt: string;
 };
 
+export type JobReplacement = Named & {
+  id: string;
+  productId: string;
+  serialNumber: string;
+  sku: string;
+};
+
 export type JobCost = {
   servicesTotal: number;
   partsTotal: number;
@@ -255,7 +260,7 @@ export type JobCost = {
 export type CatalogChoice = Named & {
   id: string;
   price: number;
-  productCategory: string;
+  productCategories: string[];
   stockQuantity?: number;
   lowStockThreshold?: number;
   lowStock?: boolean;
@@ -267,6 +272,8 @@ export type JobWorkPayload = {
   partLines: JobPartLine[];
   extraExpenses: JobExtraExpense[];
   photos: JobPhoto[];
+  resolutionType: ResolutionType | null;
+  replacement: JobReplacement | null;
   pauses: RequestPauseRecord[];
   timeline: TimelineEvent[];
   cost: JobCost;
@@ -275,6 +282,7 @@ export type JobWorkPayload = {
   catalog: {
     services: CatalogChoice[];
     parts: CatalogChoice[];
+    replacementProducts: Array<Named & { id: string; sku: string; category: string }>;
   };
   settings?: { blockZeroStock: boolean };
 };
@@ -290,7 +298,7 @@ export type RequestPauseRecord = {
 
 export type TimelineEvent = {
   key: string;
-  kind: "created" | "received" | "accepted" | "arrived" | "paused" | "resumed" | "completed";
+  kind: "created" | "received" | "assigned" | "accepted" | "arrived" | "paused" | "resumed" | "completed" | "picked_up";
   at: string;
   title: string;
   detail: string | null;
@@ -337,7 +345,7 @@ export type PortalRequest = {
   product: Named & { id: string; sku: string; category: string };
   assignedTechnician: { name: string } | null;
   sale: { invoiceNumber: string; warrantyExpiry: string; warrantyStatus: WarrantyStatus } | null;
-  feedback: { rating: number; comment: string | null; createdAt: string } | null;
+  feedback: { rating: number; comment: string | null; tags: string[]; createdAt: string } | null;
   canFeedback: boolean;
   pickupConfirmedAt: string | null;
   canConfirmPickup: boolean;
@@ -443,7 +451,7 @@ export type DashboardReport = {
   topProducts: Array<Named & { id: string; sku: string; category: string; count: number }>;
   topParts: Array<Named & { id: string; quantity: number }>;
   defectsByCategory: Array<{ category: string; count: number }>;
-  byStatus: Array<{ status: RequestStatus | "paused"; count: number }>;
+  byStatus: Array<{ status: RequestStatus; count: number }>;
   warrantySplit: { free: number; paid: number };
 };
 

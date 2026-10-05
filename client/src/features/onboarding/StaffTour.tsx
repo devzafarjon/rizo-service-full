@@ -33,7 +33,7 @@ export function StaffTour({ userId }: { userId: string }) {
     <div className="fixed inset-0 z-[90] print:hidden">
       <button type="button" className="absolute inset-0 bg-black/40" aria-label={t("tour.skip")} onClick={finish} />
       <div className="absolute inset-x-4 bottom-6 mx-auto max-w-md rounded-2xl bg-white p-5 shadow-xl ring-1 ring-black/5 sm:bottom-10">
-        <p className="text-xs font-bold tracking-wide text-[#B439FD] uppercase">
+        <p className="text-xs font-bold tracking-wide text-[#7B00E0] uppercase">
           {t("common.stepOf", { current: step + 1, total: STEPS.length })}
         </p>
         <h2 className="mt-2 text-lg font-extrabold text-neutral-900">{t(`tour.${current}.title`)}</h2>
@@ -61,7 +61,7 @@ export function StaffTour({ userId }: { userId: string }) {
                 }
                 setStep((currentStep) => currentStep + 1);
               }}
-              className="inline-flex min-h-11 items-center rounded-xl bg-[#B439FD] px-4 text-sm font-extrabold text-white"
+              className="inline-flex min-h-11 items-center rounded-lg bg-[#7B00E0] px-6 text-[12.8px] font-extrabold text-white"
             >
               {step >= STEPS.length - 1 ? t("common.done") : t("common.next")}
             </button>

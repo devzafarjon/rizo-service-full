@@ -3,8 +3,8 @@ import { useTranslation } from "react-i18next";
 import { formatMoney, formatNumber } from "../../lib/format";
 
 export const CHART = {
-  purple: "#B439FD",
-  orange: "#F6921E",
+  purple: "#7B00E0",
+  orange: "#F7941E",
   green: "#10B981",
   sky: "#0EA5E9",
   rose: "#F43F5E",

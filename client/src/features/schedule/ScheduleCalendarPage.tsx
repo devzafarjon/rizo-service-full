@@ -7,6 +7,7 @@ import { useStaffAuth } from "../auth/StaffAuthContext";
 import { api, apiErrorMessage } from "../../lib/api";
 import { formatDate } from "../../lib/format";
 import type { ScheduleDay, TechnicianSummary } from "../../lib/types";
+import { todayIso } from "../../lib/warranty";
 
 function addDays(iso: string, days: number) {
   const date = new Date(`${iso}T00:00:00.000Z`);
@@ -19,7 +20,7 @@ export function ScheduleCalendarPage() {
   const { token } = useStaffAuth();
   const { notify } = useToast();
   const queryClient = useQueryClient();
-  const from = new Date().toISOString().slice(0, 10);
+  const from = todayIso();
   const to = addDays(from, 13);
 
   const schedule = useQuery({
@@ -54,7 +55,7 @@ export function ScheduleCalendarPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold tracking-tight">{t("schedule.title")}</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{t("schedule.title")}</h1>
       <p className="mt-1 mb-4 text-sm text-neutral-500">{t("schedule.intro")}</p>
       <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
         <table className="min-w-max text-left text-xs">

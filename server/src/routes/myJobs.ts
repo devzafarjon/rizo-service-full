@@ -3,28 +3,21 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { HttpError } from "../lib/httpError.js";
-import { completionGaps, resolveJobFinancials, serializeJobWork, workInclude } from "../lib/jobWork.js";
+import { serializeJobWork, workInclude } from "../lib/jobWork.js";
 import { serializeNamed } from "../lib/named.js";
-import { notifyRequestStatus } from "../lib/notifyCustomer.js";
 import { parseBody } from "../lib/parse.js";
 import { prisma } from "../lib/prisma.js";
 import { publishRequest } from "../lib/realtime.js";
-import { statusPatch } from "../lib/requestLifecycle.js";
 import { buildTimeline, serializePauses } from "../lib/timeline.js";
 import { serializeRequest, type RequestRecord } from "../lib/serializeRequest.js";
-import {
-  NEW_TIMER_MS,
-  PROGRESS_TIMER_MS,
-  completedStatusFor,
-  inProgressStatusFor,
-  techColumn,
-} from "../lib/techBoard.js";
+import { techColumn } from "../lib/techBoard.js";
+import { changeRequestStatus } from "../lib/statusChange.js";
+import { staffActor } from "../lib/audit.js";
 import { acceptJobPhotos, publicPhotoUrl, removeUploadedFile } from "../lib/uploads.js";
 import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
 import { getAppSettings, isBlockZeroStock } from "../lib/settings.js";
 import { maybeAlertLowStock } from "../lib/stockAlerts.js";
 import { normalizeDisplayIdQuery, tashkentCalendarDate } from "../lib/displayId.js";
-import { writeAudit } from "../lib/audit.js";
 import { parseDateOnly, toDateOnly } from "../lib/warranty.js";
 
 const jobInclude = Prisma.validator<Prisma.ServiceRequestInclude>()({
@@ -73,6 +66,19 @@ const moveSchema = z
       } else if (data.pauseHours > 336) {
         ctx.addIssue({ code: "custom", message: "Pause cannot exceed 14 days", path: ["pauseHours"] });
       }
+    }
+  });
+
+const resolutionSchema = z
+  .object({
+    resolutionType: z.enum(["repair", "replace"]),
+    productId: z.string().trim().min(1).optional(),
+    serialNumber: z.string().trim().min(1).max(80).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.resolutionType === "replace") {
+      if (!data.productId) ctx.addIssue({ code: "custom", message: "Select the replacement product", path: ["productId"] });
+      if (!data.serialNumber) ctx.addIssue({ code: "custom", message: "Enter the new serial number", path: ["serialNumber"] });
     }
   });
 
@@ -157,7 +163,7 @@ myJobsRouter.get(
   "/",
   asyncHandler(async (req, res) => {
     const jobs = await prisma.serviceRequest.findMany({
-      where: { assignedTechnicianId: req.staff!.sub },
+      where: { assignedTechnicianId: req.staff!.sub, status: { not: "cancelled" } },
       orderBy: { createdAt: "desc" },
       include: jobInclude,
     });
@@ -196,61 +202,44 @@ myJobsRouter.patch(
       throw new HttpError(400, "Jobs cannot be moved back to New");
     }
     const existing = await loadOwnedJob(req.staff!.sub, req.params.id);
-    const activePause = existing.pauses.find((pause) => pause.resumedAt == null) ?? null;
-    const currentColumn = techColumn(existing.type, existing.status, Boolean(activePause));
-    if (currentColumn === "completed" && body.column !== "completed") {
+    const current = techColumn(existing.status);
+    if (current === "completed") {
       throw new HttpError(400, "Completed jobs cannot be moved on this board");
     }
-    if (currentColumn === body.column) {
+    if (current === body.column) {
       res.json({ job: serializeTechJob(existing) });
       return;
     }
+    await changeRequestStatus({
+      requestId: existing.id,
+      next: body.column,
+      actor: { audit: staffActor(req.staff), role: "technician" },
+      pause: { reason: body.pauseReason, hours: body.pauseHours as number | undefined },
+    });
+    res.json(await jobWorkPayload(await loadOwnedJob(req.staff!.sub, existing.id)));
+  }),
+);
 
-    if (body.column === "completed") {
-      res.json(await finishJob(existing, req.staff!.name));
-      return;
+myJobsRouter.post(
+  "/:id/arrived",
+  asyncHandler(async (req, res) => {
+    const job = await loadOpenJob(req.staff!.sub, req.params.id);
+    if (job.locationType !== "on_site") {
+      throw new HttpError(400, "Arrival is only recorded for on-site jobs");
     }
-
-    const now = new Date();
-    if (body.column === "paused") {
-      if (activePause) {
-        throw new HttpError(400, "This job is already paused");
+    if (!job.arrivedAt) {
+      if (job.status === "new") {
+        await changeRequestStatus({
+          requestId: job.id,
+          next: "in_progress",
+          actor: { audit: staffActor(req.staff), role: "technician" },
+        });
       }
-      const reason = body.pauseReason;
-      const hours = body.pauseHours;
-      if (!reason || hours == null) {
-        throw new HttpError(400, "Pause reason and duration are required");
-      }
-      await prisma.requestPause.create({
-        data: {
-          serviceRequestId: existing.id,
-          reason,
-          customTimerHours: hours,
-          pausedAt: now,
-        },
-      });
-    } else if (activePause) {
-      await prisma.requestPause.update({
-        where: { id: activePause.id },
-        data: { resumedAt: now },
-      });
+      await prisma.serviceRequest.update({ where: { id: job.id }, data: { arrivedAt: new Date() } });
+      const fresh = await loadOwnedJob(req.staff!.sub, job.id);
+      publishRequest("request:updated", serializeRequest(fresh as RequestRecord));
     }
-
-    const nextStatus = inProgressStatusFor(existing.type, existing.status);
-    if (nextStatus !== existing.status) {
-      await prisma.serviceRequest.update({
-        where: { id: existing.id },
-        data: statusPatch(existing, nextStatus, now),
-      });
-    }
-
-    const fresh = await loadOwnedJob(req.staff!.sub, existing.id);
-    const serialized = serializeRequest(fresh as RequestRecord);
-    publishRequest("request:updated", serialized);
-    if (nextStatus !== existing.status) {
-      await notifyRequestStatus(fresh);
-    }
-    res.json({ job: serializeTechJob(fresh) });
+    res.json(await jobWorkPayload(await loadOwnedJob(req.staff!.sub, job.id)));
   }),
 );
 
@@ -258,7 +247,43 @@ myJobsRouter.post(
   "/:id/complete",
   asyncHandler(async (req, res) => {
     const existing = await loadOwnedJob(req.staff!.sub, req.params.id);
-    res.json(await finishJob(existing, req.staff!.name));
+    if (techColumn(existing.status) !== "completed") {
+      await changeRequestStatus({
+        requestId: existing.id,
+        next: "completed",
+        actor: { audit: staffActor(req.staff), role: "technician" },
+      });
+    }
+    res.json(await jobWorkPayload(await loadOwnedJob(req.staff!.sub, existing.id)));
+  }),
+);
+
+myJobsRouter.put(
+  "/:id/resolution",
+  asyncHandler(async (req, res) => {
+    const body = parseBody(resolutionSchema, req.body);
+    const job = await loadOpenJob(req.staff!.sub, req.params.id);
+    if (job.type !== "repair") {
+      throw new HttpError(400, "Only repairs have a resolution");
+    }
+    if (body.resolutionType === "replace") {
+      const product = await prisma.product.findUnique({ where: { id: body.productId! } });
+      if (!product) throw new HttpError(400, "Replacement product not found");
+      await prisma.$transaction([
+        prisma.serviceRequest.update({ where: { id: job.id }, data: { resolutionType: "replace" } }),
+        prisma.replacementItem.upsert({
+          where: { serviceRequestId: job.id },
+          update: { productId: product.id, serialNumber: body.serialNumber! },
+          create: { serviceRequestId: job.id, productId: product.id, serialNumber: body.serialNumber! },
+        }),
+      ]);
+    } else {
+      await prisma.$transaction([
+        prisma.serviceRequest.update({ where: { id: job.id }, data: { resolutionType: "repair" } }),
+        prisma.replacementItem.deleteMany({ where: { serviceRequestId: job.id } }),
+      ]);
+    }
+    res.json(await jobWorkPayload(await loadOwnedJob(req.staff!.sub, job.id)));
   }),
 );
 
@@ -271,7 +296,7 @@ myJobsRouter.post(
     if (!item) {
       throw new HttpError(400, "Service not found");
     }
-    if (item.productCategory !== job.product.category) {
+    if (!item.productCategories.includes(job.product.category)) {
       throw new HttpError(400, "This service does not match the product category");
     }
     const already = job.serviceLines.find((line) => line.serviceCatalogItemId === item.id);
@@ -312,7 +337,7 @@ myJobsRouter.post(
     if (!part) {
       throw new HttpError(400, "Spare part not found");
     }
-    if (part.productCategory !== job.product.category) {
+    if (!part.productCategories.includes(job.product.category)) {
       throw new HttpError(400, "This spare part does not match the product category");
     }
 
@@ -333,6 +358,7 @@ myJobsRouter.post(
             sparePartId: part.id,
             quantity,
             priceAtTime: part.price,
+            costAtTime: part.costPrice,
           },
         });
       }
@@ -489,101 +515,25 @@ async function loadOwnedJob(technicianId: string, id: string) {
 
 async function loadOpenJob(technicianId: string, id: string) {
   const job = await loadOwnedJob(technicianId, id);
-  const column = techColumn(
-    job.type,
-    job.status,
-    job.pauses.some((pause) => pause.resumedAt == null),
-  );
-  if (column === "completed") {
+  if (techColumn(job.status) === "completed") {
     throw new HttpError(400, "Completed jobs cannot be edited");
   }
   return job;
 }
 
-async function finishJob(existing: OwnedJob, _technicianName: string) {
-  const column = techColumn(
-    existing.type,
-    existing.status,
-    existing.pauses.some((pause) => pause.resumedAt == null),
-  );
-  if (column === "completed") {
-    return {
-      job: serializeTechJob(existing),
-      ...serializeJobWork(existing, { requireService: false, type: existing.type, sale: existing.sale }),
-    };
-  }
-
-  const catalogServices = await prisma.serviceCatalogItem.count({
-    where: { productCategory: existing.product.category },
-  });
-  const gaps = completionGaps(existing, { requireService: catalogServices > 0 });
-  if (gaps.length > 0) {
-    throw new HttpError(400, `Add ${joinGaps(gaps)} before completing`, "jobIncomplete", { gaps });
-  }
-
-  const now = new Date();
-  const activePause = existing.pauses.find((pause) => pause.resumedAt == null) ?? null;
-  if (activePause) {
-    await prisma.requestPause.update({
-      where: { id: activePause.id },
-      data: { resumedAt: now },
-    });
-  }
-
-  const nextStatus = completedStatusFor(existing.type);
-  const financials = resolveJobFinancials(existing, existing.type, existing.sale);
-  await prisma.serviceRequest.update({
-    where: { id: existing.id },
-    data: {
-      ...statusPatch(existing, nextStatus, now),
-      warrantyStatus: financials.warrantyStatus,
-      isPaidRepair: financials.isPaidRepair,
-      estimatedCost: financials.estimatedCost,
-      finalCost: financials.finalCost,
-      paymentStatus: financials.paymentStatus,
-    },
-  });
-
-  const fresh = await prisma.serviceRequest.findUniqueOrThrow({
-    where: { id: existing.id },
-    include: jobDetailInclude,
-  });
-  const serialized = serializeRequest(fresh as RequestRecord);
-  publishRequest("request:updated", serialized);
-  if (nextStatus !== existing.status) {
-    await notifyRequestStatus(fresh);
-    await writeAudit({
-      actor: { id: existing.assignedTechnicianId ?? "technician", type: "staff", name: _technicianName },
-      action: "request.status",
-      entityType: "ServiceRequest",
-      entityId: fresh.id,
-      oldValue: { status: existing.status },
-      newValue: { status: nextStatus, finalCost: financials.finalCost },
-    });
-  }
-
-  return {
-    job: serializeTechJob(fresh),
-    pauses: serializePauses(fresh.pauses),
-    timeline: buildTimeline(fresh),
-    ...serializeJobWork(fresh, {
-      requireService: catalogServices > 0,
-      type: fresh.type,
-      sale: fresh.sale,
-    }),
-  };
-}
-
 async function jobWorkPayload(job: OwnedJob) {
-  const [services, parts] = await Promise.all([
+  const [services, parts, replacementProducts] = await Promise.all([
     prisma.serviceCatalogItem.findMany({
-      where: { productCategory: job.product.category },
+      where: { productCategories: { has: job.product.category } },
       orderBy: { name: "asc" },
     }),
     prisma.sparePart.findMany({
-      where: { productCategory: job.product.category },
+      where: { productCategories: { has: job.product.category } },
       orderBy: { name: "asc" },
     }),
+    job.type === "repair"
+      ? prisma.product.findMany({ where: { category: job.product.category }, orderBy: { name: "asc" } })
+      : Promise.resolve([]),
   ]);
   return {
     job: serializeTechJob(job),
@@ -595,17 +545,23 @@ async function jobWorkPayload(job: OwnedJob) {
       sale: job.sale,
     }),
     catalog: {
+      replacementProducts: replacementProducts.map((item) => ({
+        id: item.id,
+        ...serializeNamed(item),
+        sku: item.sku,
+        category: item.category,
+      })),
       services: services.map((item) => ({
         id: item.id,
         ...serializeNamed(item),
         price: Number(item.price),
-        productCategory: item.productCategory,
+        productCategories: item.productCategories,
       })),
       parts: parts.map((item) => ({
         id: item.id,
         ...serializeNamed(item),
         price: Number(item.price),
-        productCategory: item.productCategory,
+        productCategories: item.productCategories,
         stockQuantity: item.stockQuantity,
         lowStockThreshold: item.lowStockThreshold,
         lowStock: item.stockQuantity <= item.lowStockThreshold,
@@ -616,42 +572,9 @@ async function jobWorkPayload(job: OwnedJob) {
 }
 
 function serializeTechJob(job: Prisma.ServiceRequestGetPayload<{ include: typeof jobInclude }>) {
-  const activePause = job.pauses.find((pause) => pause.resumedAt == null) ?? null;
-  const column = techColumn(job.type, job.status, Boolean(activePause));
   return {
     ...serializeRequest(job as RequestRecord),
-    column,
-    activePause: activePause
-      ? {
-          id: activePause.id,
-          reason: activePause.reason,
-          pausedAt: activePause.pausedAt.toISOString(),
-          customTimerHours: Number(activePause.customTimerHours),
-        }
-      : null,
-    timer: timerFor(column, job.createdAt, job.acceptedAt, activePause),
-  };
-}
-
-function timerFor(
-  column: ReturnType<typeof techColumn>,
-  createdAt: Date,
-  acceptedAt: Date | null,
-  pause: { pausedAt: Date; customTimerHours: { toString(): string } | number } | null,
-) {
-  if (column === "completed") return null;
-  if (column === "paused" && pause) {
-    return {
-      startsAt: pause.pausedAt.toISOString(),
-      durationMs: Number(pause.customTimerHours) * 60 * 60 * 1000,
-    };
-  }
-  if (column === "new") {
-    return { startsAt: createdAt.toISOString(), durationMs: NEW_TIMER_MS };
-  }
-  return {
-    startsAt: (acceptedAt ?? createdAt).toISOString(),
-    durationMs: PROGRESS_TIMER_MS,
+    column: techColumn(job.status),
   };
 }
 
@@ -680,16 +603,4 @@ async function decrementStock(
       });
     }
   }
-}
-
-function joinGaps(gaps: Array<"service" | "part" | "photo">) {
-  const labels = {
-    service: "at least one service",
-    part: "at least one spare part",
-    photo: "at least one photo",
-  };
-  const text = gaps.map((gap) => labels[gap]);
-  if (text.length === 1) return text[0];
-  if (text.length === 2) return `${text[0]} and ${text[1]}`;
-  return `${text.slice(0, -1).join(", ")}, and ${text[text.length - 1]}`;
 }

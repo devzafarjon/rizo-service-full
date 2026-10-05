@@ -34,12 +34,12 @@ export function PrintTagPage() {
   if (!request) return <EmptyState title={t("detail.notFoundTitle")} body={t("detail.notFoundBody")} />;
 
   return (
-    <div>
+    <div className="mx-auto max-w-sm">
       <div className="mb-4 flex items-center justify-between print:hidden">
-        <Link to={`/app/requests/${request.id}`} className="text-sm font-semibold text-[#B439FD]">
+        <Link to={`/app/requests/${request.id}`} className="text-sm font-semibold text-[#7B00E0]">
           {t("common.back")}
         </Link>
-        <button type="button" onClick={() => window.print()} className="h-11 rounded-xl bg-[#B439FD] px-4 text-sm font-bold text-white">
+        <button type="button" onClick={() => window.print()} className="h-12 rounded-lg bg-[#7B00E0] px-6 text-[12.8px] font-bold text-white">
           {t("common.print")}
         </button>
       </div>

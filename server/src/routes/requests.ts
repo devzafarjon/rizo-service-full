@@ -5,16 +5,15 @@ import { z } from "zod";
 import { initialStatusFor, paymentFor, pickAvailableTechnician } from "../lib/assignment.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { HttpError } from "../lib/httpError.js";
-import { notifyRequestCreated, notifyRequestStatus } from "../lib/notifyCustomer.js";
+import { notifyRequestCreated } from "../lib/notifyCustomer.js";
 import { parseBody } from "../lib/parse.js";
 import { prisma } from "../lib/prisma.js";
 import { publishRequest } from "../lib/realtime.js";
-import { statusPatch } from "../lib/requestLifecycle.js";
 import { requestInclude, serializeRequest } from "../lib/serializeRequest.js";
-import { resolveJobFinancials, serializeJobWork, workInclude } from "../lib/jobWork.js";
-import { isDoneStatus } from "../lib/techBoard.js";
+import { serializeJobWork, workInclude } from "../lib/jobWork.js";
 import { buildTimeline, serializePauses } from "../lib/timeline.js";
-import { isAllowedStatus } from "../lib/status.js";
+import { ALL_STATUSES, OPEN_STATUSES } from "../lib/status.js";
+import { changeRequestStatus } from "../lib/statusChange.js";
 import { computeWarrantyStatus } from "../lib/warranty.js";
 import { allocateDisplayId, normalizeDisplayIdQuery } from "../lib/displayId.js";
 import { serializeNamed } from "../lib/named.js";
@@ -22,34 +21,23 @@ import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
 import { staffActor, writeAudit } from "../lib/audit.js";
 import { confirmPickup } from "../lib/pickup.js";
 
-const patchSchema = z.object({
-  status: z.enum([
-    "scheduled",
-    "in_progress",
-    "completed",
-    "received",
-    "diagnosing",
-    "awaiting_parts",
-    "repairing",
-    "ready_for_pickup",
-    "replaced",
-    "closed",
-  ]),
-});
+const patchSchema = z
+  .object({
+    status: z.enum(["new", "in_progress", "paused", "completed", "picked_up", "cancelled"]).optional(),
+    priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
+    assignedTechnicianId: z.string().trim().min(1).nullable().optional(),
+    pauseReason: z.string().trim().optional(),
+    pauseHours: z.coerce.number().positive("Pause duration must be greater than 0").max(336, "Pause cannot exceed 14 days").optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.status === "paused") {
+      if (!data.pauseReason) ctx.addIssue({ code: "custom", message: "A pause reason is required", path: ["pauseReason"] });
+      if (data.pauseHours == null) ctx.addIssue({ code: "custom", message: "Set how long this pause should last", path: ["pauseHours"] });
+    }
+  });
 
 const SERVICE_TYPES: ServiceType[] = ["installation", "repair"];
-const STATUSES: RequestStatus[] = [
-  "scheduled",
-  "in_progress",
-  "completed",
-  "received",
-  "diagnosing",
-  "awaiting_parts",
-  "repairing",
-  "ready_for_pickup",
-  "replaced",
-  "closed",
-];
+const STATUSES: RequestStatus[] = ALL_STATUSES;
 const LOCATIONS: LocationType[] = ["in_shop", "on_site"];
 
 const optionalId = z
@@ -119,7 +107,7 @@ requestsRouter.get(
     const requests = await prisma.serviceRequest.findMany({
       where: {
         AND: [
-          overdue ? { overdueAt: { not: null }, status: { notIn: ["completed", "closed", "replaced"] } } : {},
+          overdue ? { overdueAt: { not: null }, status: { in: OPEN_STATUSES } } : {},
           SERVICE_TYPES.includes(type as ServiceType) ? { type: type as ServiceType } : {},
           STATUSES.includes(status as RequestStatus) ? { status: status as RequestStatus } : {},
           LOCATIONS.includes(locationType as LocationType) ? { locationType: locationType as LocationType } : {},
@@ -181,11 +169,11 @@ requestsRouter.get(
     }
     const [services, parts] = await Promise.all([
       prisma.serviceCatalogItem.findMany({
-        where: { productCategory: request.product.category },
+        where: { productCategories: { has: request.product.category } },
         orderBy: { name: "asc" },
       }),
       prisma.sparePart.findMany({
-        where: { productCategory: request.product.category },
+        where: { productCategories: { has: request.product.category } },
         orderBy: { name: "asc" },
       }),
     ]);
@@ -202,13 +190,13 @@ requestsRouter.get(
         id: item.id,
         ...serializeNamed(item),
         price: Number(item.price),
-        productCategory: item.productCategory,
+        productCategories: item.productCategories,
       })),
       matchingParts: parts.map((item) => ({
         id: item.id,
         ...serializeNamed(item),
         price: Number(item.price),
-        productCategory: item.productCategory,
+        productCategories: item.productCategories,
         stockQuantity: item.stockQuantity,
       })),
     });
@@ -248,7 +236,7 @@ requestsRouter.post(
       ? computeWarrantyStatus(sale.warrantyMonths, sale.warrantyExpiry)
       : "not_applicable";
     const payment = paymentFor(body.type, warrantyStatus);
-    const status = initialStatusFor(body.type);
+    const status = initialStatusFor();
     const now = new Date();
 
     let assignedTechnicianId: string | null = null;
@@ -257,6 +245,9 @@ requestsRouter.post(
       const technician = await prisma.staffUser.findUnique({ where: { id: body.assignedTechnicianId } });
       if (!technician || technician.role !== "technician") {
         throw new HttpError(400, "Technician not found");
+      }
+      if (!technician.isActive) {
+        throw new HttpError(400, "This technician is not active");
       }
       if (technician.technicianType !== body.technicianTypeRequired) {
         throw new HttpError(400, "This technician does not match the required type");
@@ -300,6 +291,7 @@ requestsRouter.post(
         customerLocation,
         technicianTypeRequired: body.technicianTypeRequired,
         assignedTechnicianId,
+        assignedAt: assignedTechnicianId ? now : null,
         status,
         priority: body.priority ?? "medium",
         warrantyStatus,
@@ -353,69 +345,67 @@ requestsRouter.patch(
     const body = parseBody(patchSchema, req.body);
     const existing = await prisma.serviceRequest.findUnique({
       where: { id: req.params.id },
-      include: { ...requestInclude, ...workInclude },
+      include: requestInclude,
     });
     if (!existing) {
       throw new HttpError(404, "Service request not found");
     }
-    if (!isAllowedStatus(existing.type, body.status)) {
-      throw new HttpError(400, `This status is not part of the ${existing.type} flow`, "statusNotInFlow", {
-        type: existing.type,
+    const actor = staffActor(req.staff);
+
+    if (body.assignedTechnicianId !== undefined && body.assignedTechnicianId !== existing.assignedTechnicianId) {
+      let nextTechnicianId: string | null = null;
+      if (body.assignedTechnicianId) {
+        const technician = await prisma.staffUser.findUnique({ where: { id: body.assignedTechnicianId } });
+        if (!technician || technician.role !== "technician" || !technician.isActive) {
+          throw new HttpError(400, "Technician not found");
+        }
+        if (technician.technicianType !== existing.technicianTypeRequired) {
+          throw new HttpError(400, "This technician does not match the required type");
+        }
+        nextTechnicianId = technician.id;
+      }
+      await prisma.serviceRequest.update({
+        where: { id: existing.id },
+        data: { assignedTechnicianId: nextTechnicianId, assignedAt: nextTechnicianId ? new Date() : null },
+      });
+      await writeAudit({
+        actor,
+        action: "request.assign",
+        entityType: "ServiceRequest",
+        entityId: existing.id,
+        oldValue: { assignedTechnicianId: existing.assignedTechnicianId },
+        newValue: { assignedTechnicianId: nextTechnicianId },
       });
     }
 
-    const now = new Date();
-    const becomingDone = isDoneStatus(body.status) && !isDoneStatus(existing.status);
-    const financials = becomingDone ? resolveJobFinancials(existing, existing.type, existing.sale) : null;
-    const updated = await prisma.serviceRequest.update({
-      where: { id: existing.id },
-      data: {
-        ...statusPatch(existing, body.status, now),
-        ...(financials
-          ? {
-              warrantyStatus: financials.warrantyStatus,
-              isPaidRepair: financials.isPaidRepair,
-              estimatedCost: financials.estimatedCost,
-              finalCost: financials.finalCost,
-              paymentStatus: financials.paymentStatus,
-            }
-          : {}),
-      },
-      include: requestInclude,
-    });
-    const serialized = serializeRequest(updated);
+    if (body.priority && body.priority !== existing.priority) {
+      await prisma.serviceRequest.update({ where: { id: existing.id }, data: { priority: body.priority } });
+      await writeAudit({
+        actor,
+        action: "request.priority",
+        entityType: "ServiceRequest",
+        entityId: existing.id,
+        oldValue: { priority: existing.priority },
+        newValue: { priority: body.priority },
+      });
+    }
+
+    if (body.status && body.status !== existing.status) {
+      if (body.status === "picked_up") {
+        await confirmPickup({ requestId: existing.id, actor });
+      } else {
+        await changeRequestStatus({
+          requestId: existing.id,
+          next: body.status,
+          actor: { audit: actor, role: "admin" },
+          pause: { reason: body.pauseReason, hours: body.pauseHours },
+        });
+      }
+    }
+
+    const fresh = await prisma.serviceRequest.findUniqueOrThrow({ where: { id: existing.id }, include: requestInclude });
+    const serialized = serializeRequest(fresh);
     publishRequest("request:updated", serialized);
-    if (existing.status !== updated.status) {
-      await notifyRequestStatus(updated);
-      await writeAudit({
-        actor: staffActor(req.staff),
-        action: "request.status",
-        entityType: "ServiceRequest",
-        entityId: updated.id,
-        oldValue: { status: existing.status },
-        newValue: { status: updated.status },
-      });
-    }
-    if (
-      financials &&
-      (existing.estimatedCost?.toString() !== String(financials.estimatedCost) ||
-        existing.finalCost?.toString() !== String(financials.finalCost))
-    ) {
-      await writeAudit({
-        actor: staffActor(req.staff),
-        action: "request.cost",
-        entityType: "ServiceRequest",
-        entityId: updated.id,
-        oldValue: {
-          estimatedCost: existing.estimatedCost == null ? null : Number(existing.estimatedCost),
-          finalCost: existing.finalCost == null ? null : Number(existing.finalCost),
-        },
-        newValue: { estimatedCost: financials.estimatedCost, finalCost: financials.finalCost },
-      });
-    }
-
-    res.json({
-      request: serialized,
-    });
+    res.json({ request: serialized });
   }),
 );

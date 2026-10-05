@@ -5,10 +5,10 @@ import { useTranslation } from "react-i18next";
 export function InfoTip({ text }: { text: string }) {
   const { t } = useTranslation();
   return (
-    <Popover className="relative inline-flex">
+    <Popover as="span" className="relative inline-flex">
       <PopoverButton
         type="button"
-        className="inline-flex h-6 w-6 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-[#B439FD] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B439FD]"
+        className="inline-flex h-6 w-6 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-[#7B00E0] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B00E0]"
         aria-label={t("common.moreInfo")}
         onClick={(event) => event.stopPropagation()}
       >

@@ -9,6 +9,7 @@ import { api, apiErrorMessage } from "../../lib/api";
 import { formatPhone, formatRequestId } from "../../lib/format";
 import { localizedName } from "../../lib/localized";
 import { parseRequestTag } from "../../lib/qrTag";
+import { canConfirmPickup } from "../../lib/pickup";
 import type { ServiceRequest } from "../../lib/types";
 
 export function KioskPickupPage() {
@@ -44,21 +45,34 @@ export function KioskPickupPage() {
 
   return (
     <div className="mx-auto max-w-lg">
-      <h1 className="text-2xl font-extrabold tracking-tight">{t("kiosk.title")}</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{t("kiosk.title")}</h1>
       <p className="mt-1 mb-4 text-sm text-neutral-500">{t("kiosk.hint")}</p>
       <form
         className="flex gap-2"
         onSubmit={(event) => {
           event.preventDefault();
           const parsed = parseRequestTag(raw);
-          if (parsed) setDisplayId(parsed);
+          if (!parsed) {
+            notify(t("tag.invalid"), "error");
+            return;
+          }
+          setDisplayId(parsed);
         }}
       >
-        <input className={inputClass} value={raw} onChange={(event) => setRaw(event.target.value)} placeholder={t("tag.manualPlaceholder")} />
-        <button type="submit" className="h-11 rounded-xl bg-[#B439FD] px-4 text-sm font-bold text-white">
+        <input
+          className={`${inputClass} min-w-0 flex-1`}
+          value={raw}
+          onChange={(event) => setRaw(event.target.value)}
+          placeholder={t("tag.manualPlaceholder")}
+        />
+        <button type="submit" className="h-12 shrink-0 rounded-lg bg-[#7B00E0] px-6 text-[12.8px] font-bold text-white">
           {t("tag.open")}
         </button>
       </form>
+      {displayId && found.isFetching && !request ? <p className="mt-6 text-sm text-neutral-500">{t("common.loading")}</p> : null}
+      {displayId && found.isError ? (
+        <p className="mt-6 text-sm font-medium text-red-600">{apiErrorMessage(found.error, t)}</p>
+      ) : null}
       {request ? (
         <div className="mt-6 space-y-4">
           <div className="rounded-2xl border border-neutral-200 bg-white p-5">
@@ -68,8 +82,14 @@ export function KioskPickupPage() {
               {localizedName(request.product)} · {formatPhone(request.customer.phone)}
             </p>
             {request.pickupConfirmedAt ? <p className="mt-3 text-sm font-bold text-emerald-700">{t("pickup.already")}</p> : null}
+            {!request.pickupConfirmedAt && request.locationType !== "in_shop" ? (
+              <p className="mt-3 text-sm text-neutral-500">{t("pickup.notAtCounter")}</p>
+            ) : null}
+            {!request.pickupConfirmedAt && request.locationType === "in_shop" && !canConfirmPickup(request) ? (
+              <p className="mt-3 text-sm text-neutral-500">{t("pickup.notReady")}</p>
+            ) : null}
           </div>
-          {!request.pickupConfirmedAt ? <PickupConfirm pending={confirm.isPending} onConfirm={(signature) => confirm.mutateAsync(signature)} /> : null}
+          {canConfirmPickup(request) ? <PickupConfirm pending={confirm.isPending} onConfirm={(signature) => confirm.mutateAsync(signature)} /> : null}
         </div>
       ) : null}
     </div>

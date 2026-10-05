@@ -9,6 +9,10 @@ import { api, apiErrorMessage } from "../../lib/api";
 import { portalTextareaClass } from "./fields";
 import type { PortalRequest } from "../../lib/types";
 
+// Quick tags: what went wrong for low ratings, what went well for high ones.
+const LOW_TAGS = ["late", "not_fixed", "rude", "expensive", "unclear_price"];
+const HIGH_TAGS = ["fast", "polite", "clean"];
+
 export function FeedbackForm({ request }: { request: PortalRequest }) {
   const { t } = useTranslation();
   const { token } = useCustomerAuth();
@@ -16,13 +20,14 @@ export function FeedbackForm({ request }: { request: PortalRequest }) {
   const queryClient = useQueryClient();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
 
   const save = useMutation({
     mutationFn: () =>
       api<{ request: PortalRequest }>(`/api/customer/requests/${request.id}/feedback`, {
         method: "POST",
         token,
-        body: JSON.stringify({ rating, comment: comment.trim() || undefined }),
+        body: JSON.stringify({ rating, comment: comment.trim() || undefined, tags }),
       }),
     onSuccess: async () => {
       notify(t("feedback.thanks"));
@@ -35,6 +40,9 @@ export function FeedbackForm({ request }: { request: PortalRequest }) {
     return (
       <div className="rounded-2xl bg-[#FFF4E5] px-4 py-3">
         <p className="text-sm font-bold text-[#C56A00]">{t("feedback.rated", { rating: request.feedback.rating })}</p>
+        {request.feedback.tags?.length ? (
+          <p className="mt-1 text-xs font-semibold text-neutral-600">{request.feedback.tags.map((tag) => t(`feedback.tag.${tag}`)).join(" · ")}</p>
+        ) : null}
         {request.feedback.comment ? <p className="mt-1 text-sm text-neutral-700">{request.feedback.comment}</p> : null}
       </div>
     );
@@ -60,14 +68,35 @@ export function FeedbackForm({ request }: { request: PortalRequest }) {
           <button
             key={value}
             type="button"
-            onClick={() => setRating(value)}
+            onClick={() => {
+              setRating(value);
+              setTags([]);
+            }}
             className="inline-flex h-11 w-11 items-center justify-center rounded-xl hover:bg-[#FFF4E5]"
             aria-label={value === 1 ? t("feedback.star", { count: value }) : t("feedback.stars", { count: value })}
           >
-            <Star size={22} className={value <= rating ? "fill-[#F6921E] text-[#F6921E]" : "text-neutral-300"} />
+            <Star size={22} className={value <= rating ? "fill-[#F7941E] text-[#F7941E]" : "text-neutral-300"} />
           </button>
         ))}
       </div>
+      {rating > 0 ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {(rating <= 3 ? LOW_TAGS : HIGH_TAGS).map((tag) => {
+            const on = tags.includes(tag);
+            return (
+              <button
+                key={tag}
+                type="button"
+                aria-pressed={on}
+                onClick={() => setTags(on ? tags.filter((item) => item !== tag) : [...tags, tag])}
+                className={`h-9 rounded-full px-3 text-sm font-bold ${on ? "bg-[#7B00E0] text-white" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"}`}
+              >
+                {t(`feedback.tag.${tag}`)}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
       <textarea
         className={`${portalTextareaClass} mt-3 min-h-20`}
         value={comment}

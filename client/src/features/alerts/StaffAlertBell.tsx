@@ -16,7 +16,7 @@ export function StaffAlertBell() {
       >
         <Bell size={20} />
         {unread > 0 ? (
-          <span className="absolute top-1.5 right-1.5 inline-flex min-w-4 items-center justify-center rounded-full bg-[#B439FD] px-1 text-[10px] font-extrabold text-white">
+          <span className="absolute top-1.5 right-1.5 inline-flex min-w-4 items-center justify-center rounded-full bg-[#7B00E0] px-1 text-[10px] font-extrabold text-white">
             {unread > 9 ? "9+" : unread}
           </span>
         ) : null}
@@ -24,7 +24,7 @@ export function StaffAlertBell() {
       <PopoverPanel className="absolute right-0 z-50 mt-2 w-[min(calc(100vw-2rem),22rem)] overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-neutral-200">
         <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-3">
           <p className="text-sm font-extrabold">{t("alerts.title")}</p>
-          <Link to="/app/alerts" className="text-xs font-bold text-[#B439FD]">
+          <Link to="/app/alerts" className="text-xs font-bold text-[#7B00E0]">
             {t("alerts.viewAll")}
           </Link>
         </div>

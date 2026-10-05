@@ -46,18 +46,18 @@ export function PortalRequestDetailPage() {
 
   return (
     <div>
-      <Link to="/portal" className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-500 hover:text-[#B439FD]">
+      <Link to="/portal" className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-500 hover:text-[#7B00E0]">
         <ArrowLeft size={16} />
         {t("nav.myRequests")}
       </Link>
 
       <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-5">
         <p className="font-mono text-xs font-bold tracking-wide text-neutral-400">{formatRequestId(request.displayId)}</p>
-        <h1 className="mt-1 text-2xl font-extrabold tracking-tight">{localizedName(request.product)}</h1>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{localizedName(request.product)}</h1>
         <p className="mt-1 text-sm text-neutral-500">{request.product.sku}</p>
         <div className="mt-3 flex flex-wrap gap-2">
           <TypeBadge type={request.type} />
-          <StatusBadge status={request.status} />
+          <StatusBadge status={request.status} friendly />
           <WarrantyBadge status={request.warrantyStatus} />
           <LocationBadge type={request.locationType} />
         </div>
@@ -88,7 +88,7 @@ export function PortalRequestDetailPage() {
         <div className="mt-4">
           <PickupConfirm pending={pickup.isPending} onConfirm={(signature) => pickup.mutateAsync(signature)} />
         </div>
-      ) : request.pickupConfirmedAt ? (
+      ) : request.pickupConfirmedAt && request.locationType === "in_shop" ? (
         <p className="mt-4 text-sm font-bold text-emerald-700">{t("pickup.already")}</p>
       ) : null}
 

@@ -7,6 +7,7 @@ import { prisma } from "../lib/prisma.js";
 import { handlePrismaError } from "../lib/prismaErrors.js";
 import { namedFromInput, namedSearch, serializeNamed } from "../lib/named.js";
 import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
+import { ensureCategories } from "../lib/categories.js";
 
 const productSchema = z.object({
   name: z.string().trim().optional(),
@@ -63,6 +64,7 @@ productsRouter.post(
   "/",
   asyncHandler(async (req, res) => {
     const body = parseBody(productSchema, req.body);
+    await ensureCategories([body.category]);
     try {
       const product = await prisma.product.create({
         data: { ...namedFromInput(body), sku: body.sku.toUpperCase(), category: body.category },
@@ -79,6 +81,7 @@ productsRouter.patch(
   "/:id",
   asyncHandler(async (req, res) => {
     const body = parseBody(productPatchSchema, req.body);
+    if (body.category) await ensureCategories([body.category]);
     try {
       const product = await prisma.product.update({
         where: { id: req.params.id },

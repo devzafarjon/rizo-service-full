@@ -13,7 +13,7 @@ export function HomePage() {
   const portalTo = customer ? "/portal" : "/portal/login";
 
   return (
-    <BrandChrome
+    <BrandChrome variant="landing"
       action={
         <Link to={staffTo} className="btn-rizo-ghost">
           {staff ? t("home.staffContinue") : t("home.staff")}
@@ -21,7 +21,7 @@ export function HomePage() {
       }
     >
       <section className="mx-auto flex max-w-3xl flex-col items-center px-4 py-16 text-center sm:py-24">
-        <h1 className="text-4xl font-bold tracking-tight text-black sm:text-6xl sm:leading-[1]">
+        <h1 className="text-4xl font-bold tracking-tight text-[#141824] sm:text-6xl sm:leading-[1]">
           {t("brand.service")}
         </h1>
         <p className="mt-5 max-w-xl text-base text-gray-500 sm:text-lg">{t("brand.tagline")}</p>

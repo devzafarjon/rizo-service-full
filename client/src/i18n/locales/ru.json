@@ -67,7 +67,8 @@
     "next": "Далее",
     "skip": "Пропустить",
     "moreInfo": "Подробнее",
-    "stepOf": "Шаг {{current}} из {{total}}"
+    "stepOf": "Шаг {{current}} из {{total}}",
+    "priority": "Приоритет"
   },
   "languages": {
     "uz": "Oʻzbekcha",
@@ -78,7 +79,8 @@
     "service": "RIZO Service",
     "staff": "Персонал сервиса",
     "portal": "Портал клиента",
-    "tagline": "Установка и ремонт товаров из RIZO market."
+    "tagline": "Установка и ремонт товаров из RIZO market.",
+    "portalBadge": "Портал клиента"
   },
   "home": {
     "staff": "Вход для сотрудников",
@@ -114,14 +116,16 @@
     "haveAccount": "Уже есть аккаунт?",
     "phoneExistsSignIn": "На этот номер уже есть аккаунт. Войдите вместо регистрации.",
     "forgotTitle": "Забыли пароль",
-    "forgotHint": "Мы создадим новый пароль для этого номера. Сохраните его до ухода со страницы.",
-    "newPassword": "Ваш новый пароль",
-    "passwordOnce": "Он больше не будет показан. Войдите с ним и сохраните в надёжном месте.",
+    "forgotHint": "Мы отправим новый пароль по SMS на этот номер.",
     "backToSignIn": "Вернуться ко входу",
     "createPassword": "Создать новый пароль",
     "resetFailed": "Не удалось сбросить пароль",
     "noAccount": "Нет аккаунта?",
-    "signUp": "Регистрация"
+    "signUp": "Регистрация",
+    "showPassword": "Показать пароль",
+    "hidePassword": "Скрыть пароль",
+    "resetSentTitle": "Проверьте телефон",
+    "resetSentBody": "Если у этого номера есть аккаунт в портале, мы отправили новый пароль по SMS. Войдите с ним и храните его в надёжном месте."
   },
   "nav": {
     "dashboard": "Главная",
@@ -187,23 +191,12 @@
     "busy": "Занят"
   },
   "status": {
-    "scheduled": "Запланировано",
-    "received": "Принято",
-    "diagnosing": "Диагностика",
-    "awaiting_parts": "Ожидание запчастей",
-    "repairing": "Ремонт",
+    "new": "Новая",
     "in_progress": "В работе",
-    "ready_for_pickup": "Готово к выдаче",
-    "replaced": "Заменено",
-    "completed": "Завершено",
-    "closed": "Закрыто"
-  },
-  "outcome": {
-    "replaced": "Заменено",
-    "closed": "Закрыто",
-    "completed": "Завершено",
-    "reopened": "Открыто снова",
-    "open": "Открыто"
+    "paused": "На паузе",
+    "completed": "Завершена",
+    "picked_up": "Выдана",
+    "cancelled": "Отменена"
   },
   "type": {
     "installation": "Установка",
@@ -294,7 +287,20 @@
     "h": "{{hours}} ч",
     "dh": "{{days}} д {{hours}} ч",
     "d": "{{days}} д",
-    "monthsShort": ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"]
+    "monthsShort": [
+      "янв",
+      "фев",
+      "мар",
+      "апр",
+      "май",
+      "июн",
+      "июл",
+      "авг",
+      "сен",
+      "окт",
+      "ноя",
+      "дек"
+    ]
   },
   "timer": {
     "overdue": "Просрочено {{clock}}"
@@ -316,17 +322,16 @@
   "timeline": {
     "empty": "Пока нет событий. Эта запись хранится постоянно.",
     "created": "Заявка создана",
-    "createdReceived": "Создана · принята",
     "received": "Принята",
     "accepted": "Работа начата",
     "arrived": "Прибыл на объект",
     "paused": "Пауза",
     "resumed": "Возобновлено",
     "completed": "Завершено",
-    "replaced": "Заменено",
-    "closed": "Закрыто",
     "pauseActive": "{{reason}} · план {{planned}} · ещё на паузе",
-    "pauseDone": "{{reason}} · план {{planned}} · длилось {{lasted}}"
+    "pauseDone": "{{reason}} · план {{planned}} · длилось {{lasted}}",
+    "assigned": "Назначено технику",
+    "pickedUp": "Выдано клиенту"
   },
   "notify": {
     "createdByCustomer": "Мы получили вашу заявку на {{type}} для {{product}}.",
@@ -392,7 +397,15 @@
     "partUpdated": "Запчасть обновлена",
     "partDeleted": "Запчасть удалена",
     "partSaveFailed": "Не удалось сохранить запчасть",
-    "partDeleteFailed": "Не удалось удалить запчасть"
+    "partDeleteFailed": "Не удалось удалить запчасть",
+    "costPrice": "Себестоимость",
+    "costPriceSom": "Себестоимость (сум)",
+    "costPriceHint": "Сколько запчасть стоит RIZO. Используется в отчётах о прибыли.",
+    "applicableCategories": "Применяется к категориям товаров",
+    "applicableCategoriesHint": "Техники видят эту позицию только в заявках этих категорий.",
+    "newCategoryPlaceholder": "Новая категория",
+    "addCategory": "Добавить",
+    "pickCategory": "Выберите хотя бы одну категорию"
   },
   "customers": {
     "title": "Клиенты",
@@ -579,7 +592,8 @@
     "customerPays": "Клиент платит {{amount}}",
     "saleLine": "{{invoice}} · истекает {{date}}",
     "notLinked": "Не привязано",
-    "location": "Место"
+    "location": "Место",
+    "pickup": "Выдача подтверждена"
   },
   "kanban": {
     "title": "Доска диспетчера",
@@ -603,7 +617,7 @@
     "noJobs": "Здесь нет работ",
     "accept": "Принять",
     "start": "Начать",
-    "arrived": "На месте",
+    "arrived": "Я на месте",
     "pause": "Пауза",
     "resume": "Продолжить",
     "complete": "Завершить",
@@ -625,7 +639,9 @@
     "stayCompleted": "Завершённые работы остаются в «Завершено»",
     "drag": "Перетащить {{name}}",
     "hoursShort": "{{count}} ч",
-    "moreActions": "Ещё действия"
+    "moreActions": "Ещё действия",
+    "arrivedAt": "Прибыл: {{time}}",
+    "arrivedSaved": "Прибытие зафиксировано"
   },
   "job": {
     "timeline": "Хронология",
@@ -640,7 +656,8 @@
     "gap": {
       "service": "хотя бы одна услуга",
       "part": "хотя бы одна запчасть",
-      "photo": "хотя бы одно фото"
+      "photo": "хотя бы одно фото",
+      "replacement": "товар на замену и серийный номер"
     },
     "addService": "Добавить услугу",
     "addPart": "Добавить запчасть",
@@ -673,7 +690,13 @@
     "notFoundBody": "Эта работа вам не назначена.",
     "stockLine": "{{price}} · {{count}} на складе",
     "zeroStockWarn": "Этой запчасти нет на складе. Её всё равно можно добавить.",
-    "zeroStockBlock": "Этой запчасти нет на складе"
+    "zeroStockBlock": "Этой запчасти нет на складе",
+    "resolution": "Результат",
+    "resolutionHint": "Устройство отремонтировано или заменено?",
+    "replacementProduct": "Новый товар",
+    "serialNumber": "Новый серийный номер",
+    "replacementSaved": "Записано: {{product}} · {{serial}}",
+    "saveReplacement": "Сохранить замену"
   },
   "receipt": {
     "title": "Квитанции",
@@ -900,7 +923,17 @@
     "comment": "Комментарий (необязательно)",
     "send": "Отправить отзыв",
     "star": "{{count}} звезда",
-    "stars": "{{count}} звёзд"
+    "stars": "{{count}} звёзд",
+    "tag": {
+      "fast": "Быстро",
+      "polite": "Вежливо",
+      "clean": "Аккуратно",
+      "late": "Опоздали",
+      "not_fixed": "Не исправили",
+      "rude": "Грубо",
+      "expensive": "Дорого",
+      "unclear_price": "Цена неясна"
+    }
   },
   "alerts": {
     "title": "Оповещения персонала",
@@ -932,7 +965,13 @@
     "confirm": "Подтвердить выдачу",
     "clearSignature": "Очистить подпись",
     "saved": "Выдача подтверждена",
-    "already": "Выдача уже подтверждена"
+    "already": "Выдача уже подтверждена",
+    "notAtCounter": "Эта работа выполняется по адресу клиента, не на кассе.",
+    "notReady": "Эта работа ещё не готова к выдаче на кассе.",
+    "type": {
+      "tap": "Клиент нажал «Я получил устройство»",
+      "signature": "Подпись клиента"
+    }
   },
   "kiosk": {
     "title": "Выдача на кассе",
@@ -956,6 +995,7 @@
     "emptyTitle": "Нет записей в этом фильтре",
     "emptyBody": "Расширьте даты или очистите фильтр заявки.",
     "outbound": "Очередь SMS / Telegram",
+    "outboundEmpty": "В очереди нет исходящих сообщений.",
     "action": {
       "request.status": "Изменён статус заявки",
       "request.cost": "Изменена стоимость",
@@ -1015,7 +1055,6 @@
     "completedLocked": "Завершённые работы нельзя редактировать",
     "jobIncomplete": "Перед завершением добавьте: {{list}}",
     "stockInsufficient": "На складе только {{count}} {{name}}",
-    "statusNotInFlow": "Этот статус не входит в поток {{type}}",
     "saleNotForCustomer": "Эта продажа не принадлежит выбранному клиенту",
     "techTypeMismatch": "Этот техник не соответствует нужному типу",
     "needPurchaseOrProduct": "Выберите прошлую покупку или товар",
@@ -1029,6 +1068,45 @@
     "passwordRequired": "Пароль обязателен",
     "pickupNotReady": "Эта заявка не ждёт подтверждения выдачи",
     "invalidSignature": "Изображение подписи недействительно",
-    "mergeSameCustomer": "Выберите двух разных клиентов"
+    "mergeSameCustomer": "Выберите двух разных клиентов",
+    "statusNotAllowed": "Нельзя перевести заявку из «{{from}}» в «{{to}}»",
+    "rateLimited": "Слишком много попыток. Подождите несколько минут и повторите.",
+    "accountInactive": "Эта учётная запись отключена. Обратитесь к администратору.",
+    "pauseReasonRequired": "Нужна причина паузы",
+    "pauseHoursRequired": "Укажите длительность паузы",
+    "pauseHoursInvalid": "Длительность паузы должна быть больше 0",
+    "pauseHoursMax": "Пауза не может превышать 14 дней",
+    "categoriesRequired": "Выберите хотя бы одну категорию товара",
+    "negativeCost": "Себестоимость не может быть отрицательной",
+    "replacementProductRequired": "Выберите товар на замену",
+    "serialRequired": "Введите новый серийный номер",
+    "resolutionRepairOnly": "Результат выбирается только для ремонта",
+    "arrivalOnSiteOnly": "Прибытие фиксируется только для выездных работ",
+    "technicianInactive": "Этот техник неактивен",
+    "cannotDeactivateSelf": "Нельзя отключить собственную учётную запись"
+  },
+  "customerStatus": {
+    "new": "Принята",
+    "in_progress": "В работе",
+    "paused": "Приостановлена",
+    "completed": "Завершена",
+    "picked_up": "Выдана",
+    "cancelled": "Отменена"
+  },
+  "slideOver": {
+    "saved": "Сохранено",
+    "total": "Итого",
+    "manage": "Управление",
+    "moveTo": "Перевести в статус",
+    "openFull": "Полностью",
+    "receipt": "Квитанция",
+    "tag": "QR-метка",
+    "cancelTitle": "Отменить заявку?",
+    "cancelBody": "Клиент получит уведомление, заявка исчезнет с доски. Позже её можно открыть снова.",
+    "cancelConfirm": "Отменить заявку"
+  },
+  "resolution": {
+    "repair": "Отремонтировано",
+    "replace": "Заменено"
   }
 }

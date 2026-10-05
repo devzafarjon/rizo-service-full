@@ -15,8 +15,6 @@ import { localizedName, nameSearchText } from "../../lib/localized";
 import type { ServiceRequest } from "../../lib/types";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
 
-const DONE_STATUSES = new Set(["completed", "closed", "replaced"]);
-
 export function ReceiptPage() {
   const { t, i18n } = useTranslation();
   const { token } = useStaffAuth();
@@ -30,9 +28,8 @@ export function ReceiptPage() {
   });
 
   const receipts = useMemo(() => {
-    const rows = (list.data?.requests ?? []).filter(
-      (request) => DONE_STATUSES.has(request.status) || request.completedAt,
-    );
+    // A receipt exists from the moment a request is created; cancelled requests are left out.
+    const rows = (list.data?.requests ?? []).filter((request) => request.status !== "cancelled");
     const needle = debounced.trim().toLowerCase();
     const filtered = needle
       ? rows.filter((request) => {
@@ -66,7 +63,7 @@ export function ReceiptPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-extrabold tracking-tight">{t("receipt.title")}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{t("receipt.title")}</h1>
         <p className="mt-1 text-sm text-neutral-500">{t("receipt.intro")}</p>
       </div>
 
@@ -85,7 +82,7 @@ export function ReceiptPage() {
           title={t("receipt.emptyTitle")}
           body={t("receipt.emptyBody")}
           action={
-            <Link to="/app/requests" className="inline-flex h-11 items-center rounded-xl bg-[#B439FD] px-4 text-sm font-bold text-white">
+            <Link to="/app/requests" className="inline-flex h-12 items-center rounded-lg bg-[#7B00E0] px-6 text-[12.8px] font-bold text-white">
               {t("receipt.openRequests")}
             </Link>
           }
@@ -130,7 +127,7 @@ export function ReceiptPage() {
                 <Td>
                   <Link
                     to={`/app/receipts/${request.id}`}
-                    className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#F3E8FF] px-3 text-sm font-bold text-[#B439FD]"
+                    className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#F5EBFD] px-3 text-sm font-bold text-[#7B00E0]"
                   >
                     <Printer size={14} />
                     {t("receipt.print")}

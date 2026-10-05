@@ -12,7 +12,8 @@ import { useStaffAuth } from "../auth/StaffAuthContext";
 import { api, apiErrorMessage } from "../../lib/api";
 import { defectLabel, formatDate, formatDateTime, formatMoney, formatPhone, formatRequestId, mapsUrl, technicianTypeLabel } from "../../lib/format";
 import { categoryLabel, localizedName } from "../../lib/localized";
-import type { JobCost, JobExtraExpense, JobPartLine, JobPhoto, JobServiceLine, Named, ServiceRequest, TimelineEvent } from "../../lib/types";
+import { canConfirmPickup } from "../../lib/pickup";
+import type { JobCost, JobExtraExpense, JobPartLine, JobPhoto, JobReplacement, JobServiceLine, Named, ServiceRequest, TimelineEvent } from "../../lib/types";
 
 export function RequestDetailPage() {
   const { t } = useTranslation();
@@ -26,12 +27,13 @@ export function RequestDetailPage() {
     queryFn: () =>
       api<{
         request: ServiceRequest;
-        matchingServices: Array<Named & { id: string; price: number; productCategory: string }>;
-        matchingParts: Array<Named & { id: string; price: number; productCategory: string; stockQuantity: number }>;
+        matchingServices: Array<Named & { id: string; price: number; productCategories: string[] }>;
+        matchingParts: Array<Named & { id: string; price: number; productCategories: string[]; stockQuantity: number }>;
         serviceLines: JobServiceLine[];
         partLines: JobPartLine[];
         extraExpenses: JobExtraExpense[];
         photos: JobPhoto[];
+        replacement: JobReplacement | null;
         cost: JobCost;
         timeline: TimelineEvent[];
       }>(`/api/staff/requests/${id}`, {
@@ -69,7 +71,7 @@ export function RequestDetailPage() {
 
   return (
     <div>
-      <Link to="/app/requests" className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-500 hover:text-[#B439FD]">
+      <Link to="/app/requests" className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-500 hover:text-[#7B00E0]">
         <ArrowLeft size={16} />
         {t("common.allRequests")}
       </Link>
@@ -78,7 +80,7 @@ export function RequestDetailPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="font-mono text-xs font-bold tracking-wide text-neutral-400">{formatRequestId(request.displayId)}</p>
-            <h1 className="mt-1 text-2xl font-extrabold tracking-tight">{request.customer.name}</h1>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{request.customer.name}</h1>
             <p className="mt-1 text-sm text-neutral-500">{formatPhone(request.customer.phone)}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <TypeBadge type={request.type} />
@@ -92,19 +94,19 @@ export function RequestDetailPage() {
             </div>
           </div>
           <div className="flex flex-col gap-2 sm:items-end">
-            <Link to={`/app/customers/${request.customer.id}`} className="inline-flex h-11 items-center justify-center rounded-xl bg-neutral-100 px-4 text-sm font-bold text-[#B439FD]">
+            <Link to={`/app/customers/${request.customer.id}`} className="inline-flex h-11 items-center justify-center rounded-xl bg-neutral-100 px-4 text-sm font-bold text-[#7B00E0]">
               {t("common.customerProfile")}
             </Link>
             <Link
               to={`/app/requests/${request.id}/tag`}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-neutral-100 px-4 text-sm font-bold text-[#B439FD]"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-neutral-100 px-4 text-sm font-bold text-[#7B00E0]"
             >
               <QrCode size={16} />
               {t("tag.print")}
             </Link>
             <Link
               to={`/app/receipts/${request.id}`}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#B439FD] px-4 text-sm font-bold text-white hover:bg-[#C45FFF]"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-[#7B00E0] px-6 text-[12.8px] font-bold text-white hover:bg-[#6500BD]"
             >
               <Printer size={16} />
               {t("detail.printReceipt")}
@@ -129,6 +131,21 @@ export function RequestDetailPage() {
             <dd>{request.sale ? t("detail.saleLine", { invoice: request.sale.invoiceNumber, date: formatDate(request.sale.warrantyExpiry) }) : t("detail.notLinked")}</dd>
             <dt className="text-neutral-500">{t("detail.defect")}</dt>
             <dd>{request.defectType ? defectLabel(request.defectType) : t("common.dash")}</dd>
+            {request.resolutionType ? (
+              <>
+                <dt className="text-neutral-500">{t("job.resolution")}</dt>
+                <dd>
+                  {t(`resolution.${request.resolutionType}`)}
+                  {detail.data?.replacement ? ` · ${localizedName(detail.data.replacement)} · ${detail.data.replacement.serialNumber}` : ""}
+                </dd>
+              </>
+            ) : null}
+            {request.pickupConfirmationType ? (
+              <>
+                <dt className="text-neutral-500">{t("detail.pickup")}</dt>
+                <dd>{t(`pickup.type.${request.pickupConfirmationType}`)}</dd>
+              </>
+            ) : null}
             <dt className="text-neutral-500">{t("detail.source")}</dt>
             <dd>{t(`source.${request.source}`)}</dd>
             <dt className="text-neutral-500">{t("detail.payment")}</dt>
@@ -164,7 +181,7 @@ export function RequestDetailPage() {
                     href={mapsUrl(location)}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-2 inline-flex items-center gap-1 font-semibold text-[#B439FD]"
+                    className="mt-2 inline-flex items-center gap-1 font-semibold text-[#7B00E0]"
                   >
                     {t("maps.directions")}
                     <ExternalLink size={14} />
@@ -292,9 +309,9 @@ export function RequestDetailPage() {
         </section>
       ) : null}
 
-      {request.pickupConfirmedAt ? (
+      {request.pickupConfirmedAt && request.locationType === "in_shop" ? (
         <p className="mt-4 text-sm font-bold text-emerald-700">{t("pickup.already")}</p>
-      ) : request.status === "ready_for_pickup" || request.status === "completed" || request.status === "closed" ? (
+      ) : canConfirmPickup(request) ? (
         <div className="mt-4">
           <PickupConfirm pending={pickup.isPending} onConfirm={(signature) => pickup.mutateAsync(signature)} />
         </div>

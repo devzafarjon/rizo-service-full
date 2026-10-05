@@ -13,7 +13,7 @@ async function mark(id: string, status: "sent" | "failed", error?: string) {
   });
 }
 
-async function sendSms(to: string, body: string) {
+export async function sendSms(to: string, body: string) {
   if (!env.smsHttpUrl) {
     if (env.smsProvider === "console") {
       console.log(`[sms:console] to=${to} ${body}`);

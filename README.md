@@ -1,8 +1,8 @@
 # RIZO Service
 
-After-sales field service for RIZO market. Staff dispatch jobs, technicians work them, and customers track them. Covers **installation** and **repair**, either **in shop** or **on site**.
+After-sales field service for RIZO market. Staff dispatch jobs, technicians work them, and customers track them. Covers **installation** (always at the customer address) and **repair** (in shop or on site).
 
-Brand follows [rizo.uz](https://rizo.uz): Inter, white pages, black top bar, purple `#B439FD`, orange `#F6921E`.
+Design matches the RIZO ecosystem — the RizoPost admin app and [rizo.uz](https://rizo.uz): Nunito Sans, light gray `#F5F7FA` pages with white cards, brand purple `#7B00E0` (tint `#F5EBFD`) and orange `#F7941E` as accents only. The staff app keeps a white top bar; the customer portal has a purple-tint header with an orange rule and a “Customer portal” badge so it is never mistaken for the internal tool. Shared tokens live in `client/src/index.css`; shared pieces are `SurfaceTable`, `StatCard`, `Field`/`inputClass`, `segmented.ts`, and the `btn-rizo*` classes.
 
 Keep this file in sync with the product. After any user-visible change, re-check the running app and update this README.
 
@@ -16,7 +16,7 @@ Keep this file in sync with the product. After any user-visible change, re-check
 | Technician panel | Mobile or service-center technician | `/app/my-jobs` |
 | Customer portal | Product owner | `/portal` |
 
-Jobs can come from **RIZO market** (linked sale + warranty) or **RIZO Service** (walk-in / portal). Warranty dates are stored as UTC date-only. Matching available technicians can be auto-assigned.
+Jobs can come from **RIZO market** (linked sale + warranty) or **RIZO Service** (walk-in / portal). Warranty dates are stored as UTC date-only and run from the **installation date** once the product has been installed (set when an installation request completes), otherwise from the sale date. Matching available technicians who are working today are auto-assigned (fewest open jobs first). There is no periodic or seasonal maintenance service.
 
 ---
 
@@ -71,7 +71,7 @@ Optional notification and backup keys (see `server/.env.example`):
 
 | Key | Default | Purpose |
 | --- | --- | --- |
-| `SMS_PROVIDER` | `console` | `console` logs SMS; set `SMS_HTTP_URL` (+ optional `SMS_HTTP_TOKEN`) for a gateway |
+| `SMS_PROVIDER` | `console` | `console` logs SMS (also password-reset texts); set `SMS_HTTP_URL` (+ optional `SMS_HTTP_TOKEN`) for a gateway |
 | `TELEGRAM_PROVIDER` | `console` | `console` logs Telegram; set `TELEGRAM_BOT_TOKEN` to use Bot API |
 | `TELEGRAM_ADMIN_CHAT_ID` | empty | Admin overdue / low-stock Telegram destination |
 | `BACKUP_ENABLED` | `false` | When `true`, API process runs `pg_dump` at 02:00 Asia/Tashkent |
@@ -93,7 +93,7 @@ Phone + password. Staff and customers use **separate JWT scopes** — a staff to
 | Technician (service center) | `998900000004` | `tech123` |
 | Customer (Dilnoza) | `998900000003` | `customer123` |
 
-Seed also creates extra customers (Jasur, Malika) and invoices `RZ-1001` … `RZ-1004`.
+Seed also creates extra customers (Jasur, Malika), invoices `RZ-1001` … `RZ-1004`, a catalog with cost prices, and — on an empty database — one request in every board column (an overdue New job, an on-site job in progress, a paused job, a completed in-shop job awaiting pickup, and a picked-up job with a rating). Login is rate limited (10 failed attempts per phone per 15 minutes).
 
 ---
 
@@ -122,22 +122,22 @@ Translation files: `client/src/i18n/locales/{uz,ru,en}.json`. Add keys there whe
 | `/login` | Staff sign-in |
 | `/portal/login` | Customer sign-in |
 | `/portal/signup` | Customer registration (sends current language) |
-| `/portal/forgot` | Password reset (returns a one-time password in-app; no SMS) |
+| `/portal/forgot` | Password reset — a new password is sent **by SMS only** (console driver until a gateway is configured); the reply never reveals whether the number exists |
 
 ### Staff (admin)
 
 | Path | Screen |
 | --- | --- |
 | `/app` | Analytics dashboard (charts + KPI cards) — first screen after admin login |
-| `/app/kanban` | Dispatch board — drag-and-drop status, live updates, technician load |
+| `/app/kanban` | Dispatch board — drag-and-drop status, countdown on every card, live updates, technician load. A card opens a **slide-over** (reassign, priority, status, timeline, directions) with a link to the full page |
 | `/app/customers` | Customer list + create/edit |
 | `/app/customers/:id` | Profile, purchases, service history |
-| `/app/catalog` | Products, service items, spare parts (three names required) |
+| `/app/catalog` | Products, service items, spare parts (three names required; services and parts apply to one or more categories; parts carry a cost price) |
 | `/app/sales` | Record a sale; warranty expiry is calculated |
 | `/app/requests` | All service requests |
-| `/app/requests/new` | Create job with warranty check and auto/manual assign |
+| `/app/requests/new` | Create job with warranty check and auto/manual assign. |
 | `/app/requests/:id` | Job detail, timeline, print |
-| `/app/receipts` | Completed / closed / replaced jobs |
+| `/app/receipts` | Every request (a receipt exists from creation); cancelled ones are hidden |
 | `/app/receipts/:id` | Printable branded receipt + editable disclaimer |
 | `/app/reports` | Reports hub (admin only) |
 | `/app/reports/products` | Volume, installation vs repair, paid revenue, warranty ratio |
@@ -151,7 +151,7 @@ Translation files: `client/src/i18n/locales/{uz,ru,en}.json`. Add keys there whe
 | `/app/scan` | Camera / manual QR lookup |
 | `/app/schedule` | Technician working / off calendar (14 days) |
 | `/app/audit` | Activity log + SMS/Telegram send queue |
-| `/app/kiosk` | Counter pickup confirmation (tap or signature) |
+| `/app/kiosk` | Counter pickup confirmation for in-shop jobs (tap or signature) |
 | `/app/customers/duplicates` | Merge customers that share a phone |
 
 Dashboard and Reports are **admin / dispatcher only**. Technician and customer navigation do not show them; `RoleRoute` and `requireStaffRole("admin")` block the pages and APIs. Date filters: this week / month / quarter / year / all / custom. Each report exports CSV (opens in Excel). Dashboard date range is global and refreshes every chart from aggregated `/api/staff/reports/*` endpoints (not raw client-side job lists).
@@ -163,7 +163,7 @@ Header search finds phone, name, invoice, or request ID. The top-right account m
 | Path | Screen |
 | --- | --- |
 | `/app/my-jobs` | Personal kanban; availability toggle |
-| `/app/my-jobs/:id/complete` | Services, parts (stock check), extras, photo, complete |
+| `/app/my-jobs/:id/complete` | Photos first, then services, parts (stock check), extras, outcome (repaired / replaced + serial), complete |
 | `/app/my-jobs/:id/receipt` | Print the same receipt |
 | `/app/scan` | Scan a device tag and open the job |
 | `/app/my-schedule` | Mark working days / days off |
@@ -175,8 +175,8 @@ Phone-friendly. Desktop still uses the staff shell. The header account menu is o
 | Path | Screen |
 | --- | --- |
 | `/portal` | My requests, filters, ratings after completion |
-| `/portal/new` | New request from a past purchase or catalog product |
-| `/portal/requests/:id` | Live status, pickup confirmation, feedback |
+| `/portal/new` | New request from a past purchase or catalog product. |
+| `/portal/requests/:id` | Live status in friendly wording, technician first name only, in-shop pickup confirmation (tap or signature), rating with quick tags |
 
 Notification bell translates from `code` + `params`. Socket room `customer:{id}`. The header account menu signs out from every portal page.
 
@@ -198,29 +198,41 @@ Region codes: `01` Toshkent shahri, `10` Toshkent viloyati, `20` Sirdaryo, `25` 
 
 ---
 
-## Job types and statuses
+## Statuses
 
-Only statuses allowed for that type can be set (kanban drop is validated).
+One model for both repair and installation:
 
-| Type | Flow |
-| --- | --- |
-| Installation | scheduled → in_progress → completed |
-| Repair | received → diagnosing → awaiting_parts → repairing → ready_for_pickup → replaced / closed |
+`new → in_progress → paused → completed → picked_up`, plus `cancelled`.
 
-On-site jobs record arrival. Pauses have a reason and a custom timer.
+| Status | Meaning | Timer |
+| --- | --- | --- |
+| New | Waiting for the technician | 1 day (from assignment) |
+| In progress | Work started (`accepted_at`; on-site jobs also record `arrived_at` via “I’ve arrived”) | 3 days (from accept) |
+| Paused | Needs a **reason** and a technician-set duration; each pause is stored with start/end | the chosen duration |
+| Completed | Photos (≥1), services, parts, extras recorded; cost is automatic | — |
+| Picked up | In-shop jobs only: customer taps “I received my device” or signs | — |
+| Cancelled | Admin action; leaves the boards, can be reopened to New | — |
+
+Timers are green → yellow (last quarter) → red (expired). The technician board shows New, In progress, Paused, Completed (completed + picked up). The admin board adds Picked up. Admin transitions are validated server-side (`server/src/lib/statusChange.ts`); a technician can pause, resume and complete only their own jobs.
+
+Completion needs at least one photo, a service when the product category has any, and — when a repair is resolved by **replacement** — the new product and serial number (no service line required). Cost is 0 when in warranty (extra expenses are still charged), otherwise services + parts + extras.
+
+Repair can be in shop or on site; installation can be either too — the location is chosen when the request is created, and on-site requests need an address.
 
 ---
 
 ## Domain model (short)
 
-- **StaffUser** — `admin` or `technician` (`mobile` / `service_center`), availability, locale
+- **StaffUser** — `admin` or `technician` (`mobile` / `service_center`), availability, `is_active`, locale
 - **Customer** — phone login, address, region, locale
+- **ProductCategory / Product** — categories are a table; products reference one by name
 - **Product** — SKU, category, translated names
-- **Sale** — invoice, price, warranty months + expiry
-- **ServiceCatalogItem / SparePart** — category-tagged, translated names; parts have stock
-- **ServiceRequest** — type, source, location, assignment, warranty, payment, display id
-- **Lines** — services, parts (qty + price at time), extra expenses, photos, notes, pauses
-- **Feedback** — one rating per completed job
+- **Sale** — invoice, price, warranty months + expiry, installation date
+- **ServiceCatalogItem / SparePart** — applicable to one or more product categories, translated names; parts have price, **cost price**, stock and a low-stock threshold
+- **ServiceRequest** — type, source, location, assignment (`assigned_at`), warranty, payment, display id, resolution (`repair` / `replace`), pickup confirmation type
+- **Lines** — services, parts (qty + price and cost at time), extra expenses, photos, notes, pauses
+- **ReplacementItem** — new product + serial number when a repair ends in replacement
+- **Feedback** — one rating (1–5) per completed job, optional comment and quick tags
 - **Notification** — English `message` fallback plus `code` / `params` for i18n; staff alerts reuse the same table (`audience=staff`)
 - **TechnicianSchedule** — per-day working / off (+ optional hours); auto-assign skips off technicians
 - **AuditLog** — status, cost, role, pickup, merge
@@ -237,14 +249,14 @@ Staff routes sit under `/api/staff/…` with a staff JWT. Customer routes sit un
 | --- | --- |
 | `/api/health` | Liveness |
 | `/api/staff/auth` | Login, me, availability, locale |
-| `/api/customer/auth` | Register, login, me, forgot, locale |
+| `/api/customer/auth` | Register, login, me, forgot (SMS only), locale |
 | `/api/staff/customers` | CRUD |
 | `/api/staff/products` | Product catalog |
 | `/api/staff/catalog` | Services and spare parts |
 | `/api/staff/sales` | Sales + warranty |
 | `/api/staff/search` | Quick search |
-| `/api/staff/technicians` | Board + workload |
-| `/api/staff/requests` | Create / list / update jobs |
+| `/api/staff/technicians` | Board + workload; `PATCH` role, type, availability, `isActive` |
+| `/api/staff/requests` | Create / list; `PATCH` changes status, technician or priority (pause needs `pauseReason` + `pauseHours`) |
 | `/api/staff/reports/dashboard` | Dashboard KPIs and chart series |
 | `/api/staff/reports/products` | Product report |
 | `/api/staff/reports/parts` | Spare-part report (`productId` optional) |
@@ -253,7 +265,7 @@ Staff routes sit under `/api/staff/…` with a staff JWT. Customer routes sit un
 | `/api/staff/reports/technicians` | Technician performance |
 | `/api/staff/reports/warranty` | Warranty vs paid |
 | `/api/staff/reports/sources` | Request source mix |
-| `/api/staff/my-jobs` | Technician jobs, complete, photos, own schedule |
+| `/api/staff/my-jobs` | Technician jobs: move, `arrived`, `resolution` (repair / replace + serial), services, parts, extras, photos, complete, own schedule |
 | `/api/staff/settings` | Admin flags (block zero-stock) |
 | `/api/staff/alerts` | Admin low-stock / overdue inbox |
 | `/api/staff/audit` | Activity log |

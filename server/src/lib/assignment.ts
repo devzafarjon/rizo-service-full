@@ -1,20 +1,10 @@
 import type { PaymentStatus, RequestStatus, ServiceType, TechnicianType, WarrantyStatus } from "@prisma/client";
+import { OPEN_STATUSES } from "./status.js";
 import { tashkentCalendarDate } from "./displayId.js";
 import { prisma } from "./prisma.js";
 
-const OPEN_STATUSES: RequestStatus[] = [
-  "scheduled",
-  "in_progress",
-  "received",
-  "diagnosing",
-  "awaiting_parts",
-  "repairing",
-  "ready_for_pickup",
-];
-
-export function initialStatusFor(type: ServiceType): RequestStatus {
-  if (type === "installation") return "scheduled";
-  return "received";
+export function initialStatusFor(): RequestStatus {
+  return "new";
 }
 
 export function paymentFor(type: ServiceType, warranty: WarrantyStatus) {
@@ -52,6 +42,7 @@ export async function pickAvailableTechnician(technicianType: TechnicianType) {
       role: "technician",
       technicianType,
       isAvailable: true,
+      isActive: true,
       ...(offIds.length ? { id: { notIn: offIds } } : {}),
     },
     select: { id: true, name: true, phone: true, technicianType: true, isAvailable: true },

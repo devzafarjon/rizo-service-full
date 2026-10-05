@@ -12,8 +12,8 @@ export function StaffHomePage() {
 
   return (
     <div>
-      <p className="text-sm font-semibold text-[#B439FD]">{t("staffHome.welcome")}</p>
-      <h1 className="mt-1 text-2xl font-bold tracking-tight text-black sm:text-3xl">
+      <p className="text-sm font-semibold text-[#7B00E0]">{t("staffHome.welcome")}</p>
+      <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">
         {user.name}
       </h1>
       <p className="mt-2 max-w-2xl text-sm text-gray-500">{t("staffHome.intro")}</p>
@@ -46,8 +46,8 @@ function HomeCard({
       to={to}
       className="relative rounded-2xl border border-gray-100 bg-white p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition hover:shadow-[0_8px_30px_rgba(180,57,253,0.12)]"
     >
-      <span className="absolute top-4 right-4 h-2.5 w-2.5 rounded-full bg-[#B439FD]" />
-      <p className="text-xs font-bold tracking-wide text-[#F6921E] uppercase">{milestone}</p>
+      <span className="absolute top-4 right-4 h-2.5 w-2.5 rounded-full bg-[#7B00E0]" />
+      <p className="text-xs font-bold tracking-wide text-[#F7941E] uppercase">{milestone}</p>
       <h2 className="mt-2 text-lg font-bold text-black">{title}</h2>
       <p className="mt-2 text-sm text-gray-500">{body}</p>
     </Link>

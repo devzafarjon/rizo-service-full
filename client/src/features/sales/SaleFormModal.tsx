@@ -139,7 +139,7 @@ export function SaleFormModal({
           <button
             type="submit"
             disabled={pending}
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#B439FD] px-4 text-sm font-bold text-white hover:bg-[#C45FFF] disabled:opacity-70"
+            className="inline-flex h-12 items-center gap-2 rounded-lg bg-[#7B00E0] px-6 text-[12.8px] font-bold text-white hover:bg-[#6500BD] disabled:opacity-70"
           >
             {pending ? <Spinner className="h-4 w-4" /> : null}
             {sale ? t("sales.save") : t("sales.record")}

@@ -26,7 +26,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 ? "bg-red-600 text-white"
                 : toast.tone === "info"
                   ? "bg-neutral-900 text-white"
-                  : "bg-[#B439FD] text-white"
+                  : "bg-[#7B00E0] text-white"
             }`}
           >
             {toast.message}

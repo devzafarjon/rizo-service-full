@@ -12,12 +12,13 @@ import { useStaffAuth } from "../auth/StaffAuthContext";
 import { api } from "../../lib/api";
 import { formatDateTime, formatRequestId } from "../../lib/format";
 import { localizedName } from "../../lib/localized";
+import { KANBAN_COLUMNS } from "../../lib/status";
 import type { RequestStatus, ServiceRequest, ServiceType } from "../../lib/types";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
 
 const TYPE_FILTERS: Array<"" | ServiceType> = ["", "installation", "repair"];
 
-const STATUS_FILTERS: Array<"" | RequestStatus> = ["", "scheduled", "received", "in_progress", "completed"];
+const STATUS_FILTERS: Array<"" | RequestStatus> = ["", ...KANBAN_COLUMNS];
 
 export function ServiceRequestsPage() {
   const { t } = useTranslation();
@@ -50,12 +51,12 @@ export function ServiceRequestsPage() {
     <div>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">{t("requests.title")}</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{t("requests.title")}</h1>
           <p className="mt-1 text-sm text-neutral-500">{t("requests.intro")}</p>
         </div>
         <Link
           to="/app/requests/new"
-          className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#B439FD] px-4 text-sm font-bold text-white hover:bg-[#C45FFF]"
+          className="inline-flex h-12 items-center gap-2 rounded-lg bg-[#7B00E0] px-6 text-[12.8px] font-bold text-white hover:bg-[#6500BD]"
         >
           <Plus size={16} />
           {t("requests.new")}
@@ -97,7 +98,7 @@ export function ServiceRequestsPage() {
           title={t("requests.emptyTitle")}
           body={t("requests.emptyBody")}
           action={
-            <Link to="/app/requests/new" className="inline-flex h-11 items-center rounded-xl bg-[#B439FD] px-4 text-sm font-bold text-white">
+            <Link to="/app/requests/new" className="inline-flex h-12 items-center rounded-lg bg-[#7B00E0] px-6 text-[12.8px] font-bold text-white">
               {t("requests.new")}
             </Link>
           }
@@ -120,7 +121,7 @@ export function ServiceRequestsPage() {
             {requests.map((request) => (
               <tr key={request.id} className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50">
                 <Td>
-                  <Link to={`/app/requests/${request.id}`} className="font-semibold text-[#B439FD] hover:underline">
+                  <Link to={`/app/requests/${request.id}`} className="font-semibold text-[#7B00E0] hover:underline">
                     {formatRequestId(request.displayId)}
                   </Link>
                   <div className="mt-1 flex flex-wrap gap-1">
@@ -134,7 +135,7 @@ export function ServiceRequestsPage() {
                   </div>
                 </Td>
                 <Td>
-                  <Link to={`/app/customers/${request.customer.id}`} className="font-medium hover:text-[#B439FD]">
+                  <Link to={`/app/customers/${request.customer.id}`} className="font-medium hover:text-[#7B00E0]">
                     {request.customer.name}
                   </Link>
                 </Td>

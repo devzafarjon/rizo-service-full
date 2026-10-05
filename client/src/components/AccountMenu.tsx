@@ -28,7 +28,7 @@ export function AccountMenu({
         className="inline-flex h-10 max-w-[12rem] items-center gap-2 rounded-lg px-1.5 hover:bg-gray-100 sm:px-2"
         aria-label={t("common.accountMenu")}
       >
-        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#F3E8FF] text-xs font-extrabold text-[#B439FD]">
+        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#F5EBFD] text-xs font-extrabold text-[#7B00E0]">
           {initials(name)}
         </span>
         <span className="hidden min-w-0 truncate text-left text-sm font-bold text-black sm:block">{name}</span>
@@ -47,7 +47,7 @@ export function AccountMenu({
           <button
             type="button"
             onClick={onLogout}
-            className="flex min-h-10 w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-bold text-[#B439FD] data-focus:bg-[#F3E8FF]"
+            className="flex min-h-10 w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-bold text-[#7B00E0] data-focus:bg-[#F5EBFD]"
           >
             <LogOut size={16} />
             {t("common.signOut")}

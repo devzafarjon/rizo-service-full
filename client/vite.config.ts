@@ -5,6 +5,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
+// Point the dev proxy at another API (e.g. a scratch database) with API_TARGET=http://localhost:4100.
+const api = process.env.API_TARGET ?? "http://localhost:4000";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
@@ -14,12 +16,12 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: Number(process.env.DEV_PORT ?? 5173),
     proxy: {
-      "/api": "http://localhost:4000",
-      "/uploads": "http://localhost:4000",
+      "/api": api,
+      "/uploads": api,
       "/socket.io": {
-        target: "http://localhost:4000",
+        target: api,
         ws: true,
       },
     },

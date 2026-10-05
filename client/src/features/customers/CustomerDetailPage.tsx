@@ -3,7 +3,7 @@ import { ArrowLeft, Plus } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
-import { TypeBadge, WarrantyBadge } from "../../components/Badges";
+import { StatusBadge, TypeBadge, WarrantyBadge } from "../../components/Badges";
 import { EmptyState } from "../../components/EmptyState";
 import { PageSkeleton } from "../../components/PageSkeleton";
 import { SurfaceTable, Td, Th } from "../../components/SurfaceTable";
@@ -13,7 +13,6 @@ import { api, apiErrorMessage } from "../../lib/api";
 import { formatDate, formatDateTime, formatMoney, formatPhone, formatRequestId } from "../../lib/format";
 import { localizedName } from "../../lib/localized";
 import { regionLabel } from "../../lib/regions";
-import { outcomeLabel } from "../../lib/status";
 import type { CustomerRequest, CustomerSale, StaffCustomer } from "../../lib/types";
 import { CustomerFormModal } from "./CustomerFormModal";
 import { SaleFormModal } from "../sales/SaleFormModal";
@@ -74,14 +73,14 @@ export function CustomerDetailPage() {
 
   return (
     <div>
-      <Link to="/app/customers" className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-500 hover:text-[#B439FD]">
+      <Link to="/app/customers" className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-500 hover:text-[#7B00E0]">
         <ArrowLeft size={16} />
         {t("customers.all")}
       </Link>
 
       <div className="mt-4 flex flex-col gap-4 rounded-2xl border border-neutral-200 bg-white p-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">{customer.name}</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{customer.name}</h1>
           <p className="mt-1 text-sm text-neutral-500">{formatPhone(customer.phone)}</p>
           <p className="mt-1 text-sm text-neutral-500">{customer.address || t("customers.noAddress")}</p>
           <p className="mt-1 text-sm text-neutral-500">
@@ -92,7 +91,7 @@ export function CustomerDetailPage() {
         <div className="flex flex-wrap gap-2">
           <Link
             to={`/app/requests/new?customerId=${customer.id}`}
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#B439FD] px-4 text-sm font-bold text-white"
+            className="inline-flex h-12 items-center gap-2 rounded-lg bg-[#7B00E0] px-6 text-[12.8px] font-bold text-white"
           >
             <Plus size={16} />
             {t("requests.new")}
@@ -103,7 +102,7 @@ export function CustomerDetailPage() {
               setFormError(null);
               setEditOpen(true);
             }}
-            className="h-11 rounded-xl bg-neutral-100 px-4 text-sm font-bold text-[#B439FD]"
+            className="h-11 rounded-xl bg-neutral-100 px-4 text-sm font-bold text-[#7B00E0]"
           >
             {t("customers.editProfile")}
           </button>
@@ -113,7 +112,7 @@ export function CustomerDetailPage() {
               setSaleError(null);
               setSaleOpen(true);
             }}
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-neutral-100 px-4 text-sm font-bold text-[#B439FD]"
+            className="inline-flex h-11 items-center gap-2 rounded-xl bg-neutral-100 px-4 text-sm font-bold text-[#7B00E0]"
           >
             <Plus size={16} />
             {t("customers.addSale")}
@@ -182,7 +181,7 @@ export function CustomerDetailPage() {
               {requests.map((request) => (
                 <tr key={request.id} className="border-b border-neutral-100 last:border-0">
                   <Td className="font-mono text-xs font-semibold">
-                    <Link to={`/app/requests/${request.id}`} className="text-[#B439FD] hover:underline">
+                    <Link to={`/app/requests/${request.id}`} className="text-[#7B00E0] hover:underline">
                       {formatRequestId(request.displayId)}
                     </Link>
                   </Td>
@@ -192,12 +191,12 @@ export function CustomerDetailPage() {
                     <TypeBadge type={request.type} />
                   </Td>
                   <Td>
-                    <Link to={`/app/requests/${request.id}`} className="font-medium text-[#B439FD] hover:underline">
+                    <Link to={`/app/requests/${request.id}`} className="font-medium text-[#7B00E0] hover:underline">
                       {localizedName(request.product)}
                     </Link>
                   </Td>
                   <Td>
-                    <span className="text-sm font-semibold">{outcomeLabel(request.status, request.completedAt)}</span>
+                    <StatusBadge status={request.status} />
                   </Td>
                   <Td>
                     <WarrantyBadge status={request.warrantyStatus} />

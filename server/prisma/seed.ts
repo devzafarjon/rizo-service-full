@@ -8,6 +8,9 @@ import {
   WarrantyStatus,
 } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import fs from "node:fs";
+import path from "node:path";
+import { uploadsRoot } from "../src/lib/uploads.js";
 import { allocateDisplayId } from "../src/lib/displayId.js";
 
 const prisma = new PrismaClient();
@@ -51,7 +54,7 @@ async function main() {
     },
   });
 
-  await prisma.staffUser.upsert({
+  const shopTech = await prisma.staffUser.upsert({
     where: { phone: "998900000004" },
     update: {},
     create: {
@@ -109,6 +112,10 @@ async function main() {
     { name: "RIZO Vision 43", nameUz: "RIZO Vision 43", nameRu: "RIZO Vision 43", nameEn: "RIZO Vision 43", sku: "TV-43", category: "Televisions" },
   ];
 
+  for (const name of new Set(products.map((product) => product.category))) {
+    await prisma.productCategory.upsert({ where: { name }, update: {}, create: { name } });
+  }
+
   const savedProducts = [];
   for (const product of products) {
     savedProducts.push(
@@ -129,19 +136,20 @@ async function main() {
   const [fridge, washer, ac, tv] = savedProducts;
 
   const services = [
-    { name: "Standard installation", nameUz: "Standart o‘rnatish", nameRu: "Стандартная установка", nameEn: "Standard installation", price: 180000, productCategory: "Refrigerators" },
-    { name: "Diagnostic visit", nameUz: "Diagnostika tashrifi", nameRu: "Диагностический визит", nameEn: "Diagnostic visit", price: 80000, productCategory: "Refrigerators" },
-    { name: "Gas refill", nameUz: "Gaz to‘ldirish", nameRu: "Заправка газом", nameEn: "Gas refill", price: 220000, productCategory: "Refrigerators" },
-    { name: "Washer installation", nameUz: "Kir yuvish mashinasini o‘rnatish", nameRu: "Установка стиральной машины", nameEn: "Washer installation", price: 150000, productCategory: "Washing machines" },
-    { name: "Drum cleaning", nameUz: "Barabanni tozalash", nameRu: "Чистка барабана", nameEn: "Drum cleaning", price: 110000, productCategory: "Washing machines" },
-    { name: "AC installation", nameUz: "Konditsioner o‘rnatish", nameRu: "Установка кондиционера", nameEn: "AC installation", price: 350000, productCategory: "Air conditioners" },
-    { name: "Seasonal AC maintenance", nameUz: "Mavsumiy konditsioner xizmati", nameRu: "Сезонное ТО кондиционера", nameEn: "Seasonal AC maintenance", price: 160000, productCategory: "Air conditioners" },
-    { name: "TV wall mount & setup", nameUz: "Televizorni devorga o‘rnatish", nameRu: "Монтаж телевизора на стену", nameEn: "TV wall mount & setup", price: 120000, productCategory: "Televisions" },
+    { name: "Standard installation", nameUz: "Standart o‘rnatish", nameRu: "Стандартная установка", nameEn: "Standard installation", price: 180000, productCategories: ["Refrigerators"] },
+    { name: "Diagnostic visit", nameUz: "Diagnostika tashrifi", nameRu: "Диагностический визит", nameEn: "Diagnostic visit", price: 80000, productCategories: ["Refrigerators"] },
+    { name: "Gas refill", nameUz: "Gaz to‘ldirish", nameRu: "Заправка газом", nameEn: "Gas refill", price: 220000, productCategories: ["Refrigerators"] },
+    { name: "Washer installation", nameUz: "Kir yuvish mashinasini o‘rnatish", nameRu: "Установка стиральной машины", nameEn: "Washer installation", price: 150000, productCategories: ["Washing machines"] },
+    { name: "Drum cleaning", nameUz: "Barabanni tozalash", nameRu: "Чистка барабана", nameEn: "Drum cleaning", price: 110000, productCategories: ["Washing machines"] },
+    { name: "AC installation", nameUz: "Konditsioner o‘rnatish", nameRu: "Установка кондиционера", nameEn: "AC installation", price: 350000, productCategories: ["Air conditioners"] },
+    { name: "AC diagnostic visit", nameUz: "Konditsioner diagnostikasi", nameRu: "Диагностика кондиционера", nameEn: "AC diagnostic visit", price: 90000, productCategories: ["Air conditioners"] },
+    { name: "Remote setup", nameUz: "Pultni sozlash", nameRu: "Настройка пульта", nameEn: "Remote setup", price: 40000, productCategories: ["Televisions"] },
+    { name: "TV wall mount & setup", nameUz: "Televizorni devorga o‘rnatish", nameRu: "Монтаж телевизора на стену", nameEn: "TV wall mount & setup", price: 120000, productCategories: ["Televisions"] },
   ];
 
   for (const item of services) {
     const existing = await prisma.serviceCatalogItem.findFirst({
-      where: { name: item.name, productCategory: item.productCategory },
+      where: { name: item.name },
     });
     if (!existing) {
       await prisma.serviceCatalogItem.create({ data: item });
@@ -153,6 +161,11 @@ async function main() {
     }
   }
 
+  // Periodic / seasonal maintenance is not a RIZO Service product.
+  await prisma.serviceCatalogItem.deleteMany({
+    where: { name: "Seasonal AC maintenance", requestLines: { none: {} } },
+  });
+
   await prisma.serviceCatalogItem.updateMany({
     where: { name: "Compressor check" },
     data: {
@@ -163,24 +176,24 @@ async function main() {
   });
 
   const parts = [
-    { name: "Door gasket", nameUz: "Eshik qistirmasi", nameRu: "Уплотнитель двери", nameEn: "Door gasket", price: 95000, productCategory: "Refrigerators", stockQuantity: 14 },
-    { name: "Thermostat", nameUz: "Termostat", nameRu: "Термостат", nameEn: "Thermostat", price: 140000, productCategory: "Refrigerators", stockQuantity: 8 },
-    { name: "Drain pump", nameUz: "Drenaj nasosi", nameRu: "Сливной насос", nameEn: "Drain pump", price: 175000, productCategory: "Washing machines", stockQuantity: 6 },
-    { name: "Inlet valve", nameUz: "Kirish klapani", nameRu: "Впускной клапан", nameEn: "Inlet valve", price: 89000, productCategory: "Washing machines", stockQuantity: 11 },
-    { name: "Capacitor", nameUz: "Kondensator", nameRu: "Конденсатор", nameEn: "Capacitor", price: 65000, productCategory: "Air conditioners", stockQuantity: 20 },
-    { name: "Remote control", nameUz: "Pult", nameRu: "Пульт", nameEn: "Remote control", price: 45000, productCategory: "Televisions", stockQuantity: 18 },
+    { name: "Door gasket", nameUz: "Eshik qistirmasi", nameRu: "Уплотнитель двери", nameEn: "Door gasket", price: 95000, costPrice: 62000, productCategories: ["Refrigerators"], stockQuantity: 14 },
+    { name: "Thermostat", nameUz: "Termostat", nameRu: "Термостат", nameEn: "Thermostat", price: 140000, costPrice: 91000, productCategories: ["Refrigerators"], stockQuantity: 8 },
+    { name: "Drain pump", nameUz: "Drenaj nasosi", nameRu: "Сливной насос", nameEn: "Drain pump", price: 175000, costPrice: 114000, productCategories: ["Washing machines"], stockQuantity: 6 },
+    { name: "Inlet valve", nameUz: "Kirish klapani", nameRu: "Впускной клапан", nameEn: "Inlet valve", price: 89000, costPrice: 58000, productCategories: ["Washing machines"], stockQuantity: 11 },
+    { name: "Capacitor", nameUz: "Kondensator", nameRu: "Конденсатор", nameEn: "Capacitor", price: 65000, costPrice: 42000, productCategories: ["Air conditioners"], stockQuantity: 20 },
+    { name: "Remote control", nameUz: "Pult", nameRu: "Пульт", nameEn: "Remote control", price: 45000, costPrice: 29000, productCategories: ["Televisions"], stockQuantity: 18 },
   ];
 
   for (const item of parts) {
     const existing = await prisma.sparePart.findFirst({
-      where: { name: item.name, productCategory: item.productCategory },
+      where: { name: item.name },
     });
     if (!existing) {
       await prisma.sparePart.create({ data: item });
     } else {
       await prisma.sparePart.update({
         where: { id: existing.id },
-        data: { nameUz: item.nameUz, nameRu: item.nameRu, nameEn: item.nameEn },
+        data: { nameUz: item.nameUz, nameRu: item.nameRu, nameEn: item.nameEn, costPrice: item.costPrice },
       });
     }
   }
@@ -199,6 +212,7 @@ async function main() {
       saleDate: fridgeSaleDate,
       pricePaid: 4500000,
       warrantyMonths: 24,
+      installationDate: fridgeSaleDate,
       warrantyExpiry: addMonths(fridgeSaleDate, 24),
       invoiceNumber: "RZ-1001",
     },
@@ -249,38 +263,153 @@ async function main() {
     },
   });
 
-  const existingInstall = await prisma.serviceRequest.findFirst({
-    where: { saleId: fridgeSale.id, type: ServiceType.installation },
-  });
-  if (!existingInstall) {
-    const installedAt = utcMonthsAgo(8);
-    const displayId = await allocateDisplayId(prisma, {
-      regionCode: dilnoza.regionCode,
-      address: dilnoza.address,
-      at: installedAt,
+  const tvSale = await prisma.sale.findUniqueOrThrow({ where: { invoiceNumber: "RZ-1002" } });
+  const acSale = await prisma.sale.findUniqueOrThrow({ where: { invoiceNumber: "RZ-1003" } });
+  const washerSale = await prisma.sale.findUniqueOrThrow({ where: { invoiceNumber: "RZ-1004" } });
+
+  // Demo requests, one per board column, so every screen has something to show.
+  if ((await prisma.serviceRequest.count()) === 0) {
+    const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000);
+    const demoPhoto = "/api/uploads/seed/demo-photo.svg";
+    fs.mkdirSync(path.join(uploadsRoot, "seed"), { recursive: true });
+    fs.writeFileSync(
+      path.join(uploadsRoot, "seed", "demo-photo.svg"),
+      '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420"><rect width="640" height="420" fill="#F4F0FA"/><rect x="230" y="90" width="180" height="240" rx="14" fill="#fff" stroke="#7B00E0" stroke-width="6"/><circle cx="320" cy="150" r="22" fill="#F7941E"/><text x="320" y="380" text-anchor="middle" font-family="sans-serif" font-size="20" fill="#7B00E0">Demo job photo</text></svg>',
+    );
+
+    type Seed = {
+      type: ServiceType;
+      customer: typeof dilnoza;
+      product: typeof fridge;
+      sale: { id: string } | null;
+      issue: string;
+      defect?: "dead_on_arrival" | "failed_during_use";
+      location: LocationType;
+      tech: typeof mobileTech;
+      status: RequestStatus;
+      createdHoursAgo: number;
+      priority?: "low" | "medium" | "high" | "urgent";
+      warranty: WarrantyStatus;
+      source?: "rizo_market" | "rizo_service";
+      byCustomer?: boolean;
+    };
+
+    async function seedRequest(input: Seed) {
+      const createdAt = hoursAgo(input.createdHoursAgo);
+      const displayId = await allocateDisplayId(prisma, {
+        regionCode: input.customer.regionCode,
+        address: input.customer.address,
+        at: createdAt,
+      });
+      const worked = input.status !== "new";
+      return prisma.serviceRequest.create({
+        data: {
+          displayId,
+          type: input.type,
+          source: input.source ?? "rizo_service",
+          submittedByCustomer: input.byCustomer ?? false,
+          saleId: input.sale?.id ?? null,
+          customerId: input.customer.id,
+          productId: input.product.id,
+          issueDescription: input.issue,
+          defectType: input.defect ?? null,
+          locationType: input.location,
+          customerLocation: input.location === "on_site" ? { address: input.customer.address, lat: 41.311081, lng: 69.240562 } : undefined,
+          technicianTypeRequired: input.tech.technicianType ?? TechnicianType.mobile,
+          assignedTechnicianId: input.tech.id,
+          assignedAt: createdAt,
+          status: input.status,
+          priority: input.priority ?? "medium",
+          warrantyStatus: input.warranty,
+          isPaidRepair: input.type === "repair" && input.warranty !== "in_warranty",
+          paymentStatus: input.warranty === "in_warranty" ? "not_required" : "pending",
+          acceptedAt: worked ? new Date(createdAt.getTime() + 30 * 60_000) : null,
+          arrivedAt: worked && input.location === "on_site" ? new Date(createdAt.getTime() + 45 * 60_000) : null,
+          createdAt,
+        },
+      });
+    }
+
+    // New and already overdue (New has a 1 day timer).
+    await seedRequest({
+      type: ServiceType.repair, customer: dilnoza, product: tv, sale: tvSale, defect: "failed_during_use",
+      issue: "Screen flickers and turns off after a few minutes.", location: LocationType.in_shop, tech: shopTech,
+      status: RequestStatus.new, createdHoursAgo: 30, priority: "high", warranty: WarrantyStatus.expired, byCustomer: true,
     });
-    await prisma.serviceRequest.create({
+    // In progress, on site.
+    await seedRequest({
+      type: ServiceType.installation, customer: jasur, product: ac, sale: acSale,
+      issue: "Install the new split air conditioner in the living room.", location: LocationType.on_site, tech: mobileTech,
+      status: RequestStatus.in_progress, createdHoursAgo: 5, warranty: WarrantyStatus.in_warranty, source: "rizo_market",
+    });
+    // Paused with a reason and a technician-set timer.
+    const paused = await seedRequest({
+      type: ServiceType.repair, customer: jasur, product: washer, sale: washerSale, defect: "dead_on_arrival",
+      issue: "Washer does not start; display stays dark.", location: LocationType.on_site, tech: mobileTech,
+      status: RequestStatus.paused, createdHoursAgo: 20, priority: "urgent", warranty: WarrantyStatus.in_warranty,
+    });
+    await prisma.requestPause.create({
+      data: { serviceRequestId: paused.id, reason: "Waiting for a control board from the warehouse", customTimerHours: 48, pausedAt: hoursAgo(6) },
+    });
+
+    // Completed in-shop repair, waiting for the customer to collect it.
+    const gasket = await prisma.sparePart.findFirstOrThrow({ where: { name: "Door gasket" } });
+    const diagnostic = await prisma.serviceCatalogItem.findFirstOrThrow({ where: { name: "Diagnostic visit" } });
+    const done = await seedRequest({
+      type: ServiceType.repair, customer: dilnoza, product: fridge, sale: fridgeSale, defect: "failed_during_use",
+      issue: "Door does not seal and the fridge warms up.", location: LocationType.in_shop, tech: shopTech,
+      status: RequestStatus.completed, createdHoursAgo: 52, warranty: WarrantyStatus.in_warranty,
+    });
+    await prisma.serviceRequest.update({
+      where: { id: done.id },
+      data: { completedAt: hoursAgo(4), resolutionType: "repair", estimatedCost: 190000, finalCost: 0 },
+    });
+    await prisma.requestServiceLine.create({ data: { serviceRequestId: done.id, serviceCatalogItemId: diagnostic.id, priceAtTime: diagnostic.price } });
+    await prisma.requestPartLine.create({
+      data: { serviceRequestId: done.id, sparePartId: gasket.id, quantity: 1, priceAtTime: gasket.price, costAtTime: gasket.costPrice },
+    });
+    await prisma.sparePart.update({ where: { id: gasket.id }, data: { stockQuantity: { decrement: 1 } } });
+    await prisma.requestPhoto.create({ data: { serviceRequestId: done.id, photoUrl: demoPhoto, uploadedBy: shopTech.name, staffUserId: shopTech.id } });
+
+    // Picked up and rated.
+    const picked = await seedRequest({
+      type: ServiceType.repair, customer: dilnoza, product: tv, sale: tvSale, defect: "failed_during_use",
+      issue: "Remote control stopped working.", location: LocationType.in_shop, tech: shopTech,
+      status: RequestStatus.picked_up, createdHoursAgo: 150, warranty: WarrantyStatus.expired,
+    });
+    const remote = await prisma.sparePart.findFirstOrThrow({ where: { name: "Remote control" } });
+    const remoteSetup = await prisma.serviceCatalogItem.findFirstOrThrow({ where: { name: "Remote setup" } });
+    await prisma.serviceRequest.update({
+      where: { id: picked.id },
       data: {
-        displayId,
-        type: ServiceType.installation,
-        source: "rizo_market",
-        submittedByCustomer: false,
-        saleId: fridgeSale.id,
-        customerId: dilnoza.id,
-        productId: fridge.id,
-        issueDescription: "Install newly purchased refrigerator and check cooling.",
-        locationType: LocationType.in_shop,
-        technicianTypeRequired: TechnicianType.service_center,
-        assignedTechnicianId: mobileTech.id,
-        status: RequestStatus.completed,
-        priority: "medium",
-        warrantyStatus: WarrantyStatus.in_warranty,
-        paymentStatus: "not_required",
-        receivedAt: installedAt,
-        acceptedAt: installedAt,
-        completedAt: installedAt,
-        createdAt: installedAt,
+        completedAt: hoursAgo(120),
+        pickupConfirmedAt: hoursAgo(100),
+        pickupConfirmedBy: dilnoza.id,
+        pickupConfirmationType: "tap",
+        resolutionType: "repair",
+        estimatedCost: 85000,
+        finalCost: 85000,
+        paymentStatus: "paid",
       },
+    });
+    await prisma.requestServiceLine.create({ data: { serviceRequestId: picked.id, serviceCatalogItemId: remoteSetup.id, priceAtTime: remoteSetup.price } });
+    await prisma.requestPartLine.create({
+      data: { serviceRequestId: picked.id, sparePartId: remote.id, quantity: 1, priceAtTime: remote.price, costAtTime: remote.costPrice },
+    });
+    await prisma.requestPhoto.create({ data: { serviceRequestId: picked.id, photoUrl: demoPhoto, uploadedBy: shopTech.name, staffUserId: shopTech.id } });
+    await prisma.feedback.create({
+      data: { serviceRequestId: picked.id, customerId: dilnoza.id, rating: 5, comment: "Fast and polite service.", tags: ["fast", "polite"] },
+    });
+
+    // The fridge was installed the day it was sold.
+    const install = await seedRequest({
+      type: ServiceType.installation, customer: dilnoza, product: fridge, sale: fridgeSale,
+      issue: "Install newly purchased refrigerator and check cooling.", location: LocationType.on_site, tech: mobileTech,
+      status: RequestStatus.completed, createdHoursAgo: 24 * 240, warranty: WarrantyStatus.in_warranty, source: "rizo_market",
+    });
+    await prisma.serviceRequest.update({
+      where: { id: install.id },
+      data: { completedAt: fridgeSaleDate, estimatedCost: 180000, finalCost: 0 },
     });
   }
 

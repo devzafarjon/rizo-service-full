@@ -1,11 +1,14 @@
 import { Prisma } from "@prisma/client";
 import { computeWarrantyStatus, money, toDateOnly } from "./warranty.js";
+import { isTerminalStatus } from "./status.js";
+import { jobTimer } from "./techBoard.js";
 
 export const requestInclude = Prisma.validator<Prisma.ServiceRequestInclude>()({
   customer: { select: { id: true, name: true, phone: true, address: true, regionCode: true } },
   product: true,
   assignedTechnician: { select: { id: true, name: true, technicianType: true, isAvailable: true } },
   sale: { include: { product: true } },
+  pauses: { where: { resumedAt: null }, take: 1 },
 });
 
 export type RequestRecord = Prisma.ServiceRequestGetPayload<{ include: typeof requestInclude }>;
@@ -32,6 +35,8 @@ export function serializeLocation(value: Prisma.JsonValue | null): CustomerLocat
 }
 
 export function serializeRequest(request: RequestRecord) {
+  const activePause = request.pauses.find((pause) => pause.resumedAt == null) ?? null;
+  const timer = jobTimer(request.status, request, activePause);
   const warrantyStatus = request.sale
     ? computeWarrantyStatus(request.sale.warrantyMonths, request.sale.warrantyExpiry)
     : request.warrantyStatus;
@@ -46,6 +51,7 @@ export function serializeRequest(request: RequestRecord) {
     productId: request.productId,
     issueDescription: request.issueDescription,
     defectType: request.defectType,
+    resolutionType: request.resolutionType,
     locationType: request.locationType,
     customerLocation: serializeLocation(request.customerLocation),
     technicianTypeRequired: request.technicianTypeRequired,
@@ -58,14 +64,26 @@ export function serializeRequest(request: RequestRecord) {
     finalCost: request.finalCost == null ? null : money(request.finalCost),
     paymentStatus: request.paymentStatus,
     receivedAt: request.receivedAt?.toISOString() ?? null,
+    assignedAt: request.assignedAt?.toISOString() ?? null,
     acceptedAt: request.acceptedAt?.toISOString() ?? null,
     arrivedAt: request.arrivedAt?.toISOString() ?? null,
     completedAt: request.completedAt?.toISOString() ?? null,
     overdueAt: request.overdueAt?.toISOString() ?? null,
-    isOverdue: Boolean(request.overdueAt) && !["completed", "closed", "replaced"].includes(request.status),
+    isOverdue: Boolean(request.overdueAt) && !isTerminalStatus(request.status),
     pickupConfirmedAt: request.pickupConfirmedAt?.toISOString() ?? null,
+    pickupConfirmationType: request.pickupConfirmationType,
     pickupSignatureUrl: request.pickupSignatureUrl,
     createdAt: request.createdAt.toISOString(),
+    // Countdown shown on cards: 1 day New, 3 days In progress, technician-set when Paused.
+    timer: timer ? { startsAt: timer.startsAt.toISOString(), durationMs: timer.durationMs } : null,
+    activePause: activePause
+      ? {
+          id: activePause.id,
+          reason: activePause.reason,
+          pausedAt: activePause.pausedAt.toISOString(),
+          customTimerHours: Number(activePause.customTimerHours),
+        }
+      : null,
     customer: request.customer,
     product: request.product,
     assignedTechnician: request.assignedTechnician,

@@ -12,6 +12,7 @@ import { localizedName } from "../../lib/localized";
 import { isDoneStatus } from "../../lib/status";
 import type { PortalRequest, ServiceType } from "../../lib/types";
 import { FeedbackForm } from "./FeedbackForm";
+import { segmentedGroupClass, segmentedItemClass } from "../../components/segmented";
 
 const TYPE_FILTERS: Array<"" | ServiceType> = ["", "installation", "repair"];
 const SCOPE_FILTERS = ["all", "open", "done"] as const;
@@ -45,8 +46,8 @@ export function PortalHomePage() {
 
   return (
     <div>
-      <p className="text-sm font-semibold text-[#B439FD]">{t("portal.hello", { name: user?.name.split(" ")[0] })}</p>
-      <h1 className="mt-1 text-2xl font-extrabold tracking-tight">{t("portal.homeTitle")}</h1>
+      <p className="text-sm font-semibold text-[#7B00E0]">{t("portal.hello", { name: user?.name.split(" ")[0] })}</p>
+      <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{t("portal.homeTitle")}</h1>
       <p className="mt-2 text-sm text-neutral-500">{t("portal.homeIntro")}</p>
 
       {pendingFeedback.length > 0 ? (
@@ -55,29 +56,25 @@ export function PortalHomePage() {
         </div>
       ) : null}
 
-      <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+      <div className={`${segmentedGroupClass} mt-4 flex-nowrap overflow-x-auto`}>
         {SCOPE_FILTERS.map((value) => (
           <button
             key={value}
             type="button"
             onClick={() => setScope(value)}
-            className={`inline-flex h-10 shrink-0 items-center rounded-full px-4 text-sm font-bold ${
-              scope === value ? "bg-[#B439FD] text-white" : "bg-neutral-100 text-neutral-600"
-            }`}
+            className={`shrink-0 ${segmentedItemClass(scope === value)}`}
           >
             {value === "all" ? t("common.all") : value === "open" ? t("portal.open") : t("common.completed")}
           </button>
         ))}
       </div>
-      <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+      <div className={`${segmentedGroupClass} mt-2 flex-nowrap overflow-x-auto`}>
         {TYPE_FILTERS.map((item) => (
           <button
             key={item || "all"}
             type="button"
             onClick={() => setType(item)}
-            className={`inline-flex h-10 shrink-0 items-center rounded-full px-4 text-sm font-bold ${
-              type === item ? "bg-[#B439FD] text-white" : "bg-neutral-100 text-neutral-600"
-            }`}
+            className={`shrink-0 ${segmentedItemClass(type === item)}`}
           >
             {item ? t(`type.${item}`) : t("requests.allTypes")}
           </button>
@@ -113,7 +110,7 @@ export function PortalHomePage() {
                     <p className="mt-1 font-mono text-xs font-semibold text-neutral-400">{formatRequestId(request.displayId)}</p>
                     <p className="mt-1 text-xs text-neutral-500">{formatDateTime(request.createdAt)}</p>
                   </div>
-                  <StatusBadge status={request.status} />
+                  <StatusBadge status={request.status} friendly />
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <TypeBadge type={request.type} />

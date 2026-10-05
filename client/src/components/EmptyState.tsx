@@ -17,7 +17,7 @@ export function EmptyState({
     <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-white px-6 py-16 text-center">
       <div
         className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl ${
-          tone === "error" ? "bg-red-50 text-red-600" : "bg-[#F3E8FF] text-[#B439FD]"
+          tone === "error" ? "bg-red-50 text-red-600" : "bg-[#F5EBFD] text-[#7B00E0]"
         }`}
       >
         <Icon size={22} />

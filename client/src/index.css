@@ -1,132 +1,158 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700;800;900&display=swap");
 @import "tailwindcss";
 
+/* Design tokens shared with RizoPost (rizopost.uz) and rizo.uz. */
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --color-rizo: #b439fd;
-  --color-rizo-dark: #8200bf;
-  --color-rizo-hover: #c45fff;
-  --color-rizo-soft: #f3e8ff;
-  --color-rizo-orange: #f6921e;
-  --color-rizo-orange-hover: #e08512;
+  --font-sans: "Nunito Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Nunito Sans", ui-sans-serif, system-ui, sans-serif;
+  --color-rizo: #7B00E0;
+  --color-rizo-dark: #6500BD;
+  --color-rizo-hover: #6500BD;
+  --color-rizo-soft: #F5EBFD;
+  --color-rizo-soft-strong: #EBD6FB;
+  --color-rizo-orange: #F7941E;
+  --color-rizo-orange-hover: #E3830F;
   --color-rizo-orange-soft: #fff4e5;
   --color-surface: #ffffff;
-  --color-ink: #000000;
+  --color-page: #f5f7fa;
+  --color-ink: #141824;
+  --color-black: #141824;
+  /* RizoPost corner radii: cards 12px, controls 6–8px. */
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.75rem;
+  --shadow-sm: 0 1px 2px 0 rgb(37 44 50 / 0.04);
+  /* RizoPost gray scale, applied to both Tailwind gray and neutral. */
+  --color-gray-50: #F5F7FA;
+  --color-gray-100: #EFF2F6;
+  --color-gray-200: #E3E6ED;
+  --color-gray-300: #CBD0DD;
+  --color-gray-400: #9FA6BC;
+  --color-gray-500: #8A94AD;
+  --color-gray-600: #6E7891;
+  --color-gray-700: #525B75;
+  --color-gray-800: #31374A;
+  --color-gray-900: #222834;
+  --color-gray-950: #141824;
+  --color-neutral-50: #F5F7FA;
+  --color-neutral-100: #EFF2F6;
+  --color-neutral-200: #E3E6ED;
+  --color-neutral-300: #CBD0DD;
+  --color-neutral-400: #9FA6BC;
+  --color-neutral-500: #8A94AD;
+  --color-neutral-600: #6E7891;
+  --color-neutral-700: #525B75;
+  --color-neutral-800: #31374A;
+  --color-neutral-900: #222834;
+  --color-neutral-950: #141824;
 }
 
-html,
-body,
-#root {
-  min-height: 100%;
-  min-height: 100dvh;
+/* Layered so Tailwind utilities (text-sm, font-bold, h-12, w-full, …) can override these. */
+@layer base {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+    min-height: 100dvh;
+  }
+
+  html {
+    overflow-x: hidden;
+    scroll-padding-bottom: 10rem;
+  }
+
+  body {
+    margin: 0;
+    background: #f5f7fa;
+    color: #31374a;
+    font-family: "Nunito Sans", ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
+  }
 }
 
-html {
-  overflow-x: hidden;
-  scroll-padding-bottom: 10rem;
-}
+/* RizoPost buttons: 48px, 6px corners, 13px bold. Solid brand purple or purple outline. */
+@layer components {
+  .btn-rizo,
+  .btn-rizo-sm,
+  .btn-rizo-orange,
+  .btn-rizo-ghost {
+    display: inline-flex;
+    height: 48px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 10px 24px;
+    font-size: 12.8px;
+    font-weight: 700;
+    line-height: 1.2;
+    transition:
+      background-color 150ms ease,
+      border-color 150ms ease,
+      color 150ms ease;
+  }
 
-body {
-  margin: 0;
-  background: #ffffff;
-  color: #000000;
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-}
+  .btn-rizo,
+  .btn-rizo-sm {
+    background: #7B00E0;
+    color: #ffffff;
+  }
 
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
+  .btn-rizo:hover,
+  .btn-rizo-sm:hover {
+    background: #6500BD;
+  }
 
-button,
-a,
-input,
-select,
-textarea {
-  touch-action: manipulation;
-}
+  .btn-rizo-sm {
+    height: 40px;
+    padding: 8px 16px;
+  }
 
-.btn-rizo {
-  display: inline-flex;
-  height: 56px;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border-radius: 8px;
-  background: #b439fd;
-  padding: 16px 24px;
-  font-size: 16px;
-  font-weight: 700;
-  color: #ffffff;
-  transition: background-color 150ms ease;
-}
+  .btn-rizo-orange {
+    background: #F7941E;
+    color: #ffffff;
+  }
 
-.btn-rizo:hover {
-  background: #c45fff;
-}
+  .btn-rizo-orange:hover {
+    background: #E3830F;
+  }
 
-.btn-rizo:disabled {
-  opacity: 0.7;
-}
+  /* Secondary action: purple outline, like RizoPost's Filtr / Import / Eksport. */
+  .btn-rizo-ghost {
+    height: 40px;
+    padding: 8px 16px;
+    border-color: #7B00E0;
+    background: #ffffff;
+    color: #7B00E0;
+  }
 
-.btn-rizo-sm {
-  display: inline-flex;
-  height: 44px;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border-radius: 8px;
-  background: #b439fd;
-  padding: 8px 16px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #ffffff;
-  transition: background-color 150ms ease;
-}
+  .btn-rizo-ghost:hover {
+    background: #F5EBFD;
+  }
 
-.btn-rizo-sm:hover {
-  background: #c45fff;
-}
-
-.btn-rizo-sm:disabled {
-  opacity: 0.7;
-}
-
-.btn-rizo-orange {
-  display: inline-flex;
-  height: 56px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  background: #f6921e;
-  padding: 16px 24px;
-  font-size: 16px;
-  font-weight: 700;
-  color: #ffffff;
-  transition: background-color 150ms ease;
-}
-
-.btn-rizo-orange:hover {
-  background: #e08512;
-}
-
-.btn-rizo-ghost {
-  display: inline-flex;
-  height: 40px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  background: #f3f4f6;
-  padding: 8px 16px;
-  font-size: 16px;
-  font-weight: 700;
-  color: #b439fd;
+  .btn-rizo:disabled,
+  .btn-rizo-sm:disabled,
+  .btn-rizo-orange:disabled {
+    opacity: 0.6;
+  }
 }
 
 .receipt-sheet {

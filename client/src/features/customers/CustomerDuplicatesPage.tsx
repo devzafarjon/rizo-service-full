@@ -36,10 +36,10 @@ export function CustomerDuplicatesPage() {
 
   return (
     <div>
-      <Link to="/app/customers" className="text-sm font-semibold text-[#B439FD]">
+      <Link to="/app/customers" className="text-sm font-semibold text-[#7B00E0]">
         {t("nav.customers")}
       </Link>
-      <h1 className="mt-3 text-2xl font-extrabold tracking-tight">{t("customers.duplicatesTitle")}</h1>
+      <h1 className="mt-3 text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{t("customers.duplicatesTitle")}</h1>
       <p className="mt-1 mb-5 text-sm text-neutral-500">{t("customers.duplicatesIntro")}</p>
       {groups.length === 0 ? (
         <EmptyState title={t("customers.noDuplicatesTitle")} body={t("customers.noDuplicatesBody")} />
@@ -52,7 +52,7 @@ export function CustomerDuplicatesPage() {
                 {group.map((customer) => (
                   <li key={customer.id} className="flex flex-wrap items-center justify-between gap-2">
                     <div>
-                      <Link to={`/app/customers/${customer.id}`} className="font-bold text-[#B439FD]">
+                      <Link to={`/app/customers/${customer.id}`} className="font-bold text-[#7B00E0]">
                         {customer.name}
                       </Link>
                       <p className="text-xs text-neutral-500">
@@ -67,7 +67,7 @@ export function CustomerDuplicatesPage() {
                           type="button"
                           disabled={merge.isPending}
                           onClick={() => merge.mutate({ keepId: customer.id, absorbId: other.id })}
-                          className="h-10 rounded-xl bg-neutral-100 px-3 text-xs font-bold text-[#B439FD]"
+                          className="h-10 rounded-xl bg-neutral-100 px-3 text-xs font-bold text-[#7B00E0]"
                         >
                           {t("customers.keepAndMerge", { name: customer.name })}
                         </button>

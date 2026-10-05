@@ -56,7 +56,7 @@ export function StaffAlertsInbox({ compact = false }: { compact?: boolean }) {
     <div>
       {unread > 0 ? (
         <div className={compact ? "flex justify-end border-b border-neutral-100 px-4 py-2" : "mb-4 flex justify-end"}>
-          <button type="button" onClick={() => markAll.mutate()} className="text-xs font-bold text-[#B439FD]">
+          <button type="button" onClick={() => markAll.mutate()} className="text-xs font-bold text-[#7B00E0]">
             {t("notifications.markAll")}
           </button>
         </div>
@@ -82,7 +82,7 @@ export function StaffAlertsInbox({ compact = false }: { compact?: boolean }) {
       ) : (
         <ul className={compact ? "" : "overflow-hidden rounded-2xl border border-neutral-200 bg-white"}>
           {notifications.map((item) => (
-            <li key={item.id} className={item.isRead ? "bg-white" : "bg-[#F3E8FF]"}>
+            <li key={item.id} className={item.isRead ? "bg-white" : "bg-[#F5EBFD]"}>
               <Link
                 to={item.serviceRequestId ? `/app/requests/${item.serviceRequestId}` : "/app/catalog"}
                 onClick={() => {

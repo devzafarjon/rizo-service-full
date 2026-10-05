@@ -13,6 +13,8 @@ import { resolveRegionCode } from "../lib/regions.js";
 import { isAppLocale, parseLocale } from "../lib/locale.js";
 import { optionalText } from "../lib/zodFields.js";
 import { customerAuth } from "../middleware/customerAuth.js";
+import { loginLimiter, registerLimiter, resetLimiter } from "../middleware/rateLimit.js";
+import { sendSms } from "../lib/notifyDispatch.js";
 
 const loginSchema = z.object({
   phone: z.string().min(1, "Phone is required"),
@@ -35,6 +37,7 @@ export const customerAuthRouter = Router();
 
 customerAuthRouter.post(
   "/login",
+  loginLimiter,
   asyncHandler(async (req, res) => {
     const body = parseBody(loginSchema, req.body);
     const phone = normalizePhone(body.phone);
@@ -45,6 +48,7 @@ customerAuthRouter.post(
       throw new HttpError(401, "Incorrect phone number or password");
     }
 
+    res.locals.rateLimitReset?.();
     const token = signToken({
       sub: user.id,
       scope: "customer",
@@ -58,6 +62,7 @@ customerAuthRouter.post(
 
 customerAuthRouter.post(
   "/register",
+  registerLimiter,
   asyncHandler(async (req, res) => {
     const body = parseBody(registerSchema, req.body);
     const phone = normalizePhone(body.phone);
@@ -95,23 +100,25 @@ customerAuthRouter.post(
 
 customerAuthRouter.post(
   "/forgot",
+  resetLimiter,
   asyncHandler(async (req, res) => {
     const body = parseBody(forgotSchema, req.body);
     const phone = normalizePhone(body.phone);
     assertPhone(phone);
     const user = await prisma.customer.findUnique({ where: { phone } });
-    if (!user) {
-      throw new HttpError(404, "No portal account for this number. Create one instead.");
+    if (user) {
+      const temporaryPassword = `Rizo-${crypto.randomBytes(3).toString("hex")}`;
+      await prisma.customer.update({
+        where: { id: user.id },
+        data: { passwordHash: await hashPassword(temporaryPassword) },
+      });
+      // The new password only ever travels by SMS; it is never returned to the caller or stored in the outbound log.
+      await sendSms(user.phone, `RIZO Service: your new password is ${temporaryPassword}`).catch((error) => {
+        console.error("[forgot] SMS failed", error instanceof Error ? error.message : error);
+      });
     }
-    const temporaryPassword = `Rizo-${crypto.randomBytes(3).toString("hex")}`;
-    await prisma.customer.update({
-      where: { id: user.id },
-      data: { passwordHash: await hashPassword(temporaryPassword) },
-    });
-    res.json({
-      temporaryPassword,
-      message: "A new password was created. Save it now — it will not be shown again.",
-    });
+    // Same answer whether or not the number has an account, so phone numbers cannot be probed.
+    res.json({ sent: true });
   }),
 );
 

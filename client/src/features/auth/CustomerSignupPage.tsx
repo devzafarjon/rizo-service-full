@@ -1,14 +1,14 @@
 import { FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { KeyRound, Phone } from "lucide-react";
+import { AuthInput } from "../../components/AuthInput";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { BrandChrome } from "../../components/BrandChrome";
 import { Spinner } from "../../components/Spinner";
 import { useToast } from "../../components/toast";
 import { ApiError, apiErrorMessage } from "../../lib/api";
+import { inputClass } from "../../components/Field";
 import { useCustomerAuth } from "./CustomerAuthContext";
-
-const inputClass =
-  "h-12 w-full rounded-lg border border-gray-200 bg-white px-3 outline-none ring-[#B439FD] focus:ring-2";
 
 export function CustomerSignupPage() {
   const { t } = useTranslation();
@@ -53,28 +53,28 @@ export function CustomerSignupPage() {
         </Link>
       }
     >
-      <div className="mx-auto flex w-full max-w-md flex-col px-4 py-12">
+      <div className="mx-auto flex w-full max-w-[29rem] flex-col px-4 pt-6 pb-12 sm:pt-8">
         <div className="mb-8 text-center">
-          <p className="text-sm font-bold text-[#B439FD]">{t("auth.portalKicker")}</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-black">{t("auth.signupTitle")}</h1>
+          <p className="text-xs font-bold tracking-wide text-[#7B00E0] uppercase">{t("auth.portalKicker")}</p>
+          <h1 className="mt-2 text-[25px] leading-tight font-extrabold text-[#222834]">{t("auth.signupTitle")}</h1>
           <p className="mt-2 text-sm text-gray-500">{t("auth.signupHint")}</p>
         </div>
 
-        <form onSubmit={onSubmit} className="rounded-2xl border border-gray-100 bg-white p-5 shadow-[0_8px_30px_rgba(0,0,0,0.06)] sm:p-6">
+        <form onSubmit={onSubmit} className="w-full">
           <label className="mb-4 block">
-            <span className="mb-1.5 block text-sm font-semibold text-gray-700">{t("auth.fullName")}</span>
+            <span className="mb-1.5 block text-[10.24px] font-bold tracking-wide text-gray-700 uppercase">{t("auth.fullName")}</span>
             <input className={inputClass} value={name} onChange={(event) => setName(event.target.value)} required autoComplete="name" />
           </label>
           <label className="mb-4 block">
-            <span className="mb-1.5 block text-sm font-semibold text-gray-700">{t("common.phone")}</span>
-            <input className={inputClass} type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} required autoComplete="tel" placeholder="998 90 000 00 03" />
+            <span className="mb-1.5 block text-[10.24px] font-bold tracking-wide text-gray-700 uppercase">{t("common.phone")}</span>
+            <AuthInput icon={Phone} type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} required autoComplete="tel" placeholder="998 90 000 00 03" />
           </label>
           <label className="mb-4 block">
-            <span className="mb-1.5 block text-sm font-semibold text-gray-700">{t("common.password")}</span>
-            <input className={inputClass} type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={6} autoComplete="new-password" />
+            <span className="mb-1.5 block text-[10.24px] font-bold tracking-wide text-gray-700 uppercase">{t("common.password")}</span>
+            <AuthInput icon={KeyRound} type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={6} autoComplete="new-password" />
           </label>
           <label className="mb-4 block">
-            <span className="mb-1.5 block text-sm font-semibold text-gray-700">{t("auth.addressOptional")}</span>
+            <span className="mb-1.5 block text-[10.24px] font-bold tracking-wide text-gray-700 uppercase">{t("auth.addressOptional")}</span>
             <input className={inputClass} value={address} onChange={(event) => setAddress(event.target.value)} autoComplete="street-address" />
           </label>
           {error ? <p className="mb-3 text-sm font-medium text-red-600">{error}</p> : null}
@@ -86,7 +86,7 @@ export function CustomerSignupPage() {
 
         <p className="mt-6 text-center text-sm text-gray-500">
           {t("auth.haveAccount")}{" "}
-          <Link to="/portal/login" className="font-semibold text-[#B439FD] hover:underline">
+          <Link to="/portal/login" className="font-bold text-[#7B00E0] hover:underline">
             {t("common.signIn")}
           </Link>
         </p>

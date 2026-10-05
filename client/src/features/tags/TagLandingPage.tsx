@@ -31,7 +31,7 @@ export function TagLandingPage() {
   return (
     <div className="rounded-2xl border border-neutral-200 bg-white p-5">
       <p className="font-mono text-xs font-bold text-neutral-400">{formatRequestId(request.displayId)}</p>
-      <h1 className="mt-1 text-2xl font-extrabold">{request.customer.name}</h1>
+      <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{request.customer.name}</h1>
       <p className="mt-1 text-sm text-neutral-500">
         {localizedName(request.product)} · {formatPhone(request.customer.phone)}
       </p>
@@ -43,11 +43,11 @@ export function TagLandingPage() {
       <p className="mt-4 text-sm text-neutral-700">{request.issueDescription}</p>
       <div className="mt-5 flex flex-wrap gap-2">
         {user?.role === "admin" ? (
-          <Link to={adminTo} className="inline-flex h-11 items-center rounded-xl bg-[#B439FD] px-4 text-sm font-bold text-white">
+          <Link to={adminTo} className="inline-flex h-12 items-center rounded-lg bg-[#7B00E0] px-6 text-[12.8px] font-bold text-white">
             {t("tag.openDetail")}
           </Link>
         ) : detail.data?.ownedByMe ? (
-          <Link to={completeTo} className="inline-flex h-11 items-center rounded-xl bg-[#B439FD] px-4 text-sm font-bold text-white">
+          <Link to={completeTo} className="inline-flex h-12 items-center rounded-lg bg-[#7B00E0] px-6 text-[12.8px] font-bold text-white">
             {t("tag.openJob")}
           </Link>
         ) : (

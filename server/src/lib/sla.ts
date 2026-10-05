@@ -1,39 +1,27 @@
-import { NEW_TIMER_MS, PROGRESS_TIMER_MS, isDoneStatus, techColumn } from "./techBoard.js";
+import { jobTimer } from "./techBoard.js";
+import { isTerminalStatus } from "./status.js";
 import { writeAudit } from "./audit.js";
 import { notifyAdmins } from "./notifyStaff.js";
 import { formatRequestId } from "./displayId.js";
 import { prisma } from "./prisma.js";
+import type { RequestStatus } from "@prisma/client";
 
 type TimerInput = {
-  id: string;
-  displayId: string;
-  type: "installation" | "repair";
-  status: Parameters<typeof isDoneStatus>[0];
+  status: RequestStatus;
   createdAt: Date;
+  assignedAt: Date | null;
   acceptedAt: Date | null;
   pauses: Array<{ resumedAt: Date | null; pausedAt: Date; customTimerHours: { toString(): string } | number }>;
 };
 
 export function slaTimerFor(job: TimerInput, now = Date.now()) {
   const activePause = job.pauses.find((pause) => pause.resumedAt == null) ?? null;
-  const column = techColumn(job.type, job.status, Boolean(activePause));
-  if (column === "completed") return null;
-  const startsAt =
-    column === "paused" && activePause
-      ? activePause.pausedAt
-      : column === "new"
-        ? job.createdAt
-        : job.acceptedAt ?? job.createdAt;
-  const durationMs =
-    column === "paused" && activePause
-      ? Number(activePause.customTimerHours) * 60 * 60 * 1000
-      : column === "new"
-        ? NEW_TIMER_MS
-        : PROGRESS_TIMER_MS;
-  const remaining = startsAt.getTime() + durationMs - now;
+  const timer = jobTimer(job.status, job, activePause);
+  if (!timer) return null;
+  const remaining = timer.startsAt.getTime() + timer.durationMs - now;
   return {
-    startsAt: startsAt.toISOString(),
-    durationMs,
+    startsAt: timer.startsAt.toISOString(),
+    durationMs: timer.durationMs,
     remainingMs: remaining,
     overdueMs: remaining < 0 ? -remaining : 0,
     isOverdue: remaining <= 0,
@@ -42,7 +30,7 @@ export function slaTimerFor(job: TimerInput, now = Date.now()) {
 
 export async function syncOverdueRequests() {
   const open = await prisma.serviceRequest.findMany({
-    where: { status: { notIn: ["completed", "closed", "replaced"] } },
+    where: { status: { in: ["new", "in_progress", "paused"] } },
     include: { pauses: true, product: true },
   });
   const now = Date.now();
@@ -91,3 +79,5 @@ export async function syncOverdueRequests() {
   }
   return { scanned: open.length, flagged };
 }
+
+export { isTerminalStatus };

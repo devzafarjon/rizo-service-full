@@ -3,13 +3,15 @@ import { formatDurationHours, formatDurationMs, formatStamp } from "../lib/forma
 import type { TimelineEvent } from "../lib/types";
 
 const DOT: Record<TimelineEvent["kind"], string> = {
-  created: "bg-[#B439FD]",
-  received: "bg-[#B439FD]",
-  accepted: "bg-[#B439FD]",
-  arrived: "bg-[#F6921E]",
-  paused: "bg-[#F6921E]",
-  resumed: "bg-[#B439FD]",
+  created: "bg-[#7B00E0]",
+  received: "bg-[#7B00E0]",
+  assigned: "bg-[#7B00E0]",
+  accepted: "bg-[#7B00E0]",
+  arrived: "bg-[#F7941E]",
+  paused: "bg-[#F7941E]",
+  resumed: "bg-[#7B00E0]",
   completed: "bg-emerald-500",
+  picked_up: "bg-emerald-600",
 };
 
 export function RequestTimeline({ events }: { events: TimelineEvent[] }) {

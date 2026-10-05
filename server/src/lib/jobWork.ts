@@ -9,10 +9,13 @@ export const workInclude = Prisma.validator<Prisma.ServiceRequestInclude>()({
   partLines: { include: { sparePart: true }, orderBy: { id: "asc" } },
   extraExpenses: { orderBy: { id: "asc" } },
   photos: { orderBy: { createdAt: "asc" } },
+  replacement: { include: { product: true } },
 });
 
 export type JobWorkRecord = {
   warrantyStatus: WarrantyStatus;
+  resolutionType?: "repair" | "replace" | null;
+  replacement?: { id: string; productId: string; serialNumber: string; product: NamedRecord & { sku: string } } | null;
   isPaidRepair?: boolean;
   serviceLines: Array<{
     id: string;
@@ -60,13 +63,18 @@ export function computeJobCost(
   };
 }
 
+export type CompletionGap = "service" | "part" | "photo" | "replacement";
+
 export function completionGaps(
-  work: Pick<JobWorkRecord, "serviceLines" | "partLines" | "photos">,
+  work: Pick<JobWorkRecord, "serviceLines" | "partLines" | "photos" | "resolutionType" | "replacement">,
   options?: { requireService?: boolean },
 ) {
-  const gaps: Array<"service" | "part" | "photo"> = [];
-  if (options?.requireService !== false && work.serviceLines.length === 0) gaps.push("service");
+  const gaps: CompletionGap[] = [];
+  // A replacement swaps the whole device, so no service line is needed.
+  const replacing = work.resolutionType === "replace";
+  if (!replacing && options?.requireService !== false && work.serviceLines.length === 0) gaps.push("service");
   if (work.photos.length === 0) gaps.push("photo");
+  if (replacing && !work.replacement) gaps.push("replacement");
   return gaps;
 }
 
@@ -128,6 +136,16 @@ export function serializeJobWork(
       uploadedBy: photo.uploadedBy,
       createdAt: photo.createdAt.toISOString(),
     })),
+    resolutionType: work.resolutionType ?? null,
+    replacement: work.replacement
+      ? {
+          id: work.replacement.id,
+          productId: work.replacement.productId,
+          serialNumber: work.replacement.serialNumber,
+          ...serializeNamed(work.replacement.product),
+          sku: work.replacement.product.sku,
+        }
+      : null,
     cost,
     canComplete: gaps.length === 0,
     missing: gaps,

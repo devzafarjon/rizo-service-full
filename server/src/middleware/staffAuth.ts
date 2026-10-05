@@ -1,6 +1,24 @@
 import type { NextFunction, Request, Response } from "express";
 import { HttpError } from "../lib/httpError.js";
 import { verifyToken, type StaffTokenPayload } from "../lib/jwt.js";
+import { prisma } from "../lib/prisma.js";
+
+// Deactivated staff lose access within seconds even though their JWT is still valid.
+const activeCache = new Map<string, { active: boolean; at: number }>();
+const ACTIVE_TTL_MS = 15_000;
+
+async function isStaffActive(id: string) {
+  const hit = activeCache.get(id);
+  if (hit && Date.now() - hit.at < ACTIVE_TTL_MS) return hit.active;
+  const row = await prisma.staffUser.findUnique({ where: { id }, select: { isActive: true } });
+  const active = Boolean(row?.isActive);
+  activeCache.set(id, { active, at: Date.now() });
+  return active;
+}
+
+export function forgetStaffActiveCache(id: string) {
+  activeCache.delete(id);
+}
 
 declare global {
   namespace Express {
@@ -10,7 +28,7 @@ declare global {
   }
 }
 
-export function staffAuth(req: Request, _res: Response, next: NextFunction) {
+export async function staffAuth(req: Request, _res: Response, next: NextFunction) {
   try {
     const header = req.headers.authorization;
     const token = header?.startsWith("Bearer ") ? header.slice(7) : null;
@@ -20,6 +38,9 @@ export function staffAuth(req: Request, _res: Response, next: NextFunction) {
     const payload = verifyToken(token);
     if (payload.scope !== "staff") {
       throw new HttpError(403, "Staff access only");
+    }
+    if (!(await isStaffActive(payload.sub))) {
+      throw new HttpError(401, "Account no longer exists");
     }
     req.staff = payload;
     next();

@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { inputClass } from "../../components/Field";
 import { defaultGrain, type ReportQuery } from "../../lib/reportQuery";
 import type { ReportPreset, TrendGrain } from "../../lib/types";
+import { segmentedGroupClass, segmentedItemClass } from "../../components/segmented";
 
 const PRESETS: ReportPreset[] = ["week", "month", "quarter", "year", "all", "custom"];
 const GRAINS: TrendGrain[] = ["day", "week", "month"];
@@ -19,15 +20,13 @@ export function DateRangeBar({
 
   return (
     <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-      <div className="flex flex-wrap gap-2">
+      <div className={segmentedGroupClass}>
         {PRESETS.map((preset) => (
           <button
             key={preset}
             type="button"
             onClick={() => onChange({ ...query, preset, grain: grain ? defaultGrain(preset) : query.grain })}
-            className={`inline-flex h-10 items-center rounded-full px-4 text-sm font-bold ${
-              query.preset === preset ? "bg-[#B439FD] text-white" : "bg-white text-neutral-600 ring-1 ring-neutral-200"
-            }`}
+            className={segmentedItemClass(query.preset === preset)}
           >
             {t(`reports.preset.${preset}`)}
           </button>
@@ -57,15 +56,13 @@ export function DateRangeBar({
           </>
         ) : null}
         {grain ? (
-          <div className="flex gap-1 rounded-full bg-neutral-100 p-1">
+          <div className={segmentedGroupClass}>
             {GRAINS.map((item) => (
               <button
                 key={item}
                 type="button"
                 onClick={() => onChange({ ...query, grain: item })}
-                className={`h-8 rounded-full px-3 text-xs font-bold ${
-                  (query.grain ?? "day") === item ? "bg-white text-[#B439FD] shadow-sm" : "text-neutral-500"
-                }`}
+                className={segmentedItemClass((query.grain ?? "day") === item, "sm")}
               >
                 {t(`reports.grain.${item}`)}
               </button>

@@ -155,6 +155,10 @@ export function NewRequestPage() {
     setAssignedTechnicianId("");
   }
 
+  function chooseType(next: ServiceType) {
+    setType(next);
+  }
+
   function useCustomerAddress() {
     if (customer?.address) {
       setAddress(customer.address);
@@ -210,11 +214,11 @@ export function NewRequestPage() {
 
   return (
     <div>
-      <Link to="/app/requests" className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-500 hover:text-[#B439FD]">
+      <Link to="/app/requests" className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-500 hover:text-[#7B00E0]">
         <ArrowLeft size={16} />
         {t("common.allRequests")}
       </Link>
-      <h1 className="mt-4 text-2xl font-extrabold tracking-tight">{t("newRequest.title")}</h1>
+      <h1 className="mt-4 text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{t("newRequest.title")}</h1>
       <p className="mt-1 mb-6 text-sm text-neutral-500">{t("newRequest.intro")}</p>
 
       <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
@@ -226,9 +230,9 @@ export function NewRequestPage() {
                 <button
                   key={item}
                   type="button"
-                  onClick={() => setType(item)}
+                  onClick={() => chooseType(item)}
                   className={`rounded-2xl border px-3 py-3 text-left ${
-                    type === item ? "border-[#B439FD] bg-[#F3E8FF]" : "border-neutral-200 hover:border-neutral-300"
+                    type === item ? "border-[#7B00E0] bg-[#F5EBFD]" : "border-neutral-200 hover:border-neutral-300"
                   }`}
                 >
                   <p className="text-sm font-bold">{t(`type.${item}`)}</p>
@@ -320,28 +324,28 @@ export function NewRequestPage() {
 
           <section className="rounded-2xl border border-neutral-200 bg-white p-5">
             <p className="mb-3 text-sm font-semibold text-neutral-700">{t("newRequest.location")}</p>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => chooseLocation("in_shop")}
-                className={`rounded-2xl border px-3 py-3 text-left ${
-                  locationType === "in_shop" ? "border-[#B439FD] bg-[#F3E8FF]" : "border-neutral-200"
-                }`}
-              >
-                <p className="text-sm font-bold">{t("location.in_shop")}</p>
-                <p className="mt-1 text-xs text-neutral-500">{t("location.inShopHint")}</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => chooseLocation("on_site")}
-                className={`rounded-2xl border px-3 py-3 text-left ${
-                  locationType === "on_site" ? "border-[#F6921E] bg-[#FFF4E5]" : "border-neutral-200"
-                }`}
-              >
-                <p className="text-sm font-bold">{t("location.on_site")}</p>
-                <p className="mt-1 text-xs text-neutral-500">{t("location.onSiteHint")}</p>
-              </button>
-            </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => chooseLocation("in_shop")}
+                  className={`rounded-2xl border px-3 py-3 text-left ${
+                    locationType === "in_shop" ? "border-[#7B00E0] bg-[#F5EBFD]" : "border-neutral-200"
+                  }`}
+                >
+                  <p className="text-sm font-bold">{t("location.in_shop")}</p>
+                  <p className="mt-1 text-xs text-neutral-500">{t("location.inShopHint")}</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => chooseLocation("on_site")}
+                  className={`rounded-2xl border px-3 py-3 text-left ${
+                    locationType === "on_site" ? "border-[#F7941E] bg-[#FFF4E5]" : "border-neutral-200"
+                  }`}
+                >
+                  <p className="text-sm font-bold">{t("location.on_site")}</p>
+                  <p className="mt-1 text-xs text-neutral-500">{t("location.onSiteHint")}</p>
+                </button>
+              </div>
             {locationType === "on_site" ? (
               <div className="mt-4 space-y-3">
                 <Field label={t("newRequest.address")}>
@@ -420,7 +424,7 @@ export function NewRequestPage() {
           <button
             type="submit"
             disabled={create.isPending}
-            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#B439FD] px-4 text-sm font-bold text-white hover:bg-[#C45FFF] disabled:opacity-70 sm:w-auto"
+            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#7B00E0] px-4 text-sm font-bold text-white hover:bg-[#6500BD] disabled:opacity-70 sm:w-auto"
           >
             {create.isPending ? <Spinner className="h-4 w-4" /> : null}
             {t("newRequest.submit")}

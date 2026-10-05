@@ -15,7 +15,7 @@ import {
   trendSeries,
 } from "../lib/reportJobs.js";
 import { bucketKey, defaultGrain, parseReportRange, parseTrendGrain, serializeWindow } from "../lib/reportRange.js";
-import { isDoneStatus, KANBAN_COLUMNS } from "../lib/status.js";
+import { isDoneStatus, ALL_STATUSES } from "../lib/status.js";
 import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
 
 export const reportsRouter = Router();
@@ -36,7 +36,7 @@ reportsRouter.get(
     const ratings = jobs.map((job) => job.rating).filter((value): value is number => value != null);
 
     const statusCounts = new Map<string, number>();
-    for (const status of KANBAN_COLUMNS) statusCounts.set(status, 0);
+    for (const status of ALL_STATUSES) statusCounts.set(status, 0);
     let paused = 0;
     for (const job of jobs) {
       statusCounts.set(job.status, (statusCounts.get(job.status) ?? 0) + 1);
@@ -100,7 +100,7 @@ reportsRouter.get(
         .map(([category, count]) => ({ category, count }))
         .sort((a, b) => b.count - a.count || a.category.localeCompare(b.category)),
       byStatus: [
-        ...KANBAN_COLUMNS.map((status) => ({ status, count: statusCounts.get(status) ?? 0 })).filter((row) => row.count > 0),
+        ...ALL_STATUSES.map((status) => ({ status, count: statusCounts.get(status) ?? 0 })).filter((row) => row.count > 0),
         ...(paused ? [{ status: "paused" as const, count: paused }] : []),
       ],
       warrantySplit: { free, paid },

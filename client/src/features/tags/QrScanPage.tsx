@@ -99,19 +99,24 @@ export function QrScanPage() {
   }, []);
 
   return (
-    <div>
-      <h1 className="text-2xl font-extrabold tracking-tight">{t("tag.scanTitle")}</h1>
+    <div className="mx-auto max-w-sm">
+      <h1 className="text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{t("tag.scanTitle")}</h1>
       <p className="mt-1 mb-4 text-sm text-neutral-500">{t("tag.scanHint")}</p>
-      <div id={hostId} className="mx-auto min-h-64 max-w-sm overflow-hidden rounded-2xl bg-black" />
+      <div id={hostId} className="min-h-64 overflow-hidden rounded-2xl bg-black" />
       <form
-        className="mx-auto mt-6 flex max-w-sm gap-2"
+        className="mt-6 flex gap-2"
         onSubmit={(event) => {
           event.preventDefault();
           void openRequest(manual);
         }}
       >
-        <input className={inputClass} value={manual} onChange={(event) => setManual(event.target.value)} placeholder={t("tag.manualPlaceholder")} />
-        <button type="submit" disabled={busy} className="h-11 shrink-0 rounded-xl bg-[#B439FD] px-4 text-sm font-bold text-white">
+        <input
+          className={`${inputClass} min-w-0 flex-1`}
+          value={manual}
+          onChange={(event) => setManual(event.target.value)}
+          placeholder={t("tag.manualPlaceholder")}
+        />
+        <button type="submit" disabled={busy} className="h-12 shrink-0 rounded-lg bg-[#7B00E0] px-6 text-[12.8px] font-bold text-white">
           {t("tag.open")}
         </button>
       </form>

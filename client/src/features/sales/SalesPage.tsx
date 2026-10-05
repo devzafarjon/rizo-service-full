@@ -86,7 +86,7 @@ export function SalesPage() {
     <div>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">{t("sales.title")}</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{t("sales.title")}</h1>
           <p className="mt-1 text-sm text-neutral-500">{t("sales.intro")}</p>
         </div>
         <button
@@ -96,7 +96,7 @@ export function SalesPage() {
             setFormError(null);
             setFormOpen(true);
           }}
-          className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#B439FD] px-4 text-sm font-bold text-white hover:bg-[#C45FFF]"
+          className="inline-flex h-12 items-center gap-2 rounded-lg bg-[#7B00E0] px-6 text-[12.8px] font-bold text-white hover:bg-[#6500BD]"
         >
           <Plus size={16} />
           {t("sales.new")}
@@ -144,7 +144,7 @@ export function SalesPage() {
               >
                 <Td className="font-semibold">{sale.invoiceNumber}</Td>
                 <Td>
-                  <Link to={`/app/customers/${sale.customer.id}`} className="font-medium text-[#B439FD] hover:underline">
+                  <Link to={`/app/customers/${sale.customer.id}`} className="font-medium text-[#7B00E0] hover:underline">
                     {sale.customer.name}
                   </Link>
                   <p className="text-xs text-neutral-500">{formatPhone(sale.customer.phone)}</p>
@@ -162,13 +162,13 @@ export function SalesPage() {
                 <Td className="text-right">
                   <Link
                     to={`/app/requests/new?saleId=${sale.id}`}
-                    className="mr-2 text-sm font-semibold text-[#B439FD] hover:underline"
+                    className="mr-2 text-sm font-semibold text-[#7B00E0] hover:underline"
                   >
                     {t("sales.request")}
                   </Link>
                   <button
                     type="button"
-                    className="mr-2 text-sm font-semibold text-neutral-600 hover:text-[#B439FD]"
+                    className="mr-2 text-sm font-semibold text-neutral-600 hover:text-[#7B00E0]"
                     onClick={() => {
                       setEditing(sale);
                       setFormError(null);

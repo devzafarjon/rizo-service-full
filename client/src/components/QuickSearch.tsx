@@ -55,7 +55,7 @@ export function QuickSearch() {
           placeholder={t("search.placeholder")}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          className="h-11 w-full rounded-xl border border-neutral-200 bg-neutral-50 pr-3 pl-10 text-sm outline-none ring-[#B439FD] focus:bg-white focus:ring-2"
+          className="h-11 w-full rounded-lg border border-gray-300 bg-white pr-3 pl-10 text-[13px] font-semibold text-gray-800 outline-none transition placeholder:font-normal placeholder:text-gray-400 focus:border-[#7B00E0]/40 focus:ring-[3px] focus:ring-[#7B00E0]/25"
         />
         <ComboboxOptions className="absolute z-40 mt-2 max-h-80 w-full overflow-auto rounded-2xl border border-neutral-200 bg-white py-2 shadow-xl">
           {results.isFetching ? <p className="px-4 py-3 text-sm text-neutral-500">{t("search.searching")}</p> : null}
@@ -65,7 +65,7 @@ export function QuickSearch() {
             <ComboboxOption
               key={customer.id}
               value={{ kind: "customer" as const, id: customer.id }}
-              className="cursor-pointer px-4 py-2.5 data-focus:bg-[#F3E8FF]"
+              className="cursor-pointer px-4 py-2.5 data-focus:bg-[#F5EBFD]"
             >
               <p className="text-sm font-semibold text-neutral-900">{customer.name}</p>
               <p className="text-xs text-neutral-500">{formatPhone(customer.phone)}</p>
@@ -94,7 +94,7 @@ export function QuickSearch() {
             <ComboboxOption
               key={request.id}
               value={{ kind: "request" as const, id: request.id }}
-              className="cursor-pointer px-4 py-2.5 data-focus:bg-[#F3E8FF]"
+              className="cursor-pointer px-4 py-2.5 data-focus:bg-[#F5EBFD]"
             >
               <div className="flex items-center justify-between gap-3">
                 <div>

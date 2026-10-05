@@ -11,7 +11,7 @@ export function ComingSoonPage({
   const { t } = useTranslation();
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-extrabold tracking-tight text-neutral-900">{title}</h1>
+      <h1 className="mb-6 text-2xl text-neutral-900 font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{title}</h1>
       <EmptyState title={t("common.comingSoon")} body={body} />
     </div>
   );

@@ -16,6 +16,7 @@ import { api, apiErrorMessage } from "../../lib/api";
 import { formatMoney, SUGGESTED_CATEGORIES } from "../../lib/format";
 import { categoryLabel, localizedName, namedFields } from "../../lib/localized";
 import type { CatalogService, Product, SparePart } from "../../lib/types";
+import { segmentedGroupClass, segmentedTabClass } from "../../components/segmented";
 
 export function CatalogPage() {
   const { t } = useTranslation();
@@ -54,14 +55,14 @@ export function CatalogPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold tracking-tight">{t("catalog.title")}</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{t("catalog.title")}</h1>
       <p className="mt-1 mb-6 text-sm text-neutral-500">{t("catalog.intro")}</p>
       <TabGroup>
-        <TabList className="mb-5 flex flex-wrap gap-2">
+        <TabList className={`${segmentedGroupClass} mb-5`}>
           {tabs.map((tab) => (
             <Tab
               key={tab.id}
-              className="rounded-full px-4 py-2 text-sm font-bold text-neutral-600 outline-none data-selected:bg-[#B439FD] data-selected:text-white"
+              className={segmentedTabClass}
             >
               {tab.label}
             </Tab>
@@ -150,7 +151,7 @@ function ProductsPanel({ items, categories }: { items: Product[]; categories: st
                 <Td>{categoryLabel(product.category)}</Td>
                 <Td>{product.salesCount}</Td>
                 <Td className="text-right">
-                  <button type="button" className="mr-2 text-sm font-semibold text-neutral-600 hover:text-[#B439FD]" onClick={() => start(product)}>
+                  <button type="button" className="mr-2 text-sm font-semibold text-neutral-600 hover:text-[#7B00E0]" onClick={() => start(product)}>
                     {t("common.edit")}
                   </button>
                   <button type="button" className="text-sm font-semibold text-red-600" onClick={() => setPendingDelete(product)}>
@@ -207,7 +208,7 @@ function ServicesPanel({ items, categories }: { items: CatalogService[]; categor
   const [editing, setEditing] = useState<CatalogService | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<CatalogService | null>(null);
-  const [form, setForm] = useState({ nameUz: "", nameRu: "", nameEn: "", price: "", productCategory: "" });
+  const [form, setForm] = useState<FormValue>({ nameUz: "", nameRu: "", nameEn: "", price: "", productCategories: [] });
 
   const save = useMutation({
     mutationFn: () => {
@@ -237,7 +238,7 @@ function ServicesPanel({ items, categories }: { items: CatalogService[]; categor
 
   function start(item: CatalogService | null) {
     setEditing(item);
-    setForm({ ...namedFields(item), price: item ? String(item.price) : "", productCategory: item?.productCategory ?? "" });
+    setForm({ ...namedFields(item), price: item ? String(item.price) : "", productCategories: item?.productCategories ?? [] });
     setError(null);
     setOpen(true);
   }
@@ -260,10 +261,10 @@ function ServicesPanel({ items, categories }: { items: CatalogService[]; categor
             {items.map((item) => (
               <tr key={item.id} className="border-b border-neutral-100 last:border-0">
                 <Td className="font-semibold">{localizedName(item)}</Td>
-                <Td>{categoryLabel(item.productCategory)}</Td>
+                <Td>{item.productCategories.map((category) => categoryLabel(category)).join(", ")}</Td>
                 <Td>{formatMoney(item.price)}</Td>
                 <Td className="text-right">
-                  <button type="button" className="mr-2 text-sm font-semibold text-neutral-600 hover:text-[#B439FD]" onClick={() => start(item)}>
+                  <button type="button" className="mr-2 text-sm font-semibold text-neutral-600 hover:text-[#7B00E0]" onClick={() => start(item)}>
                     {t("common.edit")}
                   </button>
                   <button type="button" className="text-sm font-semibold text-red-600" onClick={() => setPendingDelete(item)}>
@@ -283,13 +284,7 @@ function ServicesPanel({ items, categories }: { items: CatalogService[]; categor
         error={error}
         pending={save.isPending}
         onClose={() => setOpen(false)}
-        onChange={(next) => setForm({
-          nameUz: next.nameUz,
-          nameRu: next.nameRu,
-          nameEn: next.nameEn,
-          price: next.price,
-          productCategory: next.productCategory,
-        })}
+        onChange={(next) => setForm(next)}
         onSubmit={() => save.mutate()}
       />
       <ConfirmDialog
@@ -313,12 +308,13 @@ function PartsPanel({ items, categories }: { items: SparePart[]; categories: str
   const [editing, setEditing] = useState<SparePart | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<SparePart | null>(null);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<FormValue>({
     nameUz: "",
     nameRu: "",
     nameEn: "",
     price: "",
-    productCategory: "",
+    costPrice: "",
+    productCategories: [],
     stockQuantity: "0",
     lowStockThreshold: "3",
   });
@@ -342,6 +338,7 @@ function PartsPanel({ items, categories }: { items: SparePart[]; categories: str
       const body = JSON.stringify({
         ...form,
         price: Number(form.price),
+        costPrice: Number(form.costPrice),
         stockQuantity: Number(form.stockQuantity),
         lowStockThreshold: Number(form.lowStockThreshold),
       });
@@ -373,7 +370,8 @@ function PartsPanel({ items, categories }: { items: SparePart[]; categories: str
     setForm({
       ...namedFields(item),
       price: item ? String(item.price) : "",
-      productCategory: item?.productCategory ?? "",
+      costPrice: item ? String(item.costPrice) : "",
+      productCategories: item?.productCategories ?? [],
       stockQuantity: item ? String(item.stockQuantity) : "0",
       lowStockThreshold: item ? String(item.lowStockThreshold ?? 3) : "3",
     });
@@ -417,6 +415,7 @@ function PartsPanel({ items, categories }: { items: SparePart[]; categories: str
               <Th>{t("catalog.part")}</Th>
               <Th>{t("common.category")}</Th>
               <Th>{t("common.price")}</Th>
+              <Th>{t("catalog.costPrice")}</Th>
               <Th>{t("common.stock")}</Th>
               <Th className="text-right">{t("common.actions")}</Th>
             </tr>
@@ -425,8 +424,9 @@ function PartsPanel({ items, categories }: { items: SparePart[]; categories: str
             {items.map((item) => (
               <tr key={item.id} className="border-b border-neutral-100 last:border-0">
                 <Td className="font-semibold">{localizedName(item)}</Td>
-                <Td>{categoryLabel(item.productCategory)}</Td>
+                <Td>{item.productCategories.map((category) => categoryLabel(category)).join(", ")}</Td>
                 <Td>{formatMoney(item.price)}</Td>
+                <Td>{formatMoney(item.costPrice)}</Td>
                 <Td>
                   <span className="font-semibold">{item.stockQuantity}</span>
                   {item.stockQuantity <= (item.lowStockThreshold ?? 3) ? (
@@ -436,7 +436,7 @@ function PartsPanel({ items, categories }: { items: SparePart[]; categories: str
                   ) : null}
                 </Td>
                 <Td className="text-right">
-                  <button type="button" className="mr-2 text-sm font-semibold text-neutral-600 hover:text-[#B439FD]" onClick={() => start(item)}>
+                  <button type="button" className="mr-2 text-sm font-semibold text-neutral-600 hover:text-[#7B00E0]" onClick={() => start(item)}>
                     {t("common.edit")}
                   </button>
                   <button type="button" className="text-sm font-semibold text-red-600" onClick={() => setPendingDelete(item)}>
@@ -458,17 +458,7 @@ function PartsPanel({ items, categories }: { items: SparePart[]; categories: str
         error={error}
         pending={save.isPending}
         onClose={() => setOpen(false)}
-        onChange={(next) =>
-          setForm({
-            nameUz: next.nameUz,
-            nameRu: next.nameRu,
-            nameEn: next.nameEn,
-            price: next.price,
-            productCategory: next.productCategory,
-            stockQuantity: next.stockQuantity ?? form.stockQuantity,
-            lowStockThreshold: next.lowStockThreshold ?? form.lowStockThreshold,
-          })
-        }
+        onChange={(next) => setForm(next)}
         onStock={(stockQuantity) => setForm({ ...form, stockQuantity })}
         onThreshold={(lowStockThreshold) => setForm({ ...form, lowStockThreshold })}
         onSubmit={() => save.mutate()}
@@ -520,7 +510,7 @@ function CatalogSection({
   return (
     <div>
       <div className="mb-4 flex justify-end">
-        <button type="button" onClick={onCreate} className="inline-flex h-11 items-center rounded-xl bg-[#B439FD] px-4 text-sm font-bold text-white">
+        <button type="button" onClick={onCreate} className="inline-flex h-12 items-center rounded-lg bg-[#7B00E0] px-6 text-[12.8px] font-bold text-white">
           {actionLabel}
         </button>
       </div>
@@ -546,14 +536,14 @@ function CategoryFormModal({
 }: {
   open: boolean;
   title: string;
-  form: { nameUz: string; nameRu: string; nameEn: string; price: string; productCategory: string; stockQuantity?: string; lowStockThreshold?: string };
+  form: FormValue;
   categories: string[];
   stock?: string;
   threshold?: string;
   error: string | null;
   pending: boolean;
   onClose: () => void;
-  onChange: (value: { nameUz: string; nameRu: string; nameEn: string; price: string; productCategory: string; stockQuantity?: string; lowStockThreshold?: string }) => void;
+  onChange: (value: FormValue) => void;
   onStock?: (value: string) => void;
   onThreshold?: (value: string) => void;
   onSubmit: () => void;
@@ -569,17 +559,21 @@ function CategoryFormModal({
         }}
       >
         <NameFields form={form} onChange={(names) => onChange({ ...form, ...names })} />
-        <Field label={t("catalog.productCategory")}>
-          <input className={inputClass} list="catalog-categories" value={form.productCategory} onChange={(event) => onChange({ ...form, productCategory: event.target.value })} required />
-          <datalist id="catalog-categories">
-            {categories.map((item) => (
-              <option key={item} value={item} />
-            ))}
-          </datalist>
+        <Field label={t("catalog.applicableCategories")} hint={t("catalog.applicableCategoriesHint")}>
+          <CategoryPicker
+            categories={categories}
+            selected={form.productCategories}
+            onChange={(productCategories) => onChange({ ...form, productCategories })}
+          />
         </Field>
         <Field label={t("catalog.priceSom")}>
           <input className={inputClass} type="number" min={0} step={1000} value={form.price} onChange={(event) => onChange({ ...form, price: event.target.value })} required />
         </Field>
+        {onStock ? (
+          <Field label={t("catalog.costPriceSom")} hint={t("catalog.costPriceHint")}>
+            <input className={inputClass} type="number" min={0} step={1000} value={form.costPrice ?? ""} onChange={(event) => onChange({ ...form, costPrice: event.target.value })} required />
+          </Field>
+        ) : null}
         {onStock ? (
           <Field label={t("catalog.stockQty")}>
             <input className={inputClass} type="number" min={0} value={stock} onChange={(event) => onStock(event.target.value)} required />
@@ -591,9 +585,84 @@ function CategoryFormModal({
           </Field>
         ) : null}
         {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
-        <FormActions pending={pending} onCancel={onClose} submitLabel={t("common.save")} />
+        <FormActions pending={pending || form.productCategories.length === 0} onCancel={onClose} submitLabel={t("common.save")} />
       </form>
     </Modal>
+  );
+}
+
+type FormValue = {
+  nameUz: string;
+  nameRu: string;
+  nameEn: string;
+  price: string;
+  costPrice?: string;
+  productCategories: string[];
+  stockQuantity?: string;
+  lowStockThreshold?: string;
+};
+
+/** Pick one or more product categories, or add a new one. */
+function CategoryPicker({
+  categories,
+  selected,
+  onChange,
+}: {
+  categories: string[];
+  selected: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const { t } = useTranslation();
+  const [draft, setDraft] = useState("");
+  const options = [...new Set([...categories, ...selected])].sort();
+
+  function toggle(category: string) {
+    onChange(selected.includes(category) ? selected.filter((item) => item !== category) : [...selected, category]);
+  }
+  function addDraft() {
+    const name = draft.trim();
+    if (!name) return;
+    if (!selected.includes(name)) onChange([...selected, name]);
+    setDraft("");
+  }
+
+  return (
+    <div>
+      <div className="flex flex-wrap gap-2">
+        {options.map((category) => {
+          const on = selected.includes(category);
+          return (
+            <button
+              key={category}
+              type="button"
+              aria-pressed={on}
+              onClick={() => toggle(category)}
+              className={`h-9 rounded-full px-3 text-sm font-bold ${on ? "bg-[#7B00E0] text-white" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"}`}
+            >
+              {categoryLabel(category)}
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-2 flex gap-2">
+        <input
+          className={inputClass}
+          value={draft}
+          placeholder={t("catalog.newCategoryPlaceholder")}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              addDraft();
+            }
+          }}
+        />
+        <button type="button" onClick={addDraft} className="h-12 shrink-0 rounded-lg bg-neutral-100 px-4 text-sm font-bold text-neutral-800">
+          {t("catalog.addCategory")}
+        </button>
+      </div>
+      {selected.length === 0 ? <p className="mt-1 text-xs font-semibold text-red-600">{t("catalog.pickCategory")}</p> : null}
+    </div>
   );
 }
 
@@ -604,7 +673,7 @@ function FormActions({ pending, onCancel, submitLabel }: { pending: boolean; onC
       <button type="button" onClick={onCancel} className="h-11 rounded-xl px-4 text-sm font-semibold text-neutral-600 hover:bg-neutral-100">
         {t("common.cancel")}
       </button>
-      <button type="submit" disabled={pending} className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#B439FD] px-4 text-sm font-bold text-white disabled:opacity-70">
+      <button type="submit" disabled={pending} className="inline-flex h-12 items-center gap-2 rounded-lg bg-[#7B00E0] px-6 text-[12.8px] font-bold text-white disabled:opacity-70">
         {pending ? <Spinner className="h-4 w-4" /> : null}
         {submitLabel}
       </button>

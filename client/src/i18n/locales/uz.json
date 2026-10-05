@@ -67,7 +67,8 @@
     "next": "Keyingi",
     "skip": "O‘tkazib yuborish",
     "moreInfo": "Qo‘shimcha ma’lumot",
-    "stepOf": "{{current}}-qadam / {{total}}"
+    "stepOf": "{{current}}-qadam / {{total}}",
+    "priority": "Ustuvorlik"
   },
   "languages": {
     "uz": "Oʻzbekcha",
@@ -78,7 +79,8 @@
     "service": "RIZO Service",
     "staff": "Xizmat xodimlari",
     "portal": "Mijoz portali",
-    "tagline": "RIZO market mahsulotlari uchun o‘rnatish va ta’mirlash."
+    "tagline": "RIZO market mahsulotlari uchun o‘rnatish va ta’mirlash.",
+    "portalBadge": "Mijoz portali"
   },
   "home": {
     "staff": "Xodimlar kirishi",
@@ -114,14 +116,16 @@
     "haveAccount": "Hisobingiz bormi?",
     "phoneExistsSignIn": "Bu raqam allaqachon ro‘yxatdan o‘tgan. Kirish sahifasiga o‘ting.",
     "forgotTitle": "Parolni unutdingiz",
-    "forgotHint": "Bu raqam uchun yangi parol yaratamiz. Sahifani tark etishdan oldin saqlab qoling.",
-    "newPassword": "Yangi parolingiz",
-    "passwordOnce": "U qayta ko‘rsatilmaydi. Shu parol bilan kiring va saqlab qo‘ying.",
+    "forgotHint": "Shu raqamga yangi parolni SMS orqali yuboramiz.",
     "backToSignIn": "Kirishga qaytish",
     "createPassword": "Yangi parol yaratish",
     "resetFailed": "Parolni tiklab bo‘lmadi",
     "noAccount": "Hisob yo‘qmi?",
-    "signUp": "Ro‘yxatdan o‘tish"
+    "signUp": "Ro‘yxatdan o‘tish",
+    "showPassword": "Parolni ko'rsatish",
+    "hidePassword": "Parolni yashirish",
+    "resetSentTitle": "Telefoningizni tekshiring",
+    "resetSentBody": "Agar bu raqamda portal akkaunti bo‘lsa, yangi parolni SMS orqali yubordik. U bilan kiring va saqlab qo‘ying."
   },
   "nav": {
     "dashboard": "Bosh sahifa",
@@ -169,7 +173,7 @@
   },
   "dashboard": {
     "intro": "Tanlangan davr uchun xizmat hajmi, tushum va foyda. Sana oralig‘ini o‘zgartirsangiz, barcha diagrammalar yangilanadi.",
-    "introShort": "Bugungi hajm, pul va ishlar qancha vaqt oladi.",
+    "introShort": "Tanlangan davr uchun hajm, pul va ishlar qancha vaqt oladi.",
     "trend": "Tushum, xarajat va foyda",
     "topProducts": "Xizmat hajmi bo‘yicha mahsulotlar",
     "topParts": "Eng ko‘p ishlatilgan ehtiyot qismlar",
@@ -187,23 +191,12 @@
     "busy": "Band"
   },
   "status": {
-    "scheduled": "Rejalashtirilgan",
-    "received": "Qabul qilingan",
-    "diagnosing": "Diagnostika",
-    "awaiting_parts": "Qism kutilmoqda",
-    "repairing": "Ta’mirlanmoqda",
+    "new": "Yangi",
     "in_progress": "Jarayonda",
-    "ready_for_pickup": "Olib ketishga tayyor",
-    "replaced": "Almashtirilgan",
+    "paused": "To‘xtatilgan",
     "completed": "Yakunlangan",
-    "closed": "Yopilgan"
-  },
-  "outcome": {
-    "replaced": "Almashtirilgan",
-    "closed": "Yopilgan",
-    "completed": "Yakunlangan",
-    "reopened": "Qayta ochilgan",
-    "open": "Ochiq"
+    "picked_up": "Olib ketilgan",
+    "cancelled": "Bekor qilingan"
   },
   "type": {
     "installation": "O‘rnatish",
@@ -294,7 +287,20 @@
     "h": "{{hours}} soat",
     "dh": "{{days}} kun {{hours}} soat",
     "d": "{{days}} kun",
-    "monthsShort": ["yan", "fev", "mar", "apr", "may", "iyn", "iyl", "avg", "sen", "okt", "noy", "dek"]
+    "monthsShort": [
+      "yan",
+      "fev",
+      "mar",
+      "apr",
+      "may",
+      "iyn",
+      "iyl",
+      "avg",
+      "sen",
+      "okt",
+      "noy",
+      "dek"
+    ]
   },
   "timer": {
     "overdue": "Muddati o‘tgan {{clock}}"
@@ -316,17 +322,16 @@
   "timeline": {
     "empty": "Hali voqealar yo‘q. Bu yozuv doimiy saqlanadi.",
     "created": "So‘rov yaratildi",
-    "createdReceived": "Yaratildi · qabul qilindi",
     "received": "Qabul qilindi",
     "accepted": "Ish boshlandi",
     "arrived": "Manzilga yetib kelindi",
     "paused": "To‘xtatildi",
     "resumed": "Davom ettirildi",
     "completed": "Yakunlandi",
-    "replaced": "Almashtirildi",
-    "closed": "Yopildi",
     "pauseActive": "{{reason}} · reja {{planned}} · hali to‘xtatilgan",
-    "pauseDone": "{{reason}} · reja {{planned}} · davom etdi {{lasted}}"
+    "pauseDone": "{{reason}} · reja {{planned}} · davom etdi {{lasted}}",
+    "assigned": "Texnikka biriktirildi",
+    "pickedUp": "Olib ketildi"
   },
   "notify": {
     "createdByCustomer": "{{product}} uchun {{type}} so‘rovingiz qabul qilindi.",
@@ -392,7 +397,15 @@
     "partUpdated": "Qism yangilandi",
     "partDeleted": "Qism o‘chirildi",
     "partSaveFailed": "Qismni saqlab bo‘lmadi",
-    "partDeleteFailed": "Qismni o‘chirib bo‘lmadi"
+    "partDeleteFailed": "Qismni o‘chirib bo‘lmadi",
+    "costPrice": "Tannarx",
+    "costPriceSom": "Tannarx (so‘m)",
+    "costPriceHint": "Ehtiyot qismning RIZO uchun tannarxi. Foyda hisobotlarida ishlatiladi.",
+    "applicableCategories": "Qo‘llaniladigan mahsulot turkumlari",
+    "applicableCategoriesHint": "Texniklar bu elementni faqat shu turkumdagi ishlarda ko‘radi.",
+    "newCategoryPlaceholder": "Yangi turkum",
+    "addCategory": "Qo‘shish",
+    "pickCategory": "Kamida bitta turkumni tanlang"
   },
   "customers": {
     "title": "Mijozlar",
@@ -579,7 +592,8 @@
     "customerPays": "Mijoz to‘laydi {{amount}}",
     "saleLine": "{{invoice}} · tugash {{date}}",
     "notLinked": "Bog‘lanmagan",
-    "location": "Joy"
+    "location": "Joy",
+    "pickup": "Olib ketish tasdig‘i"
   },
   "kanban": {
     "title": "Jo‘natish doskasi",
@@ -625,7 +639,9 @@
     "stayCompleted": "Yakunlangan ishlar Yakunlanganda qoladi",
     "drag": "{{name}} ni sudrang",
     "hoursShort": "{{count}} soat",
-    "moreActions": "Yana amallar"
+    "moreActions": "Yana amallar",
+    "arrivedAt": "Yetib kelindi: {{time}}",
+    "arrivedSaved": "Yetib kelish qayd etildi"
   },
   "job": {
     "timeline": "Vaqt chizig‘i",
@@ -640,7 +656,8 @@
     "gap": {
       "service": "kamida bitta xizmat",
       "part": "kamida bitta ehtiyot qism",
-      "photo": "kamida bitta rasm"
+      "photo": "kamida bitta rasm",
+      "replacement": "almashtirilgan mahsulot va seriya raqami"
     },
     "addService": "Xizmat qo‘shish",
     "addPart": "Qism qo‘shish",
@@ -673,7 +690,13 @@
     "notFoundBody": "Bu ish sizga tayinlanmagan.",
     "stockLine": "{{price}} · omborda {{count}}",
     "zeroStockWarn": "Bu qism omborda yo‘q. Baribir qo‘shishingiz mumkin.",
-    "zeroStockBlock": "Bu qism omborda yo‘q"
+    "zeroStockBlock": "Bu qism omborda yo‘q",
+    "resolution": "Natija",
+    "resolutionHint": "Qurilma ta’mirlandimi yoki almashtirildimi?",
+    "replacementProduct": "Yangi mahsulot",
+    "serialNumber": "Yangi seriya raqami",
+    "replacementSaved": "Qayd etildi: {{product}} · {{serial}}",
+    "saveReplacement": "Almashtirishni saqlash"
   },
   "receipt": {
     "title": "Kvitansiyalar",
@@ -898,7 +921,17 @@
     "comment": "Ixtiyoriy izoh",
     "send": "Fikr yuborish",
     "star": "{{count}} yulduz",
-    "stars": "{{count}} yulduz"
+    "stars": "{{count}} yulduz",
+    "tag": {
+      "fast": "Tez",
+      "polite": "Xushmuomala",
+      "clean": "Toza ish",
+      "late": "Kech qoldi",
+      "not_fixed": "Tuzatilmadi",
+      "rude": "Qo‘pol",
+      "expensive": "Qimmat",
+      "unclear_price": "Narx noaniq"
+    }
   },
   "alerts": {
     "title": "Xodim ogohlantirishlari",
@@ -930,7 +963,13 @@
     "confirm": "Olib ketishni tasdiqlash",
     "clearSignature": "Imzoni tozalash",
     "saved": "Olib ketish tasdiqlandi",
-    "already": "Olib ketish allaqachon tasdiqlangan"
+    "already": "Olib ketish allaqachon tasdiqlangan",
+    "notAtCounter": "Bu ish mijoz manzilida bajariladi, kassada olib ketilmaydi.",
+    "notReady": "Bu ish hali kassada olib ketish uchun tayyor emas.",
+    "type": {
+      "tap": "Mijoz «Qurilmani oldim» tugmasini bosdi",
+      "signature": "Mijoz imzosi"
+    }
   },
   "kiosk": {
     "title": "Kassa olib ketish",
@@ -954,6 +993,7 @@
     "emptyTitle": "Bu filtrda yozuv yo‘q",
     "emptyBody": "Sana oralig‘ini kengaytiring yoki filtrni tozalang.",
     "outbound": "SMS / Telegram navbati",
+    "outboundEmpty": "Navbatda xabar yo‘q.",
     "action": {
       "request.status": "So‘rov holati o‘zgardi",
       "request.cost": "So‘rov narxi tahrirlandi",
@@ -1013,7 +1053,6 @@
     "completedLocked": "Yakunlangan ishlarni tahrirlab bo‘lmaydi",
     "jobIncomplete": "Yakunlashdan oldin qo‘shing: {{list}}",
     "stockInsufficient": "Omborda faqat {{count}} ta {{name}} bor",
-    "statusNotInFlow": "Bu holat {{type}} oqimiga kirmaydi",
     "saleNotForCustomer": "Bu sotuv tanlangan mijozga tegishli emas",
     "techTypeMismatch": "Bu texnik kerakli turga mos emas",
     "needPurchaseOrProduct": "Oldingi xarid yoki mahsulotni tanlang",
@@ -1027,6 +1066,45 @@
     "passwordRequired": "Parol shart",
     "pickupNotReady": "Bu so‘rov olib ketish tasdiqini kutmayapti",
     "invalidSignature": "Imzo rasmi noto‘g‘ri",
-    "mergeSameCustomer": "Ikkita turli mijozni tanlang"
+    "mergeSameCustomer": "Ikkita turli mijozni tanlang",
+    "statusNotAllowed": "So‘rovni «{{from}}» holatidan «{{to}}» holatiga o‘tkazib bo‘lmaydi",
+    "rateLimited": "Urinishlar juda ko‘p. Bir necha daqiqadan keyin qayta urinib ko‘ring.",
+    "accountInactive": "Bu akkaunt o‘chirilgan. Administrator bilan bog‘laning.",
+    "pauseReasonRequired": "To‘xtatish sababi shart",
+    "pauseHoursRequired": "To‘xtatish davomiyligini belgilang",
+    "pauseHoursInvalid": "To‘xtatish davomiyligi 0 dan katta bo‘lishi kerak",
+    "pauseHoursMax": "To‘xtatish 14 kundan oshmasligi kerak",
+    "categoriesRequired": "Kamida bitta mahsulot turkumini tanlang",
+    "negativeCost": "Tannarx manfiy bo‘lishi mumkin emas",
+    "replacementProductRequired": "Almashtirish mahsulotini tanlang",
+    "serialRequired": "Yangi seriya raqamini kiriting",
+    "resolutionRepairOnly": "Natija faqat ta’mirlash uchun tanlanadi",
+    "arrivalOnSiteOnly": "Yetib borish faqat manzildagi ishlar uchun qayd etiladi",
+    "technicianInactive": "Bu texnik faol emas",
+    "cannotDeactivateSelf": "O‘z akkauntingizni o‘chira olmaysiz"
+  },
+  "customerStatus": {
+    "new": "Qabul qilindi",
+    "in_progress": "Jarayonda",
+    "paused": "Kutishda",
+    "completed": "Yakunlandi",
+    "picked_up": "Topshirildi",
+    "cancelled": "Bekor qilindi"
+  },
+  "slideOver": {
+    "saved": "Saqlandi",
+    "total": "Jami",
+    "manage": "Boshqarish",
+    "moveTo": "Holatga o‘tkazish",
+    "openFull": "To‘liq sahifa",
+    "receipt": "Kvitansiya",
+    "tag": "QR yorliq",
+    "cancelTitle": "So‘rov bekor qilinsinmi?",
+    "cancelBody": "Mijozga xabar yuboriladi va ish taxtadan olib tashlanadi. Keyinroq qayta ochishingiz mumkin.",
+    "cancelConfirm": "So‘rovni bekor qilish"
+  },
+  "resolution": {
+    "repair": "Ta’mirlandi",
+    "replace": "Almashtirildi"
   }
 }

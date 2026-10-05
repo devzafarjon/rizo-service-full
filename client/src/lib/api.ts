@@ -32,6 +32,9 @@ export function apiErrorMessage(
     if (details.nameUz || details.nameRu || details.nameEn || details.name) {
       details.name = localizedName(details as Named);
     }
+    for (const key of ["from", "to"] as const) {
+      if (typeof details[key] === "string") details[key] = t(`status.${details[key]}`, { defaultValue: details[key] });
+    }
     if (Array.isArray(details.gaps)) {
       details.list = (details.gaps as string[])
         .map((gap) => t(`job.gap.${gap}`, { defaultValue: gap }))

@@ -8,6 +8,7 @@ import { verifyPassword } from "../lib/password.js";
 import { prisma } from "../lib/prisma.js";
 import { emitToStaff } from "../lib/realtime.js";
 import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
+import { loginLimiter } from "../middleware/rateLimit.js";
 
 const loginSchema = z.object({
   phone: z.string().min(1, "Phone is required"),
@@ -16,7 +17,7 @@ const loginSchema = z.object({
 
 export const staffAuthRouter = Router();
 
-staffAuthRouter.post("/login", async (req, res, next) => {
+staffAuthRouter.post("/login", loginLimiter, async (req, res, next) => {
   try {
     const body = loginSchema.parse(req.body);
     const phone = normalizePhone(body.phone);
@@ -26,7 +27,11 @@ staffAuthRouter.post("/login", async (req, res, next) => {
     if (!user || !(await verifyPassword(body.password, user.passwordHash))) {
       throw new HttpError(401, "Incorrect phone number or password");
     }
+    if (!user.isActive) {
+      throw new HttpError(403, "This account has been deactivated", "accountInactive");
+    }
 
+    res.locals.rateLimitReset?.();
     const token = signToken({
       sub: user.id,
       scope: "staff",
@@ -44,7 +49,7 @@ staffAuthRouter.post("/login", async (req, res, next) => {
 staffAuthRouter.get("/me", staffAuth, async (req, res, next) => {
   try {
     const user = await prisma.staffUser.findUnique({ where: { id: req.staff!.sub } });
-    if (!user) {
+    if (!user || !user.isActive) {
       throw new HttpError(401, "Account no longer exists");
     }
     res.json({ user: serializeStaff(user) });

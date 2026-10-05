@@ -30,23 +30,23 @@ export function ReceiptDocument({
 
   return (
     <article className="receipt-sheet mx-auto w-full max-w-[44rem] overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-neutral-200 print:max-w-none print:rounded-none print:shadow-none print:ring-0">
-      <header className="relative bg-[#B439FD] px-6 py-5 text-white">
-        <div className="flex items-start justify-between gap-4">
+      <header className="relative bg-[#7B00E0] px-6 py-5 text-white">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-white px-2 py-1">
+            <div className="shrink-0 rounded-xl bg-white px-2 py-1">
               <RizoLogo className="h-8 w-auto" />
             </div>
             <div>
               <p className="font-display text-lg font-extrabold tracking-tight">{t("brand.service")}</p>
-              <p className="text-xs font-semibold tracking-wide text-white/80 uppercase">{t("receipt.afterSales")}</p>
+              <p className="text-xs font-semibold tracking-wide whitespace-nowrap text-white/80 uppercase">{t("receipt.afterSales")}</p>
             </div>
           </div>
-          <div className="text-right">
+          <div className="ml-auto text-right">
             <p className="text-[11px] font-bold tracking-wide text-white/70 uppercase">{t("receipt.kicker")}</p>
             <p className="font-display text-xl font-extrabold tabular-nums">{receiptNo}</p>
           </div>
         </div>
-        <div className="absolute inset-x-0 bottom-0 h-1.5 bg-[#F6921E]" />
+        <div className="absolute inset-x-0 bottom-0 h-1.5 bg-[#F7941E]" />
       </header>
 
       <div className="px-6 py-5">
@@ -65,6 +65,7 @@ export function ReceiptDocument({
           <Meta label={t("common.technician")} value={request.assignedTechnician?.name ?? t("common.unassigned")} />
           <Meta label={t("common.customer")} value={`${request.customer.name} · ${formatPhone(request.customer.phone)}`} />
           <Meta label={t("common.product")} value={`${localizedName(request.product)} · ${request.product.sku}`} />
+          {request.resolutionType ? <Meta label={t("job.resolution")} value={t(`resolution.${request.resolutionType}`)} /> : null}
         </dl>
       </div>
 
@@ -114,7 +115,7 @@ export function ReceiptDocument({
       </div>
 
       <footer className="border-t border-neutral-200 px-6 py-5">
-        <p className="text-[11px] font-bold tracking-wide text-[#B439FD] uppercase">{t("receipt.disclaimer")}</p>
+        <p className="text-[11px] font-bold tracking-wide text-[#7B00E0] uppercase">{t("receipt.disclaimer")}</p>
         <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-neutral-600">{disclaimer}</p>
         <p className="mt-4 text-xs font-semibold text-neutral-400">{t("receipt.thanks")}</p>
       </footer>

@@ -67,7 +67,8 @@
     "next": "Next",
     "skip": "Skip",
     "moreInfo": "More information",
-    "stepOf": "Step {{current}} of {{total}}"
+    "stepOf": "Step {{current}} of {{total}}",
+    "priority": "Priority"
   },
   "languages": {
     "uz": "Oʻzbekcha",
@@ -78,7 +79,8 @@
     "service": "RIZO Service",
     "staff": "Service staff",
     "portal": "Customer portal",
-    "tagline": "After-sales installation and repair for products from RIZO market."
+    "tagline": "After-sales installation and repair for products from RIZO market.",
+    "portalBadge": "Customer portal"
   },
   "home": {
     "staff": "Staff sign in",
@@ -114,14 +116,16 @@
     "haveAccount": "Already have an account?",
     "phoneExistsSignIn": "This phone number already has an account. Sign in instead.",
     "forgotTitle": "Forgot password",
-    "forgotHint": "We’ll create a new password for this phone number. Save it before you leave this page.",
-    "newPassword": "Your new password",
-    "passwordOnce": "It will not be shown again. Sign in with it, then keep it somewhere safe.",
+    "forgotHint": "We’ll text a new password to this phone number.",
     "backToSignIn": "Back to sign in",
     "createPassword": "Create new password",
     "resetFailed": "Could not reset password",
     "noAccount": "No account?",
-    "signUp": "Sign up"
+    "signUp": "Sign up",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "resetSentTitle": "Check your phone",
+    "resetSentBody": "If this number has a portal account, we sent a new password by SMS. Sign in with it and keep it safe."
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -169,7 +173,7 @@
   },
   "dashboard": {
     "intro": "Live service volume, revenue, and profit for the selected period. Change the date range to refresh every chart.",
-    "introShort": "Today’s volume, money, and how long jobs are taking.",
+    "introShort": "Volume, money, and how long jobs are taking for the selected period.",
     "trend": "Revenue, costs, and profit",
     "topProducts": "Top products by service volume",
     "topParts": "Top spare parts used",
@@ -187,23 +191,12 @@
     "busy": "Busy"
   },
   "status": {
-    "scheduled": "Scheduled",
-    "received": "Received",
-    "diagnosing": "Diagnosing",
-    "awaiting_parts": "Awaiting parts",
-    "repairing": "Repairing",
+    "new": "New",
     "in_progress": "In progress",
-    "ready_for_pickup": "Ready for pickup",
-    "replaced": "Replaced",
+    "paused": "Paused",
     "completed": "Completed",
-    "closed": "Closed"
-  },
-  "outcome": {
-    "replaced": "Replaced",
-    "closed": "Closed",
-    "completed": "Completed",
-    "reopened": "Reopened",
-    "open": "Open"
+    "picked_up": "Picked up",
+    "cancelled": "Cancelled"
   },
   "type": {
     "installation": "Installation",
@@ -294,7 +287,20 @@
     "h": "{{hours}}h",
     "dh": "{{days}}d {{hours}}h",
     "d": "{{days}}d",
-    "monthsShort": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    "monthsShort": [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec"
+    ]
   },
   "timer": {
     "overdue": "Overdue {{clock}}"
@@ -316,17 +322,16 @@
   "timeline": {
     "empty": "No timeline events yet. This record is kept permanently.",
     "created": "Request created",
-    "createdReceived": "Created · received",
     "received": "Received",
     "accepted": "Work started",
     "arrived": "Arrived on site",
     "paused": "Paused",
     "resumed": "Resumed",
     "completed": "Completed",
-    "replaced": "Replaced",
-    "closed": "Closed",
     "pauseActive": "{{reason}} · planned {{planned}} · still paused",
-    "pauseDone": "{{reason}} · planned {{planned}} · lasted {{lasted}}"
+    "pauseDone": "{{reason}} · planned {{planned}} · lasted {{lasted}}",
+    "assigned": "Assigned to technician",
+    "pickedUp": "Picked up"
   },
   "notify": {
     "createdByCustomer": "We received your {{type}} request for {{product}}.",
@@ -392,7 +397,15 @@
     "partUpdated": "Part updated",
     "partDeleted": "Part deleted",
     "partSaveFailed": "Could not save part",
-    "partDeleteFailed": "Could not delete part"
+    "partDeleteFailed": "Could not delete part",
+    "costPrice": "Cost",
+    "costPriceSom": "Cost price (so’m)",
+    "costPriceHint": "What the part costs RIZO. Used in profit reports.",
+    "applicableCategories": "Applies to product categories",
+    "applicableCategoriesHint": "Technicians only see this item on jobs for these categories.",
+    "newCategoryPlaceholder": "New category",
+    "addCategory": "Add",
+    "pickCategory": "Pick at least one category"
   },
   "customers": {
     "title": "Customers",
@@ -579,7 +592,8 @@
     "customerPays": "Customer pays {{amount}}",
     "saleLine": "{{invoice}} · expires {{date}}",
     "notLinked": "Not linked",
-    "location": "Location"
+    "location": "Location",
+    "pickup": "Pickup confirmation"
   },
   "kanban": {
     "title": "Dispatch board",
@@ -603,7 +617,7 @@
     "noJobs": "No jobs here",
     "accept": "Accept",
     "start": "Start",
-    "arrived": "Arrived",
+    "arrived": "I’ve arrived",
     "pause": "Pause",
     "resume": "Resume",
     "complete": "Complete",
@@ -625,7 +639,9 @@
     "stayCompleted": "Completed jobs stay in Completed",
     "drag": "Drag {{name}}",
     "hoursShort": "{{count}}h",
-    "moreActions": "More actions"
+    "moreActions": "More actions",
+    "arrivedAt": "Arrived {{time}}",
+    "arrivedSaved": "Arrival recorded"
   },
   "job": {
     "timeline": "Timeline",
@@ -640,7 +656,8 @@
     "gap": {
       "service": "at least one service",
       "part": "at least one spare part",
-      "photo": "at least one photo"
+      "photo": "at least one photo",
+      "replacement": "the replacement product and serial number"
     },
     "addService": "Add service",
     "addPart": "Add part",
@@ -673,7 +690,13 @@
     "notFoundBody": "This job is not assigned to you.",
     "stockLine": "{{price}} · {{count}} in stock",
     "zeroStockWarn": "This part has 0 stock. You can still add it.",
-    "zeroStockBlock": "This part is out of stock"
+    "zeroStockBlock": "This part is out of stock",
+    "resolution": "Outcome",
+    "resolutionHint": "Was the device repaired or replaced?",
+    "replacementProduct": "New product",
+    "serialNumber": "New serial number",
+    "replacementSaved": "Recorded: {{product}} · {{serial}}",
+    "saveReplacement": "Save replacement"
   },
   "receipt": {
     "title": "Receipts",
@@ -898,7 +921,17 @@
     "comment": "Optional comment",
     "send": "Send feedback",
     "star": "{{count}} star",
-    "stars": "{{count}} stars"
+    "stars": "{{count}} stars",
+    "tag": {
+      "fast": "Fast",
+      "polite": "Polite",
+      "clean": "Tidy work",
+      "late": "Arrived late",
+      "not_fixed": "Not fixed",
+      "rude": "Rude",
+      "expensive": "Too expensive",
+      "unclear_price": "Price unclear"
+    }
   },
   "alerts": {
     "title": "Staff alerts",
@@ -930,7 +963,13 @@
     "confirm": "Confirm pickup",
     "clearSignature": "Clear signature",
     "saved": "Pickup confirmed",
-    "already": "Pickup already confirmed"
+    "already": "Pickup already confirmed",
+    "notAtCounter": "This job is done at the customer address, not at the service counter.",
+    "notReady": "This job is not ready for counter pickup yet.",
+    "type": {
+      "tap": "Customer tapped “I received my device”",
+      "signature": "Customer signature"
+    }
   },
   "kiosk": {
     "title": "Counter pickup",
@@ -954,6 +993,7 @@
     "emptyTitle": "No activity in this filter",
     "emptyBody": "Try a wider date range or clear the request filter.",
     "outbound": "SMS / Telegram queue",
+    "outboundEmpty": "No outbound messages in the queue.",
     "action": {
       "request.status": "Request status changed",
       "request.cost": "Request cost edited",
@@ -1013,7 +1053,6 @@
     "completedLocked": "Completed jobs cannot be edited",
     "jobIncomplete": "Add {{list}} before completing",
     "stockInsufficient": "Only {{count}} {{name}} in stock",
-    "statusNotInFlow": "This status is not part of the {{type}} flow",
     "saleNotForCustomer": "This sale does not belong to the selected customer",
     "techTypeMismatch": "This technician does not match the required type",
     "needPurchaseOrProduct": "Select a past purchase or a product",
@@ -1027,6 +1066,45 @@
     "passwordRequired": "Password is required",
     "pickupNotReady": "This request is not waiting for pickup confirmation",
     "invalidSignature": "Signature image is invalid",
-    "mergeSameCustomer": "Choose two different customers"
+    "mergeSameCustomer": "Choose two different customers",
+    "statusNotAllowed": "A request cannot move from {{from}} to {{to}}",
+    "rateLimited": "Too many attempts. Please wait a few minutes and try again.",
+    "accountInactive": "This account has been deactivated. Contact your administrator.",
+    "pauseReasonRequired": "A pause reason is required",
+    "pauseHoursRequired": "Set how long this pause should last",
+    "pauseHoursInvalid": "Pause duration must be greater than 0",
+    "pauseHoursMax": "A pause cannot exceed 14 days",
+    "categoriesRequired": "Select at least one product category",
+    "negativeCost": "Cost price cannot be negative",
+    "replacementProductRequired": "Select the replacement product",
+    "serialRequired": "Enter the new serial number",
+    "resolutionRepairOnly": "Only repairs have an outcome",
+    "arrivalOnSiteOnly": "Arrival is only recorded for on-site jobs",
+    "technicianInactive": "This technician is not active",
+    "cannotDeactivateSelf": "You cannot deactivate your own account"
+  },
+  "customerStatus": {
+    "new": "Received",
+    "in_progress": "In progress",
+    "paused": "On hold",
+    "completed": "Completed",
+    "picked_up": "Handed over",
+    "cancelled": "Cancelled"
+  },
+  "slideOver": {
+    "saved": "Saved",
+    "total": "Total",
+    "manage": "Manage",
+    "moveTo": "Move to",
+    "openFull": "Full page",
+    "receipt": "Receipt",
+    "tag": "QR tag",
+    "cancelTitle": "Cancel this request?",
+    "cancelBody": "The customer is notified and the job leaves the board. You can reopen it later.",
+    "cancelConfirm": "Cancel request"
+  },
+  "resolution": {
+    "repair": "Repaired",
+    "replace": "Replaced"
   }
 }

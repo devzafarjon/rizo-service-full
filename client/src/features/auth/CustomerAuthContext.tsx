@@ -11,7 +11,7 @@ type CustomerAuthContextValue = {
   loading: boolean;
   login: (phone: string, password: string) => Promise<CustomerUser>;
   signup: (values: { name: string; phone: string; password: string; address?: string }) => Promise<CustomerUser>;
-  forgotPassword: (phone: string) => Promise<{ temporaryPassword: string; message: string }>;
+  forgotPassword: (phone: string) => Promise<{ sent: boolean }>;
   logout: () => void;
   saveLocale: (locale: AppLocale) => Promise<void>;
 };
@@ -92,7 +92,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   );
 
   const forgotPassword = useCallback(async (phone: string) => {
-    return api<{ temporaryPassword: string; message: string }>("/api/customer/auth/forgot", {
+    return api<{ sent: boolean }>("/api/customer/auth/forgot", {
       method: "POST",
       body: JSON.stringify({ phone }),
     });

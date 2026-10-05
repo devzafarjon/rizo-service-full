@@ -47,7 +47,7 @@ export function ActivityLogPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold tracking-tight">{t("audit.title")}</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{t("audit.title")}</h1>
       <p className="mt-1 mb-4 text-sm text-neutral-500">{t("audit.intro")}</p>
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Field label={t("audit.requestOrEntity")}>
@@ -87,14 +87,18 @@ export function ActivityLogPage() {
       )}
 
       <h2 className="mt-10 text-lg font-extrabold">{t("audit.outbound")}</h2>
-      <ul className="mt-3 space-y-2">
-        {(outbound.data?.messages ?? []).map((row) => (
-          <li key={row.id} className="rounded-xl bg-neutral-50 px-4 py-3 text-sm">
-            <span className="font-bold uppercase">{row.channel}</span> · {row.to} · {row.status}
-            <p className="mt-1 text-neutral-600">{row.body}</p>
-          </li>
-        ))}
-      </ul>
+      {(outbound.data?.messages ?? []).length === 0 ? (
+        <p className="mt-3 text-sm text-neutral-500">{t("audit.outboundEmpty")}</p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {(outbound.data?.messages ?? []).map((row) => (
+            <li key={row.id} className="rounded-xl bg-neutral-50 px-4 py-3 text-sm">
+              <span className="font-bold uppercase">{row.channel}</span> · {row.to} · {row.status}
+              <p className="mt-1 text-neutral-600">{row.body}</p>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

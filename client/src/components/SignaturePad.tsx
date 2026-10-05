@@ -82,7 +82,7 @@ export function SignaturePad({
         type="button"
         disabled={disabled || !value}
         onClick={() => onChange(null)}
-        className="mt-2 text-xs font-bold text-neutral-500 hover:text-[#B439FD] disabled:opacity-40"
+        className="mt-2 text-xs font-bold text-neutral-500 hover:text-[#7B00E0] disabled:opacity-40"
       >
         {t("pickup.clearSignature")}
       </button>

@@ -37,7 +37,7 @@ export function LanguageSwitcher({
   return (
     <Menu>
       <MenuButton className={buttonClass} aria-label={t("common.language")}>
-        <Globe size={16} className={variant === "dark" ? "text-[#C45FFF]" : "text-[#B439FD]"} />
+        <Globe size={16} className={variant === "dark" ? "text-[#6500BD]" : "text-[#7B00E0]"} />
         <span className="text-sm font-medium uppercase">{current}</span>
       </MenuButton>
       <MenuItems
@@ -50,7 +50,7 @@ export function LanguageSwitcher({
               type="button"
               onClick={() => void select(locale)}
               className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium ${
-                current === locale ? "bg-gray-100 font-bold text-[#B439FD]" : "text-gray-700 data-focus:bg-gray-50"
+                current === locale ? "bg-gray-100 font-bold text-[#7B00E0]" : "text-gray-700 data-focus:bg-gray-50"
               }`}
             >
               <span>{t(`languages.${locale}`)}</span>

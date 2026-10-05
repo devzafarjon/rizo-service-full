@@ -16,7 +16,7 @@ import { isDoneStatus } from "../lib/techBoard.js";
 import { computeWarrantyStatus, money, toDateOnly } from "../lib/warranty.js";
 import { allocateDisplayId } from "../lib/displayId.js";
 import { customerAuth } from "../middleware/customerAuth.js";
-import { confirmPickup } from "../lib/pickup.js";
+import { canConfirmPickup, confirmPickup } from "../lib/pickup.js";
 import { customerActor } from "../lib/audit.js";
 import { acceptJobPhotos, publicPhotoUrl } from "../lib/uploads.js";
 
@@ -67,8 +67,11 @@ const createSchema = z
     }
   });
 
+export const FEEDBACK_TAGS = ["fast", "polite", "clean", "late", "not_fixed", "rude", "expensive", "unclear_price"] as const;
+
 const feedbackSchema = z.object({
   rating: z.coerce.number().int().min(1).max(5),
+  tags: z.array(z.enum(FEEDBACK_TAGS)).max(FEEDBACK_TAGS.length).optional(),
   comment: z
     .string()
     .trim()
@@ -179,7 +182,7 @@ customerPortalRouter.post(
       ? computeWarrantyStatus(sale.warrantyMonths, sale.warrantyExpiry)
       : "not_applicable";
     const payment = paymentFor(body.type, warrantyStatus);
-    const status = initialStatusFor(body.type);
+    const status = initialStatusFor();
     const now = new Date();
     const technicianTypeRequired = body.locationType === "on_site" ? "mobile" : "service_center";
     const picked = await pickAvailableTechnician(technicianTypeRequired);
@@ -215,6 +218,7 @@ customerPortalRouter.post(
           customerLocation,
           technicianTypeRequired,
           assignedTechnicianId: picked?.id ?? null,
+          assignedAt: picked ? now : null,
           status,
           priority: "medium",
           warrantyStatus,
@@ -276,6 +280,7 @@ customerPortalRouter.post(
           customerId: req.customer!.sub,
           rating: body.rating,
           comment: body.comment ?? null,
+          tags: [...new Set(body.tags ?? [])],
         },
       });
     } catch (error) {
@@ -386,7 +391,10 @@ function serializePortalRequest(request: PortalRecord) {
     completedAt: request.completedAt?.toISOString() ?? null,
     submittedByCustomer: request.submittedByCustomer,
     product: request.product,
-    assignedTechnician: request.assignedTechnician,
+    // Customers only see the technician's first name, never contact details.
+    assignedTechnician: request.assignedTechnician
+      ? { name: request.assignedTechnician.name.trim().split(/\s+/)[0] }
+      : null,
     sale: request.sale
       ? {
           invoiceNumber: request.sale.invoiceNumber,
@@ -398,13 +406,12 @@ function serializePortalRequest(request: PortalRecord) {
       ? {
           rating: request.feedback.rating,
           comment: request.feedback.comment,
+          tags: request.feedback.tags,
           createdAt: request.feedback.createdAt.toISOString(),
         }
       : null,
     canFeedback: done && !request.feedback,
     pickupConfirmedAt: request.pickupConfirmedAt?.toISOString() ?? null,
-    canConfirmPickup:
-      !request.pickupConfirmedAt &&
-      (request.status === "ready_for_pickup" || request.status === "completed" || request.status === "closed"),
+    canConfirmPickup: canConfirmPickup(request.status, request.pickupConfirmedAt, request.locationType),
   };
 }
