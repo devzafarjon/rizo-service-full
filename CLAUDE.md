@@ -4,7 +4,7 @@ After-sales service management for RIZO market (Uzbekistan). Web only; technicia
 
 ## Business rules
 - Two service types: **repair** (dead on arrival or failed in use; resolved by repair or replacement; free in warranty, paid otherwise) and **installation** (first-time setup). **No periodic / seasonal maintenance** — never model it.
-- Location is **in_shop** or **on_site**, chosen when the request is created (either type). On-site needs an address (+ optional lat/lng).
+- Location is **in_shop** or **on_site**, chosen when the request is created. **Installation is always on site at the customer's address** (in-shop installation is not allowed; the API rejects it). Repairs can be either. On-site needs an address (+ optional lat/lng).
 - `source` is `rizo_service` | `rizo_market`. Request creation lives in service-layer code so a future RIZO market API can call it. Integration is not built.
 - Warranty runs from the **installation date** when the product was installed (set when an installation request completes), otherwise from the sale date. Dates are UTC date-only; "today" is `Asia/Tashkent`.
 - Cost: 0 if in warranty (extras are still charged), otherwise services + parts + extra expenses. Profit = revenue − part **cost price** (snapshotted per line) − extra expenses.

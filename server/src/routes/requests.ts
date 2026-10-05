@@ -79,7 +79,14 @@ const createSchema = z
     source: z.enum(["rizo_market", "rizo_service"]).optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.locationType === "on_site" && !data.customerLocation?.address) {
+    if (data.type === "installation" && data.locationType === "in_shop") {
+      ctx.addIssue({
+        code: "custom",
+        message: "Installation is only done at the customer's address",
+        path: ["locationType"],
+      });
+    }
+    if ((data.locationType === "on_site" || data.type === "installation") && !data.customerLocation?.address) {
       ctx.addIssue({
         code: "custom",
         message: "Customer location is required for on-site jobs",

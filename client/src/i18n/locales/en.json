@@ -559,7 +559,8 @@
     "filteredTo": "Filtered to {{category}}. Services and parts are added when the job is completed.",
     "selectProductFilter": "Select a product to filter services and spare parts.",
     "noServices": "No services for this category.",
-    "noParts": "No parts for this category."
+    "noParts": "No parts for this category.",
+    "installationOnlyOnSite": "Installation is always done on site, at the customer’s address."
   },
   "detail": {
     "job": "Job",
@@ -873,7 +874,8 @@
     "inShopReview": "We will handle this at the service center.",
     "review": "Review",
     "photoCount_one": "{{count}} photo attached",
-    "photoCount_other": "{{count}} photos attached"
+    "photoCount_other": "{{count}} photos attached",
+    "installationOnlyOnSite": "Installation is always done at your address."
   },
   "tour": {
     "skip": "Skip tour",
@@ -1081,7 +1083,9 @@
     "resolutionRepairOnly": "Only repairs have an outcome",
     "arrivalOnSiteOnly": "Arrival is only recorded for on-site jobs",
     "technicianInactive": "This technician is not active",
-    "cannotDeactivateSelf": "You cannot deactivate your own account"
+    "cannotDeactivateSelf": "You cannot deactivate your own account",
+    "installationOnSiteOnly": "Installation is only done at the customer’s address",
+    "locationRequired": "Add the customer’s address for an on-site job"
   },
   "customerStatus": {
     "new": "Received",

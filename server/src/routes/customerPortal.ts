@@ -51,7 +51,14 @@ const createSchema = z
     customerLocation: locationSchema.optional().nullable(),
   })
   .superRefine((data, ctx) => {
-    if (data.locationType === "on_site" && !data.customerLocation?.address) {
+    if (data.type === "installation" && data.locationType === "in_shop") {
+      ctx.addIssue({
+        code: "custom",
+        message: "Installation is only done at the customer's address",
+        path: ["locationType"],
+      });
+    }
+    if ((data.locationType === "on_site" || data.type === "installation") && !data.customerLocation?.address) {
       ctx.addIssue({
         code: "custom",
         message: "Add your address for an on-site visit",

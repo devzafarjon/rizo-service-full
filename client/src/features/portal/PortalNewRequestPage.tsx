@@ -102,7 +102,7 @@ export function PortalNewRequestPage() {
   function canContinue() {
     if (step === 1) return Boolean((!useCatalog && saleId) || (useCatalog && productId));
     if (step === 2) return Boolean(issueDescription.trim());
-    if (locationType === "on_site") return Boolean(address.trim());
+    if (type === "installation" || locationType === "on_site") return Boolean(address.trim());
     return true;
   }
 
@@ -121,9 +121,9 @@ export function PortalNewRequestPage() {
       productId: useCatalog ? productId : undefined,
       issueDescription,
       defectType: type === "repair" && defectType ? defectType : null,
-      locationType,
+      locationType: type === "installation" ? "on_site" : locationType,
       customerLocation:
-        locationType === "on_site"
+        type === "installation" || locationType === "on_site"
           ? {
               address,
               lat: Number.isFinite(latNumber) ? latNumber : null,
@@ -167,6 +167,7 @@ export function PortalNewRequestPage() {
                   type="button"
                   onClick={() => {
                     setType(item);
+                    if (item === "installation") setLocationType("on_site");
                   }}
                   className={`min-h-14 rounded-2xl px-4 py-3 text-left ring-1 ${
                     type === item ? "bg-[#F5EBFD] ring-[#7B00E0]" : "bg-white ring-neutral-200"
@@ -356,6 +357,9 @@ export function PortalNewRequestPage() {
           <>
             <div>
               <p className="mb-2 text-sm font-semibold text-neutral-700">{t("portal.where")}</p>
+              {type === "installation" ? (
+                <p className="mb-3 text-sm text-neutral-500">{t("portal.installationOnlyOnSite")}</p>
+              ) : (
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -376,9 +380,9 @@ export function PortalNewRequestPage() {
                     <Store size={16} className="mb-1 inline" /> {t("location.in_shop")}
                   </button>
                 </div>
+              )}
             </div>
-
-            {locationType === "on_site" ? (
+            {type === "installation" || locationType === "on_site" ? (
               <div className="space-y-3">
                 <Field label={t("common.address")}>
                   <input className={portalInputClass} value={address} onChange={(event) => setAddress(event.target.value)} required />

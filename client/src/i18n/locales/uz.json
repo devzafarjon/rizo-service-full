@@ -559,7 +559,8 @@
     "filteredTo": "{{category}} bo‘yicha filtrlendi. Xizmatlar va qismlar ish yakunlanganda qo‘shiladi.",
     "selectProductFilter": "Xizmatlar va ehtiyot qismlarni filtrlash uchun mahsulot tanlang.",
     "noServices": "Bu turkumda xizmat yo‘q.",
-    "noParts": "Bu turkumda qism yo‘q."
+    "noParts": "Bu turkumda qism yo‘q.",
+    "installationOnlyOnSite": "O‘rnatish doim mijoz manzilida, joyida bajariladi."
   },
   "detail": {
     "job": "Ish",
@@ -873,7 +874,8 @@
     "inShopReview": "Bu ish xizmat markazida bajariladi.",
     "review": "Tekshiruv",
     "photoCount_one": "{{count}} ta rasm qo‘shildi",
-    "photoCount_other": "{{count}} ta rasm qo‘shildi"
+    "photoCount_other": "{{count}} ta rasm qo‘shildi",
+    "installationOnlyOnSite": "O‘rnatish doim sizning manzilingizda bajariladi."
   },
   "tour": {
     "skip": "Ekskursiyani o‘tkazib yuborish",
@@ -1081,7 +1083,9 @@
     "resolutionRepairOnly": "Natija faqat ta’mirlash uchun tanlanadi",
     "arrivalOnSiteOnly": "Yetib borish faqat manzildagi ishlar uchun qayd etiladi",
     "technicianInactive": "Bu texnik faol emas",
-    "cannotDeactivateSelf": "O‘z akkauntingizni o‘chira olmaysiz"
+    "cannotDeactivateSelf": "O‘z akkauntingizni o‘chira olmaysiz",
+    "installationOnSiteOnly": "O‘rnatish faqat mijoz manzilida bajariladi",
+    "locationRequired": "Joyida bajariladigan ish uchun mijoz manzilini kiriting"
   },
   "customerStatus": {
     "new": "Qabul qilindi",

@@ -217,7 +217,7 @@ Timers are green → yellow (last quarter) → red (expired). The technician boa
 
 Completion needs at least one photo, a service when the product category has any, and — when a repair is resolved by **replacement** — the new product and serial number (no service line required). Cost is 0 when in warranty (extra expenses are still charged), otherwise services + parts + extras.
 
-Repair can be in shop or on site; installation can be either too — the location is chosen when the request is created, and on-site requests need an address.
+Installation is always on site at the customer's address (in-shop installation is rejected by the API and not offered in the forms). Repair can be in shop or on site, chosen when the request is created; on-site requests need an address.
 
 ---
 

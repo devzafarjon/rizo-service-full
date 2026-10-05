@@ -157,6 +157,13 @@ export function NewRequestPage() {
 
   function chooseType(next: ServiceType) {
     setType(next);
+    // Installation is always done at the customer's address.
+    if (next === "installation") {
+      chooseLocation("on_site");
+      if (!address.trim() && customer?.address) {
+        setAddress(customer.address);
+      }
+    }
   }
 
   function useCustomerAddress() {
@@ -191,9 +198,9 @@ export function NewRequestPage() {
       productId,
       issueDescription,
       defectType: type === "repair" && defectType ? defectType : null,
-      locationType,
+      locationType: type === "installation" ? "on_site" : locationType,
       customerLocation:
-        locationType === "on_site"
+        type === "installation" || locationType === "on_site"
           ? {
               address,
               lat: Number.isFinite(latNumber) ? latNumber : null,
@@ -324,6 +331,9 @@ export function NewRequestPage() {
 
           <section className="rounded-2xl border border-neutral-200 bg-white p-5">
             <p className="mb-3 text-sm font-semibold text-neutral-700">{t("newRequest.location")}</p>
+            {type === "installation" ? (
+              <p className="mb-3 text-sm text-neutral-500">{t("newRequest.installationOnlyOnSite")}</p>
+            ) : (
               <div className="grid gap-2 sm:grid-cols-2">
                 <button
                   type="button"
@@ -346,7 +356,8 @@ export function NewRequestPage() {
                   <p className="mt-1 text-xs text-neutral-500">{t("location.onSiteHint")}</p>
                 </button>
               </div>
-            {locationType === "on_site" ? (
+            )}
+            {type === "installation" || locationType === "on_site" ? (
               <div className="mt-4 space-y-3">
                 <Field label={t("newRequest.address")}>
                   <textarea className={textareaClass} value={address} onChange={(event) => setAddress(event.target.value)} required placeholder={t("newRequest.addressPlaceholder")} />

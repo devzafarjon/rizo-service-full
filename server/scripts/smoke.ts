@@ -152,6 +152,27 @@ async function main() {
       }),
     ),
   );
+  const installInShop = await json("/api/staff/requests", {
+    method: "POST",
+    token: admin.token,
+    body: JSON.stringify({
+      type: "installation",
+      customerId: dilnoza!.id,
+      productId: product!.id,
+      issueDescription: "Smoke installation in shop",
+      locationType: "in_shop",
+      technicianTypeRequired: "service_center",
+      autoAssign: false,
+    }),
+  });
+  assert(installInShop.status === 400, "installation cannot be created as in-shop");
+  const installPortal = await json("/api/customer/requests", {
+    method: "POST",
+    token: customer.token,
+    body: JSON.stringify({ type: "installation", productId: product!.id, issueDescription: "Smoke", locationType: "in_shop" }),
+  });
+  assert(installPortal.status === 400, "customers cannot request an in-shop installation");
+
   assert(created.every((row) => row.status === 201), "six concurrent creates return 201");
   const ids = created.map((row) => row.body.request.displayId);
   assert(new Set(ids).size === ids.length, `concurrent display ids unique: ${ids.join(", ")}`);

@@ -559,7 +559,8 @@
     "filteredTo": "Отфильтровано по {{category}}. Услуги и запчасти добавляются при завершении работы.",
     "selectProductFilter": "Выберите товар, чтобы отфильтровать услуги и запчасти.",
     "noServices": "В этой категории нет услуг.",
-    "noParts": "В этой категории нет запчастей."
+    "noParts": "В этой категории нет запчастей.",
+    "installationOnlyOnSite": "Установка всегда выполняется на месте, по адресу клиента."
   },
   "detail": {
     "job": "Работа",
@@ -875,7 +876,8 @@
     "photoCount_one": "Добавлено {{count}} фото",
     "photoCount_few": "Добавлено {{count}} фото",
     "photoCount_many": "Добавлено {{count}} фото",
-    "photoCount_other": "Добавлено {{count}} фото"
+    "photoCount_other": "Добавлено {{count}} фото",
+    "installationOnlyOnSite": "Установка всегда выполняется по вашему адресу."
   },
   "tour": {
     "skip": "Пропустить тур",
@@ -1083,7 +1085,9 @@
     "resolutionRepairOnly": "Результат выбирается только для ремонта",
     "arrivalOnSiteOnly": "Прибытие фиксируется только для выездных работ",
     "technicianInactive": "Этот техник неактивен",
-    "cannotDeactivateSelf": "Нельзя отключить собственную учётную запись"
+    "cannotDeactivateSelf": "Нельзя отключить собственную учётную запись",
+    "installationOnSiteOnly": "Установка выполняется только по адресу клиента",
+    "locationRequired": "Укажите адрес клиента для выездной работы"
   },
   "customerStatus": {
     "new": "Принята",
