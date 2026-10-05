@@ -37,10 +37,8 @@ reportsRouter.get(
 
     const statusCounts = new Map<string, number>();
     for (const status of ALL_STATUSES) statusCounts.set(status, 0);
-    let paused = 0;
     for (const job of jobs) {
       statusCounts.set(job.status, (statusCounts.get(job.status) ?? 0) + 1);
-      if (job.paused) paused += 1;
     }
 
     const products = new Map<string, { product: (typeof jobs)[number]["product"]; count: number }>();
@@ -99,10 +97,7 @@ reportsRouter.get(
       defectsByCategory: [...defects.entries()]
         .map(([category, count]) => ({ category, count }))
         .sort((a, b) => b.count - a.count || a.category.localeCompare(b.category)),
-      byStatus: [
-        ...ALL_STATUSES.map((status) => ({ status, count: statusCounts.get(status) ?? 0 })).filter((row) => row.count > 0),
-        ...(paused ? [{ status: "paused" as const, count: paused }] : []),
-      ],
+      byStatus: ALL_STATUSES.map((status) => ({ status, count: statusCounts.get(status) ?? 0 })).filter((row) => row.count > 0),
       warrantySplit: { free, paid },
     });
   }),

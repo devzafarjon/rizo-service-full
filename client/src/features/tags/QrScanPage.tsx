@@ -57,7 +57,7 @@ export function QrScanPage() {
     setBusy(true);
     try {
       if (stopRef.current) {
-        await stopRef.current().catch(() => undefined);
+        await stopRef.current();
         stopRef.current = null;
       }
       const data = await api<{ request: ServiceRequest; ownedByMe: boolean }>(`/api/staff/tags/${encodeURIComponent(displayId)}`, {
@@ -83,7 +83,14 @@ export function QrScanPage() {
       .then((Html5Qrcode) => {
         if (cancelled || !document.getElementById(hostId)) return;
         const scanner = new Html5Qrcode(hostId);
-        stopRef.current = () => scanner.stop();
+        // stop() throws when the camera never started (permission denied), so it is always wrapped.
+        stopRef.current = async () => {
+          try {
+            await scanner.stop();
+          } catch {
+            /* scanner was not running */
+          }
+        };
         return scanner.start({ facingMode: "environment" }, { fps: 8, qrbox: { width: 240, height: 240 } }, (text) => {
           void openRequest(text);
         });
@@ -93,7 +100,7 @@ export function QrScanPage() {
       });
     return () => {
       cancelled = true;
-      void stopRef.current?.().catch(() => undefined);
+      void stopRef.current?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

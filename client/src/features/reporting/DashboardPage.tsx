@@ -55,7 +55,7 @@ export function DashboardPage() {
   const defects = data.defectsByCategory.map((row) => ({ ...row, label: categoryLabel(row.category) }));
   const statuses = data.byStatus.map((row) => ({
     ...row,
-    label: row.status === "paused" ? t("reports.paused") : statusLabel(row.status),
+    label: statusLabel(row.status),
   }));
   const warranty = [
     { name: t("reports.inWarrantyFree"), value: data.warrantySplit.free, color: CHART.green },

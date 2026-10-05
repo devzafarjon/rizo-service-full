@@ -5,6 +5,7 @@ import { AuthInput } from "../../components/AuthInput";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { BrandChrome } from "../../components/BrandChrome";
 import { Spinner } from "../../components/Spinner";
+import { SHOW_DEMO } from "../../lib/demo";
 import { useToast } from "../../components/toast";
 import { apiErrorMessage } from "../../lib/api";
 import { useCustomerAuth } from "./CustomerAuthContext";
@@ -15,8 +16,8 @@ export function CustomerLoginPage() {
   const { notify } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const [phone, setPhone] = useState("998900000003");
-  const [password, setPassword] = useState("customer123");
+  const [phone, setPhone] = useState(SHOW_DEMO ? "998900000003" : "");
+  const [password, setPassword] = useState(SHOW_DEMO ? "customer123" : "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -100,9 +101,11 @@ export function CustomerLoginPage() {
             {t("auth.staffSignIn")}
           </Link>
         </p>
-        <p className="mt-4 text-center text-xs text-gray-400">
-          {t("auth.demoCustomer")}: <span className="font-medium">998900000003 / customer123</span>
-        </p>
+        {SHOW_DEMO ? (
+          <p className="mt-4 text-center text-xs text-gray-400">
+            {t("auth.demoCustomer")}: <span className="font-medium">998900000003 / customer123</span>
+          </p>
+        ) : null}
       </div>
     </BrandChrome>
   );

@@ -14,7 +14,8 @@
     "db:seed": "npm run prisma:seed -w server",
     "db:reset": "npm run prisma:reset -w server",
     "smoke": "npm run smoke -w server",
-    "db:backup": "npm run backup -w server"
+    "db:backup": "npm run backup -w server",
+    "set-password": "npm run set-password -w server --"
   },
   "devDependencies": {
     "@types/multer": "^2.2.0",

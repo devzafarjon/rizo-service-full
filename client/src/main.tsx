@@ -2,8 +2,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode, type ReactNode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { useTranslation } from "react-i18next";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, useLocation } from "react-router-dom";
 import App from "./App";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ToastProvider } from "./components/ToastProvider";
 import { CustomerAuthProvider } from "./features/auth/CustomerAuthContext";
 import { StaffAuthProvider } from "./features/auth/StaffAuthContext";
@@ -19,6 +20,11 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+function RouteGuard({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
+  return <ErrorBoundary resetKey={pathname}>{children}</ErrorBoundary>;
+}
 
 function I18nGate({ children }: { children: ReactNode }) {
   const { i18n } = useTranslation();
@@ -41,7 +47,9 @@ createRoot(document.getElementById("root")!).render(
           <StaffAuthProvider>
             <CustomerAuthProvider>
               <I18nGate>
-                <App />
+                <RouteGuard>
+                  <App />
+                </RouteGuard>
               </I18nGate>
             </CustomerAuthProvider>
           </StaffAuthProvider>

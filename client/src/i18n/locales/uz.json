@@ -971,6 +971,12 @@
     "type": {
       "tap": "Mijoz «Qurilmani oldim» tugmasini bosdi",
       "signature": "Mijoz imzosi"
+    },
+    "customer": {
+      "title": "Qurilmangizni oldingizmi?",
+      "hint": "Qurilmangizni olganingizdan keyin tugmani bosing. Xohlasangiz, barmoq bilan imzo ham qo‘yishingiz mumkin.",
+      "tap": "Qurilmani oldim",
+      "confirm": "Tasdiqlash"
     }
   },
   "kiosk": {
@@ -1110,5 +1116,10 @@
   "resolution": {
     "repair": "Ta’mirlandi",
     "replace": "Almashtirildi"
+  },
+  "errorBoundary": {
+    "title": "Bu sahifada xatolik yuz berdi",
+    "body": "Sahifani qayta yuklang. Takrorlansa, administratorga xabar bering.",
+    "reload": "Qayta yuklash"
   }
 }

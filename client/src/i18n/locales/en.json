@@ -971,6 +971,12 @@
     "type": {
       "tap": "Customer tapped “I received my device”",
       "signature": "Customer signature"
+    },
+    "customer": {
+      "title": "Did you get your device?",
+      "hint": "Tap the button once you have your device back. You can also sign with your finger.",
+      "tap": "I received my device",
+      "confirm": "Confirm"
     }
   },
   "kiosk": {
@@ -1110,5 +1116,10 @@
   "resolution": {
     "repair": "Repaired",
     "replace": "Replaced"
+  },
+  "errorBoundary": {
+    "title": "Something went wrong on this screen",
+    "body": "Please reload the page. If it keeps happening, tell your administrator.",
+    "reload": "Reload"
   }
 }

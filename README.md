@@ -296,6 +296,23 @@ server/
 
 ---
 
+## Deploying (Netlify client + hosted API)
+
+The client is static; the API (`server/`) and PostgreSQL run elsewhere (for example Render + Neon).
+
+- **API host:** build `npm install --include=dev && npm run build -w server`, start `npm run start:prod -w server` (applies migrations, then starts). Env: `DATABASE_URL` (use the direct, non-pooled Neon URL), `JWT_SECRET`, `CLIENT_ORIGIN` (the Netlify URL, no trailing slash), `NODE_VERSION=22`.
+- **Netlify:** `netlify.toml` builds the client. Set `VITE_API_URL` to the API's public URL and redeploy. Demo logins are neither shown nor prefilled on a production build (only in development, or with `VITE_SHOW_DEMO=true`).
+- **First data:** run the seed once against the production database, then **change the demo passwords** straight away:
+
+```bash
+DATABASE_URL="<production url>" npm run set-password -- staff 998900000001 "a-strong-password"
+DATABASE_URL="<production url>" npm run set-password -- staff 998900000002 "another-strong-password"
+```
+
+Uploaded photos are stored on the API server's disk; use a persistent disk or object storage if the host wipes it on deploy.
+
+---
+
 ## Database backups
 
 Daily dumps use `pg_dump --no-owner --no-acl`. Enable them with `BACKUP_ENABLED=true` in `server/.env`, or run `npm run db:backup` by hand. Files land in `BACKUP_DIR` (default `server/backups`) as `rizo-service-<ISO timestamp>.sql`. Dumps older than `BACKUP_RETAIN_DAYS` (default 30) are deleted after a successful run.

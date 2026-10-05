@@ -5,6 +5,7 @@ import { AuthInput } from "../../components/AuthInput";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { BrandChrome } from "../../components/BrandChrome";
 import { Spinner } from "../../components/Spinner";
+import { SHOW_DEMO } from "../../lib/demo";
 import { useToast } from "../../components/toast";
 import { apiErrorMessage } from "../../lib/api";
 import { useStaffAuth } from "./StaffAuthContext";
@@ -15,8 +16,8 @@ export function StaffLoginPage() {
   const { notify } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const [phone, setPhone] = useState("998900000001");
-  const [password, setPassword] = useState("admin123");
+  const [phone, setPhone] = useState(SHOW_DEMO ? "998900000001" : "");
+  const [password, setPassword] = useState(SHOW_DEMO ? "admin123" : "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,11 +88,13 @@ export function StaffLoginPage() {
             {t("auth.openPortal")}
           </Link>
         </p>
-        <p className="mt-4 text-center text-xs text-gray-400">
-          {t("auth.demoAdmin")} <span className="font-medium">998900000001 / admin123</span>
-          <br />
-          {t("auth.demoTech")} <span className="font-medium">998900000002 / tech123</span>
-        </p>
+        {SHOW_DEMO ? (
+          <p className="mt-4 text-center text-xs text-gray-400">
+            {t("auth.demoAdmin")} <span className="font-medium">998900000001 / admin123</span>
+            <br />
+            {t("auth.demoTech")} <span className="font-medium">998900000002 / tech123</span>
+          </p>
+        ) : null}
       </div>
     </BrandChrome>
   );

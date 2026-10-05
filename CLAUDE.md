@@ -39,6 +39,7 @@ npm install
 npm run db:migrate        # prisma migrate dev
 npm run db:seed           # demo staff, customers, catalog, sales, one request per board column
 npm run dev               # API :4000 + client :5173
+npm run set-password -- staff <phone> <new password>   # change an account password (min 8 chars)
 npm run smoke             # API checks; needs the API running (SMOKE_API=http://localhost:4100 to target another)
 npx tsc -b                # client typecheck (run in client/)
 npx tsc --noEmit          # server typecheck (run in server/)

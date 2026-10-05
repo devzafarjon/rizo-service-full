@@ -86,7 +86,7 @@ export function PortalRequestDetailPage() {
 
       {request.canConfirmPickup ? (
         <div className="mt-4">
-          <PickupConfirm pending={pickup.isPending} onConfirm={(signature) => pickup.mutateAsync(signature)} />
+          <PickupConfirm audience="customer" pending={pickup.isPending} onConfirm={(signature) => pickup.mutateAsync(signature)} />
         </div>
       ) : request.pickupConfirmedAt && request.locationType === "in_shop" ? (
         <p className="mt-4 text-sm font-bold text-emerald-700">{t("pickup.already")}</p>

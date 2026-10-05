@@ -26,6 +26,12 @@ export function createApp() {
   const app = express();
   // Behind a hosting proxy (Render, Fly…) the real client IP comes from X-Forwarded-For; the rate limiter needs it.
   app.set("trust proxy", 1);
+  app.disable("x-powered-by");
+  app.use((_req, res, next) => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Referrer-Policy", "no-referrer");
+    next();
+  });
   ensureUploadsRoot();
   app.use(cors({ origin: env.clientOrigin, credentials: true }));
   app.use(express.json({ limit: "4mb" }));

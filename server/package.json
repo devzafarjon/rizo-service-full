@@ -13,7 +13,8 @@
     "prisma:reset": "prisma migrate reset --force",
     "prisma:generate": "prisma generate",
     "smoke": "node --import tsx/esm scripts/smoke.ts",
-    "backup": "node --import tsx/esm scripts/backup.ts"
+    "backup": "node --import tsx/esm scripts/backup.ts",
+    "set-password": "node --import tsx/esm scripts/set-password.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

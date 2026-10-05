@@ -1,6 +1,5 @@
 import { Prisma } from "@prisma/client";
 import { computeWarrantyStatus, money, toDateOnly } from "./warranty.js";
-import { isTerminalStatus } from "./status.js";
 import { jobTimer } from "./techBoard.js";
 
 export const requestInclude = Prisma.validator<Prisma.ServiceRequestInclude>()({
@@ -69,7 +68,8 @@ export function serializeRequest(request: RequestRecord) {
     arrivedAt: request.arrivedAt?.toISOString() ?? null,
     completedAt: request.completedAt?.toISOString() ?? null,
     overdueAt: request.overdueAt?.toISOString() ?? null,
-    isOverdue: Boolean(request.overdueAt) && !isTerminalStatus(request.status),
+    // Live from the timer, so a pause or resume is reflected immediately (the 60 s job only handles notifications).
+    isOverdue: Boolean(timer) && timer!.startsAt.getTime() + timer!.durationMs <= Date.now(),
     pickupConfirmedAt: request.pickupConfirmedAt?.toISOString() ?? null,
     pickupConfirmationType: request.pickupConfirmationType,
     pickupSignatureUrl: request.pickupSignatureUrl,

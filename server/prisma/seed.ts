@@ -411,6 +411,13 @@ async function main() {
       where: { id: install.id },
       data: { completedAt: fridgeSaleDate, estimatedCost: 180000, finalCost: 0 },
     });
+    const installService = await prisma.serviceCatalogItem.findFirstOrThrow({ where: { name: "Standard installation" } });
+    await prisma.requestServiceLine.create({
+      data: { serviceRequestId: install.id, serviceCatalogItemId: installService.id, priceAtTime: installService.price },
+    });
+    await prisma.requestPhoto.create({
+      data: { serviceRequestId: install.id, photoUrl: demoPhoto, uploadedBy: mobileTech.name, staffUserId: mobileTech.id },
+    });
   }
 
   console.log("Seeded demo accounts and catalog:");
