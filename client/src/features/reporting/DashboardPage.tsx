@@ -73,9 +73,9 @@ export function DashboardPage() {
       </div>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label={t("reports.requests")} value={String(data.totals.requests)} />
-        <Kpi label={t("reports.paidRevenue")} value={formatMoney(data.totals.revenue)} accent="green" />
-        <Kpi label={t("reports.profit")} value={formatMoney(data.totals.profit)} />
+        <Kpi label={t("reports.requests")} value={String(data.totals.requests)} delta={delta(data.totals.requests, data.previous?.requests)} />
+        <Kpi label={t("reports.paidRevenue")} value={formatMoney(data.totals.revenue)} accent="green" delta={delta(data.totals.revenue, data.previous?.revenue)} />
+        <Kpi label={t("reports.profit")} value={formatMoney(data.totals.profit)} delta={delta(data.totals.profit, data.previous?.profit)} />
         <Kpi label={t("reports.avgHours")} value={formatDurationHours(data.totals.avgResolutionHours)} accent="orange" />
       </div>
 
@@ -123,11 +123,14 @@ export function DashboardPage() {
         </Link>
       ) : (
         <>
-          <div className="mt-4 sm:max-w-xs">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Kpi
               label={t("reports.avgRating")}
               value={data.totals.avgRating == null ? t("common.dash") : `${data.totals.avgRating.toFixed(1)} / 5`}
             />
+            <Kpi label={t("dashboard.legalOverdue")} value={String(data.totals.legalOverdue)} accent="red" to="/app/reports/legal" />
+            <Kpi label={t("dashboard.debt")} value={formatMoney(data.totals.debt)} accent="red" to="/app/reports/debts" />
+            <Kpi label={t("dashboard.avgWork")} value={data.totals.avgWorkMinutes == null ? t("common.dash") : formatDurationHours(data.totals.avgWorkMinutes / 60)} accent="orange" />
           </div>
 
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -199,6 +202,24 @@ export function DashboardPage() {
   );
 }
 
-function Kpi({ label, value, accent = "purple" }: { label: string; value: string; accent?: StatAccent }) {
-  return <StatCard label={label} value={value} accent={accent} />;
+function delta(current: number, previous: number | undefined) {
+  if (previous == null) return null;
+  if (previous === 0) return current === 0 ? 0 : null;
+  return Math.round(((current - previous) / Math.abs(previous)) * 100);
+}
+
+function Kpi({ label, value, accent = "purple", delta: change, to }: { label: string; value: string; accent?: StatAccent; delta?: number | null; to?: string }) {
+  const { t } = useTranslation();
+  const card = <StatCard label={label} value={value} accent={accent} />;
+  const body = (
+    <div>
+      {card}
+      {change != null ? (
+        <p className={`mt-1 px-1 text-xs font-bold ${change > 0 ? "text-emerald-700" : change < 0 ? "text-red-700" : "text-neutral-500"}`}>
+          {change > 0 ? "▲" : change < 0 ? "▼" : "•"} {Math.abs(change)}% {t("dashboard.vsPrevious")}
+        </p>
+      ) : null}
+    </div>
+  );
+  return to ? <Link to={to}>{body}</Link> : body;
 }

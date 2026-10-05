@@ -3,7 +3,9 @@ import { ArrowLeft, Camera, Check, ImagePlus, Minus, Plus, Printer, Trash2 } fro
 import { useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { TypeBadge, WarrantyBadge } from "../../components/Badges";
+import { EstimateBuilder } from "../request-panels/EstimateBuilder";
+import { EstimateView } from "../request-panels/EstimateView";
+import { StatusBadge, TypeBadge, WarrantyBadge } from "../../components/Badges";
 import { EmptyState } from "../../components/EmptyState";
 import { Field, inputClass } from "../../components/Field";
 import { PageSkeleton } from "../../components/PageSkeleton";
@@ -13,7 +15,7 @@ import { useToast } from "../../components/toast";
 import { useStaffAuth } from "../auth/StaffAuthContext";
 import { withApiBase } from "../../lib/apiBase";
 import { api, apiErrorMessage, apiForm } from "../../lib/api";
-import { formatMoney, formatPhone, formatRequestId } from "../../lib/format";
+import { formatMoney, formatPhone, formatRequestId, formatStamp } from "../../lib/format";
 import { categoryLabel, localizedName } from "../../lib/localized";
 import type { JobWorkPayload } from "../../lib/types";
 
@@ -109,6 +111,44 @@ export function JobCompletePage() {
     onError: (error) => notify(apiErrorMessage(error, t), "error"),
   });
 
+  const estimateMut = useMutation({
+    mutationFn: (body: { lines: unknown[]; note: string; send: boolean }) =>
+      api<JobWorkPayload>(`/api/staff/my-jobs/${id}/estimates`, { method: "POST", token, body: JSON.stringify(body) }),
+    onSuccess: async (data, vars) => {
+      replaceWork(data);
+      notify(vars.send ? t("estimate.sent") : t("estimate.saved"));
+      await queryClient.invalidateQueries({ queryKey: ["staff", "my-jobs"] });
+    },
+    onError: (error) => notify(apiErrorMessage(error, t), "error"),
+  });
+
+  const diagnosisMut = useMutation({
+    mutationFn: (defectCodeId: string | null) =>
+      api<JobWorkPayload>(`/api/staff/my-jobs/${id}/diagnosis`, { method: "PUT", token, body: JSON.stringify({ defectCodeId }) }),
+    onSuccess: replaceWork,
+    onError: (error) => notify(apiErrorMessage(error, t), "error"),
+  });
+
+  const orderMut = useMutation({
+    mutationFn: (body: { sparePartId: string; quantity: number }) =>
+      api<JobWorkPayload>(`/api/staff/my-jobs/${id}/part-orders`, { method: "POST", token, body: JSON.stringify(body) }),
+    onSuccess: async (data) => {
+      replaceWork(data);
+      notify(t("parts.orderSent"));
+      await queryClient.invalidateQueries({ queryKey: ["staff", "my-jobs"] });
+    },
+    onError: (error) => notify(apiErrorMessage(error, t), "error"),
+  });
+
+  const statusMut = useMutation({
+    mutationFn: (status: string) => api<JobWorkPayload>(`/api/staff/my-jobs/${id}`, { method: "PATCH", token, body: JSON.stringify({ status }) }),
+    onSuccess: async (data) => {
+      replaceWork(data);
+      await queryClient.invalidateQueries({ queryKey: ["staff", "my-jobs"] });
+    },
+    onError: (error) => notify(apiErrorMessage(error, t), "error"),
+  });
+
   const resolutionMut = useMutation({
     mutationFn: (body: { resolutionType: "repair" | "replace"; productId?: string; serialNumber?: string }) =>
       api<JobWorkPayload>(`/api/staff/my-jobs/${id}/resolution`, { method: "PUT", token, body: JSON.stringify(body) }),
@@ -140,15 +180,21 @@ export function JobCompletePage() {
     return <EmptyState title={t("job.notFoundTitle")} body={t("job.notFoundBody")} />;
   }
 
-  const { job, catalog, serviceLines, partLines, extraExpenses, photos, cost, canComplete, missing, timeline, settings, replacement } = data;
+  const { job, catalog, serviceLines, partLines, extraExpenses, photos, cost, canComplete, missing, timeline, settings, replacement, estimates, defectCodes, partOrders, notes } = data;
   const blockZero = settings?.blockZeroStock ?? true;
   const done = job.column === "completed";
+  const repair = job.type === "repair";
+  const latestEstimate = estimates[0] ?? null;
   const busy =
     serviceMut.isPending ||
     partMut.isPending ||
     extraMut.isPending ||
     photoMut.isPending ||
     resolutionMut.isPending ||
+    estimateMut.isPending ||
+    diagnosisMut.isPending ||
+    orderMut.isPending ||
+    statusMut.isPending ||
     completeMut.isPending;
   const missingList = missing.map((code) => t(`job.gap.${code}`)).join(", ");
 
@@ -203,6 +249,83 @@ export function JobCompletePage() {
           <RequestTimeline events={timeline ?? []} />
         </div>
       </section>
+
+      {repair && !done ? (
+        <Section title={t("tech.workflow")} hint={t("tech.workflowHint")}>
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge status={job.status} />
+            {data.decision ? <span className="inline-flex rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-bold text-neutral-700">{t(`decision.${data.decision}`)}</span> : null}
+          </div>
+          {job.status === "awaiting_decision" ? <p className="mt-3 rounded-xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">{t("tech.waitingDecision")}</p> : null}
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {job.status === "new" ? (
+              <button type="button" disabled={busy} onClick={() => statusMut.mutate("diagnosing")} className="min-h-12 rounded-xl bg-[#7B00E0] text-sm font-extrabold text-white disabled:opacity-50">
+                {t("tech.startDiagnosis")}
+              </button>
+            ) : null}
+            {job.status === "diagnosing" || job.status === "awaiting_parts" ? (
+              <button type="button" disabled={busy} onClick={() => statusMut.mutate("in_progress")} className="min-h-12 rounded-xl bg-[#7B00E0] text-sm font-extrabold text-white disabled:opacity-50">
+                {job.status === "awaiting_parts" ? t("tech.partsArrived") : t("tech.startRepair")}
+              </button>
+            ) : null}
+            {job.status === "diagnosing" || job.status === "in_progress" ? (
+              <button type="button" disabled={busy} onClick={() => statusMut.mutate("awaiting_parts")} className="min-h-12 rounded-xl bg-neutral-100 text-sm font-bold disabled:opacity-50">
+                {t("tech.needParts")}
+              </button>
+            ) : null}
+          </div>
+        </Section>
+      ) : null}
+
+      {repair ? (
+        <Section title={t("detail.defectCode")} hint={t("tech.diagnosisHint")}>
+          <select className={`${inputClass} bg-white`} disabled={done || busy} value={job.defectCodeId ?? ""} onChange={(event) => diagnosisMut.mutate(event.target.value || null)}>
+            <option value="">{t("common.dash")}</option>
+            {defectCodes.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.code} · {localizedName(item)}
+              </option>
+            ))}
+          </select>
+        </Section>
+      ) : null}
+
+      {repair ? (
+        <Section title={t("estimate.title")} hint={t("estimate.techHint")}>
+          <div className="space-y-4">
+            {estimates.map((estimate) => (
+              <EstimateView key={estimate.id} estimate={estimate} />
+            ))}
+            {!done && !(latestEstimate && (latestEstimate.status === "sent" || latestEstimate.status === "draft")) && ["new", "diagnosing", "awaiting_decision", "in_progress"].includes(job.status) ? (
+              <details open={!latestEstimate || latestEstimate.status === "declined" || latestEstimate.status === "expired"}>
+                <summary className="mb-2 cursor-pointer text-sm font-semibold text-neutral-700">{t("estimate.newEstimate")}</summary>
+                <EstimateBuilder
+                  services={catalog.services}
+                  parts={catalog.parts}
+                  busy={estimateMut.isPending}
+                  allowDraft={false}
+                  onSubmit={(payload) => estimateMut.mutate(payload)}
+                />
+              </details>
+            ) : null}
+          </div>
+        </Section>
+      ) : null}
+
+      {notes.length > 0 ? (
+        <Section title={t("notes.title")} hint={t("notes.techHint")}>
+          <ul className="space-y-2">
+            {notes.map((note) => (
+              <li key={note.id} className={`rounded-2xl px-4 py-3 text-sm ${note.authorScope === "customer" ? "bg-[#FFF4E5]" : "bg-neutral-100"}`}>
+                <p className="whitespace-pre-wrap">{note.text}</p>
+                <p className="mt-1 text-xs text-neutral-500">
+                  {note.authorScope === "customer" ? t("notes.customer") : (note.authorName ?? t("notes.staff"))} · {formatStamp(note.createdAt)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
 
       <Section title={t("job.photos")} hint={t("job.photosHint")}>
         {photos.length > 0 ? (
@@ -325,6 +448,11 @@ export function JobCompletePage() {
                       <p className="text-[11px] font-bold text-amber-700">{t("catalog.lowStock")}</p>
                     ) : null}
                   </button>
+                  {out && !line ? (
+                    <button type="button" disabled={done || busy} onClick={() => orderMut.mutate({ sparePartId: item.id, quantity: 1 })} className="h-10 shrink-0 rounded-xl bg-white px-3 text-xs font-extrabold text-[#7B00E0] ring-1 ring-[#7B00E0]/30 disabled:opacity-50">
+                      {t("parts.order")}
+                    </button>
+                  ) : null}
                   {line ? (
                     <div className="flex items-center gap-2">
                       <IconButton
@@ -353,6 +481,21 @@ export function JobCompletePage() {
           </div>
         )}
       </Section>
+
+      {partOrders.length > 0 ? (
+        <Section title={t("parts.orders")} hint={t("parts.ordersHint")}>
+          <ul className="space-y-2 text-sm">
+            {partOrders.map((order) => (
+              <li key={order.id} className="flex items-center justify-between gap-3 rounded-xl bg-neutral-50 px-4 py-3">
+                <span className="font-semibold">
+                  {localizedName(order)} × {order.quantity}
+                </span>
+                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-neutral-700">{t(`parts.status.${order.status}`)}</span>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
 
       <Section title={t("detail.extras")} hint={t("job.extraHint")}>
         {extraExpenses.length > 0 ? (

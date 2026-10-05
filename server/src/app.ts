@@ -20,6 +20,13 @@ import { alertsRouter } from "./routes/alerts.js";
 import { auditRouter } from "./routes/audit.js";
 import { outboundRouter } from "./routes/outbound.js";
 import { tagsRouter } from "./routes/tags.js";
+import { publicRouter } from "./routes/publicApi.js";
+import { partOrdersRouter } from "./routes/partOrders.js";
+import { defectCodesRouter } from "./routes/defectCodes.js";
+import { serviceCentersRouter } from "./routes/serviceCenters.js";
+import { serialsRouter } from "./routes/serials.js";
+import { payrollRouter } from "./routes/payroll.js";
+import { staffAdminRouter } from "./routes/staffAdmin.js";
 import { ensureUploadsRoot, uploadsRoot } from "./lib/uploads.js";
 
 export function createApp() {
@@ -56,6 +63,13 @@ export function createApp() {
   app.use("/api/staff/audit", auditRouter);
   app.use("/api/staff/outbound", outboundRouter);
   app.use("/api/staff/tags", tagsRouter);
+  app.use("/api/staff/part-orders", partOrdersRouter);
+  app.use("/api/staff/defect-codes", defectCodesRouter);
+  app.use("/api/staff/service-centers", serviceCentersRouter);
+  app.use("/api/staff/serials", serialsRouter);
+  app.use("/api/staff/payroll", payrollRouter);
+  app.use("/api/staff/staff", staffAdminRouter);
+  app.use("/api/public", publicRouter);
 
   app.use(errorHandler);
   return app;

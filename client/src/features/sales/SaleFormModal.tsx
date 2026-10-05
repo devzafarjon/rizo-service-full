@@ -35,6 +35,7 @@ export function SaleFormModal({
     pricePaid: number;
     warrantyMonths: number;
     invoiceNumber?: string;
+    serialNumber?: string | null;
   }) => Promise<void>;
 }) {
   const { t } = useTranslation();
@@ -46,6 +47,7 @@ export function SaleFormModal({
   const [pricePaid, setPricePaid] = useState("");
   const [warrantyMonths, setWarrantyMonths] = useState("12");
   const [invoiceNumber, setInvoiceNumber] = useState("");
+  const [serialNumber, setSerialNumber] = useState("");
 
   const customersQuery = useQuery({
     queryKey: ["staff", "customers"],
@@ -67,6 +69,7 @@ export function SaleFormModal({
     setPricePaid(sale ? String(sale.pricePaid) : "");
     setWarrantyMonths(String(sale?.warrantyMonths ?? 12));
     setInvoiceNumber(sale?.invoiceNumber ?? "");
+    setSerialNumber(sale?.serialNumber ?? "");
   }, [open, sale, defaultCustomerId]);
 
   const months = Number(warrantyMonths) || 0;
@@ -83,6 +86,7 @@ export function SaleFormModal({
       pricePaid: Number(pricePaid),
       warrantyMonths: months,
       invoiceNumber: invoiceNumber || undefined,
+      serialNumber: serialNumber.trim() || null,
     });
   }
 
@@ -100,7 +104,17 @@ export function SaleFormModal({
           </select>
         </Field>
         <Field label={t("common.product")}>
-          <select className={inputClass} value={productId} onChange={(event) => setProductId(event.target.value)} required>
+          <select
+            className={inputClass}
+            value={productId}
+            onChange={(event) => {
+              setProductId(event.target.value);
+              // A new sale starts from the product's standard warranty.
+              const picked = (productsQuery.data?.products ?? []).find((item) => item.id === event.target.value);
+              if (picked && !sale) setWarrantyMonths(String(picked.warrantyMonths));
+            }}
+            required
+          >
             <option value="">{t("newRequest.selectProduct")}</option>
             {(productsQuery.data?.products ?? []).map((product) => (
               <option key={product.id} value={product.id}>
@@ -120,6 +134,9 @@ export function SaleFormModal({
         </Field>
         <Field label={t("sales.warrantyMonths")}>
           <input className={inputClass} type="number" min={0} max={120} value={warrantyMonths} onChange={(event) => setWarrantyMonths(event.target.value)} required />
+        </Field>
+        <Field label={t("serial.label")} hint={t("sales.serialHint")}>
+          <input className={inputClass} value={serialNumber} onChange={(event) => setSerialNumber(event.target.value)} maxLength={80} />
         </Field>
         <Field label={t("sales.invoiceNumber")} hint={sale ? undefined : t("sales.invoiceHint")}>
           <input className={inputClass} value={invoiceNumber} onChange={(event) => setInvoiceNumber(event.target.value)} />

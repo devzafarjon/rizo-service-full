@@ -26,7 +26,7 @@ import { useStaffAuth } from "../auth/StaffAuthContext";
 import { api, apiErrorMessage } from "../../lib/api";
 import { formatRequestId, technicianTypeLabel } from "../../lib/format";
 import { localizedName, nameSearchText } from "../../lib/localized";
-import { KANBAN_COLUMNS, canAdminMove, statusLabel } from "../../lib/status";
+import { BOARD_COLUMNS, canMove, statusLabel } from "../../lib/status";
 import { useNow } from "../../lib/useNow";
 import { RequestSlideOver } from "./RequestSlideOver";
 import type { Priority, RequestStatus, ServiceRequest, ServiceType, TechnicianSummary, WarrantyStatus } from "../../lib/types";
@@ -38,7 +38,7 @@ const WARRANTY_FILTERS: WarrantyStatus[] = ["in_warranty", "expired", "not_appli
 
 export function AdminKanbanPage() {
   const { t } = useTranslation();
-  const { token } = useStaffAuth();
+  const { token, user } = useStaffAuth();
   const { notify } = useToast();
   const queryClient = useQueryClient();
   const [q, setQ] = useState("");
@@ -106,7 +106,7 @@ export function AdminKanbanPage() {
 
   const requests = board.data?.requests ?? [];
   const technicians = techniciansQuery.data?.technicians ?? [];
-  const columns = KANBAN_COLUMNS;
+  const columns = BOARD_COLUMNS[type || "all"];
 
   const visible = useMemo(() => {
     const needle = debounced.trim().toLowerCase();
@@ -160,12 +160,18 @@ export function AdminKanbanPage() {
       ? (overId.slice(7) as RequestStatus)
       : requests.find((item) => item.id === overId)?.status;
     if (!nextStatus || nextStatus === request.status) return;
-    if (!canAdminMove(request, nextStatus)) {
+    if (!canMove(user?.role ?? "admin", request, nextStatus)) {
       notify(t("errors.statusNotAllowed", { from: statusLabel(request.status), to: statusLabel(nextStatus) }), "error");
       return;
     }
     if (nextStatus === "paused") {
       setPausing(request);
+      return;
+    }
+    // Outcomes that need details (reason, money, replacement) are chosen in the request itself.
+    if (nextStatus === "rejected" || nextStatus === "replaced" || nextStatus === "refunded") {
+      notify(t("kanban.useDecision"), "error");
+      openRequest(request.id);
       return;
     }
     move.mutate({ id: request.id, status: nextStatus });

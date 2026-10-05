@@ -48,3 +48,20 @@ export function computeWarrantyStatus(warrantyMonths: number, expiry: Date, now 
 export function money(value: { toString(): string } | number): number {
   return Number(value);
 }
+
+/**
+ * Warranty end date for a sale. It starts at installation when the product is set to count from
+ * installation and has been installed, otherwise at the sale date; extensions are added on top.
+ */
+export function warrantyExpiryFor(
+  sale: { saleDate: Date; installationDate: Date | null; warrantyMonths: number; extensionMonths: number },
+  product: { warrantyStartsOn: string },
+): Date {
+  const base = product.warrantyStartsOn === "installation" && sale.installationDate ? sale.installationDate : sale.saleDate;
+  return addMonths(base, sale.warrantyMonths + sale.extensionMonths);
+}
+
+/** A voided warranty is stored as already expired so every status check treats it as expired. */
+export function voidedExpiry(saleDate: Date): Date {
+  return new Date(saleDate.getTime() - 86_400_000);
+}

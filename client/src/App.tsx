@@ -44,6 +44,19 @@ import { ScheduleCalendarPage } from "./features/schedule/ScheduleCalendarPage";
 import { PrintTagPage } from "./features/tags/PrintTagPage";
 import { QrScanPage } from "./features/tags/QrScanPage";
 import { TagLandingPage } from "./features/tags/TagLandingPage";
+import { CalendarPage } from "./features/management/CalendarPage";
+import { MapPage } from "./features/management/MapPage";
+import { MyEarningsPage } from "./features/management/MyEarningsPage";
+import { PartOrdersPage } from "./features/management/PartOrdersPage";
+import { SerialCardPage } from "./features/management/SerialCardPage";
+import { ServiceCentersPage } from "./features/management/ServiceCentersPage";
+import { StaffPage } from "./features/management/StaffPage";
+import { WarrantyCardPage } from "./features/management/WarrantyCardPage";
+import { DebtsReportPage, DefectsReportPage, LegalReportPage, OutcomesReportPage, PayrollReportPage } from "./features/reporting/MoreReports";
+import { CentersPublicPage } from "./features/public/CentersPublicPage";
+import { TrackLookupPage } from "./features/public/TrackLookupPage";
+import { TrackPage } from "./features/public/TrackPage";
+import { PortalRegisterPage } from "./features/portal/PortalRegisterPage";
 
 export default function App() {
   return (
@@ -54,27 +67,21 @@ export default function App() {
       <Route path="/portal/signup" element={<CustomerSignupPage />} />
       <Route path="/portal/forgot" element={<CustomerForgotPage />} />
 
+      <Route path="/track" element={<TrackLookupPage />} />
+      <Route path="/t/:token" element={<TrackPage />} />
+      <Route path="/centers" element={<CentersPublicPage />} />
+
       <Route element={<StaffProtectedRoute />}>
         <Route path="/app" element={<StaffShell />}>
           <Route element={<RoleRoute roles={["admin"]} />}>
             <Route index element={<DashboardPage />} />
-            <Route path="kanban" element={<AdminKanbanPage />} />
-            <Route path="customers" element={<CustomersPage />} />
-            <Route path="customers/duplicates" element={<CustomerDuplicatesPage />} />
-            <Route path="customers/:id" element={<CustomerDetailPage />} />
             <Route path="catalog" element={<CatalogPage />} />
-            <Route path="sales" element={<SalesPage />} />
-            <Route path="requests" element={<ServiceRequestsPage />} />
-            <Route path="requests/new" element={<NewRequestPage />} />
-            <Route path="requests/:id" element={<RequestDetailPage />} />
-            <Route path="requests/:id/tag" element={<PrintTagPage />} />
             <Route path="schedule" element={<ScheduleCalendarPage />} />
             <Route path="audit" element={<ActivityLogPage />} />
             <Route path="alerts" element={<AlertsPage />} />
             <Route path="settings" element={<BackupSettingsPage />} />
-            <Route path="kiosk" element={<KioskPickupPage />} />
-            <Route path="receipts" element={<ReceiptPage />} />
-            <Route path="receipts/:id" element={<ReceiptPrintPage />} />
+            <Route path="staff" element={<StaffPage />} />
+            <Route path="customers/duplicates" element={<CustomerDuplicatesPage />} />
             <Route path="reports" element={<ReportsIndexPage />} />
             <Route path="reports/products" element={<ProductReportPage />} />
             <Route path="reports/parts" element={<PartsReportPage />} />
@@ -83,6 +90,30 @@ export default function App() {
             <Route path="reports/technicians" element={<TechnicianReportPage />} />
             <Route path="reports/warranty" element={<WarrantyReportPage />} />
             <Route path="reports/sources" element={<SourcesReportPage />} />
+            <Route path="reports/defects" element={<DefectsReportPage />} />
+            <Route path="reports/outcomes" element={<OutcomesReportPage />} />
+            <Route path="reports/legal" element={<LegalReportPage />} />
+            <Route path="reports/debts" element={<DebtsReportPage />} />
+            <Route path="reports/payroll" element={<PayrollReportPage />} />
+          </Route>
+          <Route element={<RoleRoute roles={["admin", "receptionist"]} />}>
+            <Route path="kanban" element={<AdminKanbanPage />} />
+            <Route path="customers" element={<CustomersPage />} />
+            <Route path="customers/:id" element={<CustomerDetailPage />} />
+            <Route path="sales" element={<SalesPage />} />
+            <Route path="sales/:id/warranty-card" element={<WarrantyCardPage />} />
+            <Route path="serials/:serial" element={<SerialCardPage />} />
+            <Route path="requests" element={<ServiceRequestsPage />} />
+            <Route path="requests/new" element={<NewRequestPage />} />
+            <Route path="requests/:id" element={<RequestDetailPage />} />
+            <Route path="requests/:id/tag" element={<PrintTagPage />} />
+            <Route path="calendar" element={<CalendarPage />} />
+            <Route path="map" element={<MapPage />} />
+            <Route path="part-orders" element={<PartOrdersPage />} />
+            <Route path="centers" element={<ServiceCentersPage />} />
+            <Route path="kiosk" element={<KioskPickupPage />} />
+            <Route path="receipts" element={<ReceiptPage />} />
+            <Route path="receipts/:id" element={<ReceiptPrintPage />} />
           </Route>
           <Route path="scan" element={<QrScanPage />} />
           <Route path="tag/:displayId" element={<TagLandingPage />} />
@@ -91,6 +122,7 @@ export default function App() {
             <Route path="my-jobs/:id/complete" element={<JobCompletePage />} />
             <Route path="my-jobs/:id/receipt" element={<ReceiptPrintPage />} />
             <Route path="my-schedule" element={<MySchedulePage />} />
+            <Route path="my-earnings" element={<MyEarningsPage />} />
           </Route>
         </Route>
       </Route>
@@ -99,6 +131,7 @@ export default function App() {
         <Route path="/portal" element={<PortalShell />}>
           <Route index element={<PortalHomePage />} />
           <Route path="new" element={<PortalNewRequestPage />} />
+          <Route path="register" element={<PortalRegisterPage />} />
           <Route path="requests/:id" element={<PortalRequestDetailPage />} />
         </Route>
       </Route>

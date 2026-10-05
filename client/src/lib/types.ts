@@ -1,13 +1,28 @@
-export type StaffRole = "admin" | "technician";
+export type StaffRole = "admin" | "technician" | "receptionist";
 export type TechnicianType = "service_center" | "mobile";
 export type WarrantyStatus = "in_warranty" | "expired" | "not_applicable";
 export type ServiceType = "installation" | "repair";
-export type RequestStatus = "new" | "in_progress" | "paused" | "completed" | "picked_up" | "cancelled";
-export type ResolutionType = "repair" | "replace";
+export type RequestStatus =
+  | "new"
+  | "diagnosing"
+  | "awaiting_decision"
+  | "awaiting_parts"
+  | "in_progress"
+  | "paused"
+  | "ready"
+  | "completed"
+  | "picked_up"
+  | "replaced"
+  | "refunded"
+  | "rejected"
+  | "cancelled";
+export type RequestDecision = "warranty_repair" | "paid_repair" | "replace" | "refund" | "reject";
+export type PaymentMethod = "cash" | "card" | "transfer" | "payme" | "click" | "other";
+export type ResolutionType = "repair" | "replace" | "refund";
 export type PickupConfirmationType = "tap" | "signature";
 export type Priority = "low" | "medium" | "high" | "urgent";
 export type LocationType = "in_shop" | "on_site";
-export type PaymentStatus = "not_required" | "pending" | "paid";
+export type PaymentStatus = "not_required" | "pending" | "partial" | "paid";
 
 export type AppLocale = "uz" | "ru" | "en";
 
@@ -53,6 +68,10 @@ export type Product = Named & {
   id: string;
   sku: string;
   category: string;
+  warrantyMonths: number;
+  warrantyStartsOn: "installation" | "sale";
+  warrantyCoversLabor: boolean;
+  warrantyCoversParts: boolean;
   createdAt: string;
   salesCount: number;
   requestsCount: number;
@@ -88,6 +107,13 @@ export type Sale = {
   warrantyMonths: number;
   warrantyExpiry: string;
   installationDate?: string | null;
+  serialNumber?: string | null;
+  source?: "rizo" | "registered";
+  isVerified?: boolean;
+  extensionMonths?: number;
+  extensionReason?: string | null;
+  voided?: boolean;
+  voidReason?: string | null;
   warrantyStatus: WarrantyStatus;
   invoiceNumber: string;
   createdAt: string;
@@ -128,6 +154,7 @@ export type CustomerRequest = {
 };
 
 export type DefectType = "dead_on_arrival" | "failed_during_use";
+export type EstimateStatus = "draft" | "sent" | "approved" | "declined" | "expired";
 export type RequestSource = "rizo_market" | "rizo_service";
 
 export type CustomerLocation = {
@@ -157,6 +184,27 @@ export type ServiceRequest = {
   issueDescription: string;
   defectType: DefectType | null;
   resolutionType: ResolutionType | null;
+  decision: RequestDecision | null;
+  decisionNote: string | null;
+  rejectionReason: string | null;
+  serialNumber: string | null;
+  scheduledAt: string | null;
+  enRouteAt: string | null;
+  legalDueAt: string | null;
+  isLegallyOverdue: boolean;
+  isRepeat: boolean;
+  repeatOfId: string | null;
+  repairWarrantyUntil: string | null;
+  fiscalReceiptNumber: string | null;
+  intakeChecklist: string[];
+  intakeNotes: string | null;
+  intakeSignatureUrl: string | null;
+  defectCodeId: string | null;
+  returnReasonId: string | null;
+  serviceCenter: { id: string; name: string } | null;
+  trackingToken: string;
+  estimate: { id: string; status: EstimateStatus } | null;
+  payment: { due: number; paid: number; refunded: number; balance: number };
   locationType: LocationType;
   customerLocation: CustomerLocation | null;
   technicianTypeRequired: TechnicianType;
@@ -276,6 +324,11 @@ export type JobWorkPayload = {
   replacement: JobReplacement | null;
   pauses: RequestPauseRecord[];
   timeline: TimelineEvent[];
+  decision: RequestDecision | null;
+  estimates: Estimate[];
+  defectCodes: DefectCodeOption[];
+  partOrders: Array<Named & { id: string; quantity: number; status: PartOrder["status"]; createdAt: string }>;
+  notes: NoteRow[];
   cost: JobCost;
   canComplete: boolean;
   missing: string[];
@@ -298,7 +351,7 @@ export type RequestPauseRecord = {
 
 export type TimelineEvent = {
   key: string;
-  kind: "created" | "received" | "assigned" | "accepted" | "arrived" | "paused" | "resumed" | "completed" | "picked_up";
+  kind: "created" | "received" | "assigned" | "accepted" | "en_route" | "arrived" | "paused" | "resumed" | "completed" | "picked_up" | "status" | "decision" | "estimate";
   at: string;
   title: string;
   detail: string | null;
@@ -312,6 +365,7 @@ export type SearchResults = {
   sales: Array<{
     id: string;
     invoiceNumber: string;
+    serialNumber?: string | null;
     saleDate: string;
     pricePaid: number;
     warrantyExpiry: string;
@@ -349,6 +403,27 @@ export type PortalRequest = {
   canFeedback: boolean;
   pickupConfirmedAt: string | null;
   canConfirmPickup: boolean;
+  serialNumber: string | null;
+  scheduledAt: string | null;
+  enRouteAt: string | null;
+  dueBy: string | null;
+  repairWarrantyUntil: string | null;
+  rejectionReason: string | null;
+  serviceCenter: { id: string; name: string; address: string; phone: string | null; workingHours: string | null } | null;
+  trackingToken: string;
+  payment: { due: number; paid: number; refunded: number; balance: number };
+  estimate: PortalEstimate | null;
+  messages: Array<{ id: string; text: string; fromCustomer: boolean; createdAt: string }>;
+};
+
+export type PortalEstimate = {
+  id: string;
+  status: EstimateStatus;
+  validUntil: string;
+  note: string | null;
+  canRespond: boolean;
+  total?: number;
+  lines?: Array<{ id: string; kind: EstimateLine["kind"]; name: string; names: Named | null; quantity: number; unitPrice: number; isOptional: boolean; isSelected: boolean }>;
 };
 
 export type StaffAlert = {
@@ -408,6 +483,8 @@ export type PortalNotification = {
 
 export type PortalSale = {
   id: string;
+  serialNumber?: string | null;
+  isVerified?: boolean;
   invoiceNumber: string;
   quantity: number;
   saleDate: string;
@@ -438,14 +515,18 @@ export type TrendPoint = {
 export type DashboardReport = {
   range: ReportWindow;
   grain: TrendGrain;
+  previous: { requests: number; revenue: number; profit: number } | null;
   totals: {
     requests: number;
     revenue: number;
     profit: number;
     costs: number;
     avgResolutionHours: number | null;
+    avgWorkMinutes: number | null;
     avgRating: number | null;
     ratingCount: number;
+    legalOverdue: number;
+    debt: number;
   };
   trend: TrendPoint[];
   topProducts: Array<Named & { id: string; sku: string; category: string; count: number }>;
@@ -518,4 +599,115 @@ export type WarrantyReport = {
 export type SourcesReport = {
   range: ReportWindow;
   rows: Array<{ source: "rizo_market" | "rizo_service" | "portal"; count: number }>;
+};
+
+export type EstimateLine = {
+  id: string;
+  kind: "service" | "part" | "labor" | "other";
+  serviceCatalogItemId?: string | null;
+  sparePartId?: string | null;
+  name: string;
+  names: Named | null;
+  quantity: number;
+  unitPrice: number;
+  isOptional: boolean;
+  isSelected: boolean;
+  isFulfilled?: boolean;
+};
+
+export type Estimate = {
+  id: string;
+  status: EstimateStatus;
+  note: string | null;
+  validUntil: string;
+  sentAt: string | null;
+  approvedAt: string | null;
+  approvedBy: string | null;
+  declinedAt: string | null;
+  declineReason: string | null;
+  createdByName: string | null;
+  createdAt: string;
+  total: number;
+  lines: EstimateLine[];
+};
+
+export type PaymentRow = {
+  id: string;
+  kind: "payment" | "refund";
+  method: PaymentMethod;
+  amount: number;
+  note: string | null;
+  createdByName: string | null;
+  createdAt: string;
+};
+
+export type NoteRow = {
+  id: string;
+  text: string;
+  authorScope: "staff" | "customer";
+  authorName: string | null;
+  isVisibleToCustomer: boolean;
+  createdAt: string;
+};
+
+export type DefectCodeOption = Named & { id: string; code: string };
+
+export type ServiceCenter = {
+  id: string;
+  name: string;
+  regionCode: string;
+  address: string;
+  phone: string | null;
+  workingHours: string | null;
+  lat: number | null;
+  lng: number | null;
+  isAuthorized: boolean;
+  isActive: boolean;
+  staffCount?: number;
+  requestsCount?: number;
+};
+
+export type PartOrder = {
+  id: string;
+  quantity: number;
+  status: "requested" | "ordered" | "received" | "cancelled";
+  supplier: string | null;
+  note: string | null;
+  expectedAt: string | null;
+  receivedAt: string | null;
+  createdAt: string;
+  part: Named & { id: string; stockQuantity: number };
+  request: { id: string; displayId: string; status: RequestStatus } | null;
+};
+
+export type RequestDetailPayload = {
+  request: ServiceRequest;
+  pauses: RequestPauseRecord[];
+  timeline: TimelineEvent[];
+  serviceLines: JobServiceLine[];
+  partLines: JobPartLine[];
+  extraExpenses: JobExtraExpense[];
+  photos: JobPhoto[];
+  resolutionType: ResolutionType | null;
+  replacement: JobReplacement | null;
+  cost: JobCost;
+  matchingServices: Array<Named & { id: string; price: number; productCategories: string[] }>;
+  matchingParts: Array<Named & { id: string; price: number; productCategories: string[]; stockQuantity: number }>;
+  estimates: Estimate[];
+  payments: PaymentRow[];
+  paymentSummary: { due: number; paid: number; refunded: number; net: number; balance: number };
+  notes: NoteRow[];
+  defectCodes: DefectCodeOption[];
+  returnReasons: DefectCodeOption[];
+  repeatOf: { id: string; displayId: string } | null;
+  settings: AppSettings;
+};
+
+export type AppSettings = {
+  blockZeroStock: boolean;
+  requireEstimate: boolean;
+  repairWarrantyDays: number;
+  repairLegalDays: number;
+  estimateValidDays: number;
+  pickupStorageDays: number;
 };

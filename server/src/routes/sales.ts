@@ -6,9 +6,11 @@ import { parseBody } from "../lib/parse.js";
 import { prisma } from "../lib/prisma.js";
 import { handlePrismaError } from "../lib/prismaErrors.js";
 import { paymentFor } from "../lib/assignment.js";
-import { computeWarrantyExpiry, computeWarrantyStatus, money, parseDateOnly, toDateOnly } from "../lib/warranty.js";
+import { computeWarrantyStatus, money, parseDateOnly, toDateOnly, voidedExpiry, warrantyExpiryFor } from "../lib/warranty.js";
+import { OPEN_STATUSES } from "../lib/status.js";
+import { staffActor, writeAudit } from "../lib/audit.js";
 import { optionalText } from "../lib/zodFields.js";
-import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
+import { officeReadAdminWrite, requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
 
 const saleSchema = z.object({
   customerId: z.string().min(1, "Customer is required"),
@@ -16,12 +18,13 @@ const saleSchema = z.object({
   quantity: z.coerce.number().int().min(1, "Quantity must be at least 1"),
   saleDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a valid sale date"),
   pricePaid: z.coerce.number().nonnegative("Price cannot be negative"),
-  warrantyMonths: z.coerce.number().int().min(0, "Warranty months cannot be negative").max(120),
+  warrantyMonths: z.coerce.number().int().min(0, "Warranty months cannot be negative").max(120).optional(),
   invoiceNumber: optionalText,
+  serialNumber: z.string().trim().max(80).optional().nullable(),
 });
 
 export const salesRouter = Router();
-salesRouter.use(staffAuth, requireStaffRole("admin"));
+salesRouter.use(staffAuth, officeReadAdminWrite);
 
 salesRouter.get(
   "/",
@@ -39,6 +42,7 @@ salesRouter.get(
             ? {
                 OR: [
                   { invoiceNumber: { contains: q, mode: "insensitive" } },
+                  { serialNumber: { contains: q, mode: "insensitive" } },
                   { customer: { name: { contains: q, mode: "insensitive" } } },
                   ...(digits.length >= 3 ? [{ customer: { phone: { contains: digits } } }] : []),
                   { product: { name: { contains: q, mode: "insensitive" } } },
@@ -80,10 +84,15 @@ salesRouter.post(
   "/",
   asyncHandler(async (req, res) => {
     const body = parseBody(saleSchema, req.body);
-    await assertCustomerAndProduct(body.customerId, body.productId);
+    const { product } = await assertCustomerAndProduct(body.customerId, body.productId);
     const saleDate = parseDateOnly(body.saleDate);
-    const warrantyExpiry = computeWarrantyExpiry(saleDate, body.warrantyMonths);
+    const warrantyMonths = body.warrantyMonths ?? product.warrantyMonths;
+    const warrantyExpiry = warrantyExpiryFor({ saleDate, installationDate: null, warrantyMonths, extensionMonths: 0 }, product);
     const invoiceNumber = body.invoiceNumber?.toUpperCase() || (await nextInvoiceNumber());
+    const serialNumber = body.serialNumber?.trim() || null;
+    if (serialNumber && (await prisma.sale.findFirst({ where: { serialNumber, productId: product.id } }))) {
+      throw new HttpError(409, "This serial number is already registered", "serialExists");
+    }
     try {
       const sale = await prisma.sale.create({
         data: {
@@ -92,9 +101,10 @@ salesRouter.post(
           quantity: body.quantity,
           saleDate,
           pricePaid: body.pricePaid,
-          warrantyMonths: body.warrantyMonths,
+          warrantyMonths,
           warrantyExpiry,
           invoiceNumber,
+          serialNumber,
         },
         include: {
           customer: { select: { id: true, name: true, phone: true } },
@@ -119,11 +129,13 @@ salesRouter.patch(
     }
     const customerId = body.customerId ?? existing.customerId;
     const productId = body.productId ?? existing.productId;
-    await assertCustomerAndProduct(customerId, productId);
+    const { product } = await assertCustomerAndProduct(customerId, productId);
     const saleDate = body.saleDate ? parseDateOnly(body.saleDate) : existing.saleDate;
     const warrantyMonths = body.warrantyMonths ?? existing.warrantyMonths;
-    // Warranty runs from installation when the product has been installed, otherwise from the sale date.
-    const warrantyExpiry = computeWarrantyExpiry(existing.installationDate ?? saleDate, warrantyMonths);
+    // Warranty runs from installation when the product counts from installation and has been installed.
+    const warrantyExpiry = existing.voidedAt
+      ? voidedExpiry(saleDate)
+      : warrantyExpiryFor({ saleDate, installationDate: existing.installationDate, warrantyMonths, extensionMonths: existing.extensionMonths }, product);
     try {
       const sale = await prisma.sale.update({
         where: { id: existing.id },
@@ -135,6 +147,7 @@ salesRouter.patch(
           pricePaid: body.pricePaid ?? existing.pricePaid,
           warrantyMonths,
           warrantyExpiry,
+          ...(body.serialNumber !== undefined ? { serialNumber: body.serialNumber?.trim() || null } : {}),
           ...(body.invoiceNumber ? { invoiceNumber: body.invoiceNumber.toUpperCase() } : {}),
         },
         include: {
@@ -145,7 +158,7 @@ salesRouter.patch(
       });
       const warrantyStatus = computeWarrantyStatus(sale.warrantyMonths, sale.warrantyExpiry);
       const open = await prisma.serviceRequest.findMany({
-        where: { saleId: sale.id, status: { in: ["new", "in_progress", "paused"] } },
+        where: { saleId: sale.id, status: { in: OPEN_STATUSES } },
         select: { id: true, type: true },
       });
       for (const request of open) {
@@ -184,6 +197,103 @@ salesRouter.delete(
   }),
 );
 
+salesRouter.post(
+  "/:id/extend",
+  asyncHandler(async (req, res) => {
+    const body = parseBody(z.object({ months: z.coerce.number().int().min(1).max(60), reason: z.string().trim().min(1, "Give a reason").max(200) }), req.body);
+    const sale = await loadSale(req.params.id);
+    if (sale.voidedAt) throw new HttpError(400, "This warranty was voided", "warrantyVoided");
+    const extensionMonths = sale.extensionMonths + body.months;
+    const warrantyExpiry = warrantyExpiryFor({ ...sale, extensionMonths }, sale.product);
+    const updated = await prisma.sale.update({
+      where: { id: sale.id },
+      data: { extensionMonths, extensionReason: body.reason, warrantyExpiry },
+      include: saleInclude,
+    });
+    await writeAudit({ actor: staffActor(req.staff), action: "sale.warranty.extend", entityType: "Sale", entityId: sale.id, oldValue: { warrantyExpiry: toDateOnly(sale.warrantyExpiry) }, newValue: { months: body.months, reason: body.reason, warrantyExpiry: toDateOnly(warrantyExpiry) } });
+    res.json({ sale: serializeSale(updated) });
+  }),
+);
+
+salesRouter.post(
+  "/:id/void",
+  asyncHandler(async (req, res) => {
+    const body = parseBody(z.object({ reason: z.string().trim().min(1, "Give a reason").max(200) }), req.body);
+    const sale = await loadSale(req.params.id);
+    const updated = await prisma.sale.update({
+      where: { id: sale.id },
+      data: { voidedAt: new Date(), voidReason: body.reason, warrantyExpiry: voidedExpiry(sale.saleDate) },
+      include: saleInclude,
+    });
+    await writeAudit({ actor: staffActor(req.staff), action: "sale.warranty.void", entityType: "Sale", entityId: sale.id, oldValue: { warrantyExpiry: toDateOnly(sale.warrantyExpiry) }, newValue: { reason: body.reason } });
+    res.json({ sale: serializeSale(updated) });
+  }),
+);
+
+salesRouter.post(
+  "/:id/restore",
+  asyncHandler(async (req, res) => {
+    const sale = await loadSale(req.params.id);
+    const warrantyExpiry = warrantyExpiryFor(sale, sale.product);
+    const updated = await prisma.sale.update({
+      where: { id: sale.id },
+      data: { voidedAt: null, voidReason: null, warrantyExpiry },
+      include: saleInclude,
+    });
+    await writeAudit({ actor: staffActor(req.staff), action: "sale.warranty.restore", entityType: "Sale", entityId: sale.id, newValue: { warrantyExpiry: toDateOnly(warrantyExpiry) } });
+    res.json({ sale: serializeSale(updated) });
+  }),
+);
+
+salesRouter.post(
+  "/:id/verify",
+  asyncHandler(async (req, res) => {
+    const sale = await loadSale(req.params.id);
+    const updated = await prisma.sale.update({ where: { id: sale.id }, data: { isVerified: true }, include: saleInclude });
+    await writeAudit({ actor: staffActor(req.staff), action: "sale.verify", entityType: "Sale", entityId: sale.id });
+    res.json({ sale: serializeSale(updated) });
+  }),
+);
+
+// Everything the printed warranty card (talon) needs.
+salesRouter.get(
+  "/:id/warranty-card",
+  asyncHandler(async (req, res) => {
+    const sale = await loadSale(req.params.id);
+    const customer = await prisma.customer.findUniqueOrThrow({ where: { id: sale.customerId }, select: { name: true, phone: true } });
+    res.json({
+      card: {
+        invoiceNumber: sale.invoiceNumber,
+        serialNumber: sale.serialNumber,
+        saleDate: toDateOnly(sale.saleDate),
+        installationDate: sale.installationDate ? toDateOnly(sale.installationDate) : null,
+        warrantyMonths: sale.warrantyMonths + sale.extensionMonths,
+        warrantyExpiry: toDateOnly(sale.warrantyExpiry),
+        warrantyStatus: computeWarrantyStatus(sale.warrantyMonths, sale.warrantyExpiry),
+        voided: Boolean(sale.voidedAt),
+        voidReason: sale.voidReason,
+        startsOn: sale.product.warrantyStartsOn,
+        coversLabor: sale.product.warrantyCoversLabor,
+        coversParts: sale.product.warrantyCoversParts,
+        customer,
+        product: { id: sale.product.id, name: sale.product.name, nameUz: sale.product.nameUz, nameRu: sale.product.nameRu, nameEn: sale.product.nameEn, sku: sale.product.sku, category: sale.product.category },
+      },
+    });
+  }),
+);
+
+const saleInclude = {
+  customer: { select: { id: true, name: true, phone: true } },
+  product: true,
+  _count: { select: { requests: true } },
+} as const;
+
+async function loadSale(id: string) {
+  const sale = await prisma.sale.findUnique({ where: { id }, include: saleInclude });
+  if (!sale) throw new HttpError(404, "Sale not found");
+  return sale;
+}
+
 async function assertCustomerAndProduct(customerId: string, productId: string) {
   const [customer, product] = await Promise.all([
     prisma.customer.findUnique({ where: { id: customerId } }),
@@ -195,6 +305,7 @@ async function assertCustomerAndProduct(customerId: string, productId: string) {
   if (!product) {
     throw new HttpError(400, "Product not found");
   }
+  return { customer, product };
 }
 
 async function nextInvoiceNumber() {
@@ -219,6 +330,13 @@ function serializeSale(sale: {
   warrantyMonths: number;
   warrantyExpiry: Date;
   installationDate: Date | null;
+  serialNumber: string | null;
+  source: string;
+  isVerified: boolean;
+  extensionMonths: number;
+  extensionReason: string | null;
+  voidedAt: Date | null;
+  voidReason: string | null;
   invoiceNumber: string;
   createdAt: Date;
   customer: { id: string; name: string; phone: string };
@@ -235,6 +353,13 @@ function serializeSale(sale: {
     warrantyMonths: sale.warrantyMonths,
     warrantyExpiry: toDateOnly(sale.warrantyExpiry),
     installationDate: sale.installationDate ? toDateOnly(sale.installationDate) : null,
+    serialNumber: sale.serialNumber,
+    source: sale.source,
+    isVerified: sale.isVerified,
+    extensionMonths: sale.extensionMonths,
+    extensionReason: sale.extensionReason,
+    voided: Boolean(sale.voidedAt),
+    voidReason: sale.voidReason,
     warrantyStatus: computeWarrantyStatus(sale.warrantyMonths, sale.warrantyExpiry),
     invoiceNumber: sale.invoiceNumber,
     createdAt: sale.createdAt.toISOString(),

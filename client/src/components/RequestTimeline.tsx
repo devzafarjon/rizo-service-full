@@ -12,6 +12,10 @@ const DOT: Record<TimelineEvent["kind"], string> = {
   resumed: "bg-[#7B00E0]",
   completed: "bg-emerald-500",
   picked_up: "bg-emerald-600",
+  en_route: "bg-[#F7941E]",
+  status: "bg-[#7B00E0]",
+  decision: "bg-[#F7941E]",
+  estimate: "bg-[#7B00E0]",
 };
 
 export function RequestTimeline({ events }: { events: TimelineEvent[] }) {

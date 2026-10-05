@@ -17,6 +17,9 @@ import {
 import { bucketKey, defaultGrain, parseReportRange, parseTrendGrain, serializeWindow } from "../lib/reportRange.js";
 import { isDoneStatus, ALL_STATUSES } from "../lib/status.js";
 import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
+import { OPEN_STATUSES } from "../lib/status.js";
+import { serializeNamed } from "../lib/named.js";
+import { money as toMoney } from "../lib/warranty.js";
 
 export const reportsRouter = Router();
 reportsRouter.use(staffAuth, requireStaffRole("admin"));
@@ -73,17 +76,40 @@ reportsRouter.get(
       else paid += 1;
     }
 
+    // The same numbers for the period just before, so the cards can show the change.
+    let previous: { requests: number; revenue: number; profit: number } | null = null;
+    if (window.from) {
+      const span = window.to.getTime() - window.from.getTime();
+      const prevWindow = { ...window, from: new Date(window.from.getTime() - span - 1), to: new Date(window.from.getTime() - 1) };
+      const prevJobs = await loadReportJobs(prevWindow);
+      const prevMoney = moneyTotals(prevJobs);
+      previous = { requests: prevJobs.length, revenue: prevMoney.revenue, profit: prevMoney.profit };
+    }
+    const [legalOverdue, debtRows, workedRows] = await Promise.all([
+      prisma.serviceRequest.count({ where: { legalDueAt: { lt: new Date() }, status: { in: OPEN_STATUSES } } }),
+      prisma.serviceRequest.findMany({ where: { finalCost: { gt: 0 }, status: { in: ["ready", "completed", "picked_up", "replaced"] } }, select: { finalCost: true, payments: { select: { kind: true, amount: true } } } }),
+      jobs.filter((job) => job.workedMinutes != null).map((job) => job.workedMinutes as number),
+    ]);
+    const debt = debtRows.reduce((sum, row) => {
+      const paidSum = row.payments.reduce((acc, pay) => acc + (pay.kind === "payment" ? toMoney(pay.amount) : -toMoney(pay.amount)), 0);
+      return sum + Math.max(0, toMoney(row.finalCost ?? 0) - paidSum);
+    }, 0);
+
     res.json({
       range: serializeWindow(window),
       grain,
+      previous,
       totals: {
         requests: jobs.length,
         revenue: money.revenue,
         profit: money.profit,
         costs: money.costs,
         avgResolutionHours: average(hours),
+        avgWorkMinutes: average(workedRows),
         avgRating: average(ratings),
         ratingCount: ratings.length,
+        legalOverdue,
+        debt: roundMoney(debt),
       },
       trend: trendSeries(jobs, grain),
       topProducts: [...products.values()]
@@ -411,6 +437,161 @@ reportsRouter.get(
         { source: "rizo_service", count: counts.rizo_service },
         { source: "portal", count: counts.portal },
       ],
+    });
+  }),
+);
+
+// ---- Defects: which codes, which products, which categories fail (claim rate = repairs / units sold) ----
+reportsRouter.get(
+  "/defects",
+  asyncHandler(async (req, res) => {
+    const window = parseReportRange(req.query);
+    const jobs = (await loadReportJobs(window)).filter((job) => job.type === "repair");
+    const sold = await prisma.sale.groupBy({ by: ["productId"], _sum: { quantity: true } });
+    const soldByProduct = new Map(sold.map((row) => [row.productId, row._sum.quantity ?? 0]));
+
+    const codes = new Map<string, { id: string; code: string; names: ReturnType<typeof serializeNamed>; count: number; category: Map<string, number> }>();
+    const products = new Map<string, { product: (typeof jobs)[number]["product"]; repairs: number; repeats: number }>();
+    let uncoded = 0;
+    for (const job of jobs) {
+      const row = products.get(job.product.id) ?? { product: job.product, repairs: 0, repeats: 0 };
+      row.repairs += 1;
+      if (job.isRepeat) row.repeats += 1;
+      products.set(job.product.id, row);
+      if (job.defectCode) {
+        const code = codes.get(job.defectCode.id) ?? { id: job.defectCode.id, code: job.defectCode.code, names: serializeNamed(job.defectCode), count: 0, category: new Map() };
+        code.count += 1;
+        code.category.set(job.product.category, (code.category.get(job.product.category) ?? 0) + 1);
+        codes.set(job.defectCode.id, code);
+      } else uncoded += 1;
+    }
+    res.json({
+      range: serializeWindow(window),
+      total: jobs.length,
+      uncoded,
+      codes: [...codes.values()]
+        .map((row) => ({ id: row.id, code: row.code, ...row.names, count: row.count, categories: [...row.category.entries()].map(([category, count]) => ({ category, count })) }))
+        .sort((a, b) => b.count - a.count),
+      products: [...products.values()]
+        .map((row) => {
+          const units = soldByProduct.get(row.product.id) ?? 0;
+          return { ...row.product, repairs: row.repairs, repeats: row.repeats, unitsSold: units, claimRate: units > 0 ? roundMoney((row.repairs / units) * 100) : null };
+        })
+        .sort((a, b) => b.repairs - a.repairs),
+    });
+  }),
+);
+
+// ---- Outcomes: what a repair, a replacement and a refund each cost ----
+reportsRouter.get(
+  "/outcomes",
+  asyncHandler(async (req, res) => {
+    const window = parseReportRange(req.query);
+    const jobs = (await loadReportJobs(window)).filter((job) => job.type === "repair");
+    const rows = new Map<string, { outcome: string; count: number; charged: number; cost: number }>();
+    for (const job of jobs) {
+      let outcome: string | null = null;
+      if (job.status === "replaced") outcome = "replace";
+      else if (job.status === "refunded") outcome = "refund";
+      else if (job.status === "rejected") outcome = "reject";
+      else if (isDoneStatus(job.status)) outcome = "repair";
+      if (!outcome) continue;
+      const row = rows.get(outcome) ?? { outcome, count: 0, charged: 0, cost: 0 };
+      row.count += 1;
+      row.charged += job.finalCost;
+      row.cost += jobCost(job);
+      rows.set(outcome, row);
+    }
+    res.json({
+      range: serializeWindow(window),
+      rows: ["repair", "replace", "refund", "reject"].map((key) => {
+        const row = rows.get(key) ?? { outcome: key, count: 0, charged: 0, cost: 0 };
+        return { outcome: key, count: row.count, charged: roundMoney(row.charged), cost: roundMoney(row.cost), avgCost: row.count ? roundMoney(row.cost / row.count) : 0 };
+      }),
+    });
+  }),
+);
+
+// ---- Debts: finished jobs with an unpaid balance ----
+reportsRouter.get(
+  "/debts",
+  asyncHandler(async (_req, res) => {
+    const requests = await prisma.serviceRequest.findMany({
+      where: { finalCost: { gt: 0 }, status: { in: ["ready", "completed", "picked_up", "replaced"] } },
+      include: { customer: { select: { id: true, name: true, phone: true } }, payments: { select: { kind: true, amount: true } }, product: true },
+      orderBy: { completedAt: "asc" },
+    });
+    const rows = requests
+      .map((request) => {
+        const paid = request.payments.reduce((acc, pay) => acc + (pay.kind === "payment" ? toMoney(pay.amount) : -toMoney(pay.amount)), 0);
+        const due = toMoney(request.finalCost ?? 0);
+        return {
+          id: request.id,
+          displayId: request.displayId,
+          status: request.status,
+          completedAt: request.completedAt?.toISOString() ?? null,
+          customer: request.customer,
+          product: { ...serializeNamed(request.product) },
+          due,
+          paid,
+          balance: Math.max(0, due - paid),
+        };
+      })
+      .filter((row) => row.balance > 0)
+      .sort((a, b) => b.balance - a.balance);
+    const byCustomer = new Map<string, { customer: (typeof rows)[number]["customer"]; balance: number; jobs: number }>();
+    for (const row of rows) {
+      const entry = byCustomer.get(row.customer.id) ?? { customer: row.customer, balance: 0, jobs: 0 };
+      entry.balance += row.balance;
+      entry.jobs += 1;
+      byCustomer.set(row.customer.id, entry);
+    }
+    res.json({
+      total: roundMoney(rows.reduce((sum, row) => sum + row.balance, 0)),
+      rows,
+      customers: [...byCustomer.values()].sort((a, b) => b.balance - a.balance),
+    });
+  }),
+);
+
+// ---- Legal deadline: repairs against the 20-day limit ----
+reportsRouter.get(
+  "/legal",
+  asyncHandler(async (req, res) => {
+    const window = parseReportRange(req.query);
+    const repairs = await prisma.serviceRequest.findMany({
+      where: { type: "repair", legalDueAt: { not: null }, createdAt: { gte: window.from ?? new Date(0), lte: window.to } },
+      include: { customer: { select: { name: true, phone: true } }, product: true, assignedTechnician: { select: { name: true } } },
+      orderBy: { legalDueAt: "asc" },
+    });
+    const now = Date.now();
+    const rows = repairs.map((request) => {
+      const finished = isDoneStatus(request.status) || request.status === "rejected" || request.status === "refunded";
+      const end = finished ? (request.completedAt?.getTime() ?? now) : now;
+      const dueAt = request.legalDueAt!.getTime();
+      return {
+        id: request.id,
+        displayId: request.displayId,
+        status: request.status,
+        customer: request.customer,
+        product: serializeNamed(request.product),
+        technician: request.assignedTechnician?.name ?? null,
+        createdAt: request.createdAt.toISOString(),
+        legalDueAt: request.legalDueAt!.toISOString(),
+        finished,
+        days: roundMoney((end - request.createdAt.getTime()) / 86_400_000),
+        lateDays: end > dueAt ? roundMoney((end - dueAt) / 86_400_000) : 0,
+        late: end > dueAt,
+      };
+    });
+    const finishedRows = rows.filter((row) => row.finished);
+    res.json({
+      range: serializeWindow(window),
+      total: rows.length,
+      late: rows.filter((row) => row.late).length,
+      onTimeRate: finishedRows.length ? roundMoney((finishedRows.filter((row) => !row.late).length / finishedRows.length) * 100) : null,
+      avgDays: average(finishedRows.map((row) => row.days)),
+      rows: rows.filter((row) => row.late || !row.finished).sort((a, b) => b.lateDays - a.lateDays),
     });
   }),
 );

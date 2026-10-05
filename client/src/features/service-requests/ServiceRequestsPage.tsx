@@ -12,13 +12,13 @@ import { useStaffAuth } from "../auth/StaffAuthContext";
 import { api } from "../../lib/api";
 import { formatDateTime, formatRequestId } from "../../lib/format";
 import { localizedName } from "../../lib/localized";
-import { KANBAN_COLUMNS } from "../../lib/status";
+import { ALL_STATUSES } from "../../lib/status";
 import type { RequestStatus, ServiceRequest, ServiceType } from "../../lib/types";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
 
 const TYPE_FILTERS: Array<"" | ServiceType> = ["", "installation", "repair"];
 
-const STATUS_FILTERS: Array<"" | RequestStatus> = ["", ...KANBAN_COLUMNS];
+const STATUS_FILTERS: Array<"" | RequestStatus> = ["", ...ALL_STATUSES];
 
 export function ServiceRequestsPage() {
   const { t } = useTranslation();

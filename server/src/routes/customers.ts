@@ -11,7 +11,7 @@ import { handlePrismaError } from "../lib/prismaErrors.js";
 import { computeWarrantyStatus, money, toDateOnly } from "../lib/warranty.js";
 import { isRegionCode, resolveRegionCode } from "../lib/regions.js";
 import { optionalText } from "../lib/zodFields.js";
-import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
+import { requireOffice, requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
 import { staffActor, writeAudit } from "../lib/audit.js";
 
 const createSchema = z.object({
@@ -28,7 +28,7 @@ const updateSchema = createSchema.partial().extend({
 });
 
 export const customersRouter = Router();
-customersRouter.use(staffAuth, requireStaffRole("admin"));
+customersRouter.use(staffAuth, requireOffice);
 
 customersRouter.get(
   "/lookup",
@@ -69,6 +69,7 @@ customersRouter.get(
 
 customersRouter.post(
   "/merge",
+  requireStaffRole("admin"),
   asyncHandler(async (req, res) => {
     const body = parseBody(z.object({ keepId: z.string(), absorbId: z.string() }), req.body);
     if (body.keepId === body.absorbId) {
@@ -257,6 +258,7 @@ customersRouter.patch(
 
 customersRouter.delete(
   "/:id",
+  requireStaffRole("admin"),
   asyncHandler(async (req, res) => {
     const customer = await prisma.customer.findUnique({
       where: { id: req.params.id },

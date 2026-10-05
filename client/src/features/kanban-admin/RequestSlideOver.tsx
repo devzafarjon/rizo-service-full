@@ -15,7 +15,7 @@ import { useStaffAuth } from "../auth/StaffAuthContext";
 import { api, apiErrorMessage } from "../../lib/api";
 import { defectLabel, formatDateTime, formatMoney, formatPhone, formatRequestId, mapsUrl, technicianTypeLabel } from "../../lib/format";
 import { localizedName } from "../../lib/localized";
-import { adminNextStatuses, statusLabel } from "../../lib/status";
+import { nextStatuses, statusLabel } from "../../lib/status";
 import type { JobCost, Priority, RequestStatus, ServiceRequest, TechnicianSummary, TimelineEvent } from "../../lib/types";
 import { useNow } from "../../lib/useNow";
 
@@ -34,7 +34,7 @@ export function RequestSlideOver({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  const { token } = useStaffAuth();
+  const { token, user } = useStaffAuth();
   const { notify } = useToast();
   const queryClient = useQueryClient();
   const now = useNow(Boolean(requestId));
@@ -59,7 +59,7 @@ export function RequestSlideOver({
   });
 
   const request = detail.data?.request;
-  const next = request ? adminNextStatuses(request) : [];
+  const next = request ? nextStatuses(user?.role ?? "admin", request).filter((status) => !["replaced", "refunded", "rejected"].includes(status)) : [];
   const candidates = request ? technicians.filter((tech) => tech.technicianType === request.technicianTypeRequired) : [];
 
   function goTo(status: RequestStatus) {
@@ -106,6 +106,13 @@ export function RequestSlideOver({
                   <PriorityBadge priority={request.priority} />
                   <WarrantyBadge status={request.warrantyStatus} />
                   <LocationBadge type={request.locationType} />
+                  {request.isLegallyOverdue ? (
+                    <span className="inline-flex rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-800">{t("detail.legalOverdue")}</span>
+                  ) : null}
+                  {request.isRepeat ? <span className="inline-flex rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700">{t("detail.repeat")}</span> : null}
+                  {request.payment.balance > 0 ? (
+                    <span className="inline-flex rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700">{t("detail.owes", { amount: formatMoney(request.payment.balance) })}</span>
+                  ) : null}
                   {request.isOverdue ? (
                     <span className="inline-flex rounded-full bg-rose-100 px-2.5 py-1 text-xs font-bold text-rose-700">{t("kanban.overdue")}</span>
                   ) : null}
@@ -134,6 +141,18 @@ export function RequestSlideOver({
                   ) : null}
                   <dt className="text-neutral-500">{t("detail.required")}</dt>
                   <dd>{technicianTypeLabel(request.technicianTypeRequired)}</dd>
+                  {request.serialNumber ? (
+                    <>
+                      <dt className="text-neutral-500">{t("serial.label")}</dt>
+                      <dd className="font-mono">{request.serialNumber}</dd>
+                    </>
+                  ) : null}
+                  {request.decision ? (
+                    <>
+                      <dt className="text-neutral-500">{t("decision.title")}</dt>
+                      <dd>{t(`decision.${request.decision}`)}</dd>
+                    </>
+                  ) : null}
                   <dt className="text-neutral-500">{t("common.created")}</dt>
                   <dd>{formatDateTime(request.createdAt)}</dd>
                   {request.finalCost != null ? (

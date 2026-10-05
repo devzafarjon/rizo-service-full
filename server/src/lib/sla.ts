@@ -1,14 +1,17 @@
 import { jobTimer } from "./techBoard.js";
-import { isTerminalStatus } from "./status.js";
+import { OPEN_STATUSES, isTerminalStatus } from "./status.js";
 import { writeAudit } from "./audit.js";
 import { notifyAdmins } from "./notifyStaff.js";
 import { formatRequestId } from "./displayId.js";
 import { prisma } from "./prisma.js";
+import { expireOldEstimates } from "./estimates.js";
+import { createCustomerNotification } from "./notifyCustomer.js";
 import type { RequestStatus } from "@prisma/client";
 
 type TimerInput = {
   status: RequestStatus;
   createdAt: Date;
+  statusChangedAt?: Date | null;
   assignedAt: Date | null;
   acceptedAt: Date | null;
   pauses: Array<{ resumedAt: Date | null; pausedAt: Date; customTimerHours: { toString(): string } | number }>;
@@ -30,7 +33,7 @@ export function slaTimerFor(job: TimerInput, now = Date.now()) {
 
 export async function syncOverdueRequests() {
   const open = await prisma.serviceRequest.findMany({
-    where: { status: { in: ["new", "in_progress", "paused"] } },
+    where: { status: { in: OPEN_STATUSES } },
     include: { pauses: true, product: true },
   });
   const now = Date.now();
@@ -81,3 +84,29 @@ export async function syncOverdueRequests() {
 }
 
 export { isTerminalStatus };
+
+/** A reminder the day before a scheduled visit (sent once per request). */
+export async function sendVisitReminders() {
+  const soon = new Date(Date.now() + 24 * 3_600_000);
+  const due = await prisma.serviceRequest.findMany({
+    where: { scheduledAt: { gt: new Date(), lte: soon }, status: { in: OPEN_STATUSES } },
+    include: { product: true },
+  });
+  let sent = 0;
+  for (const request of due) {
+    const already = await prisma.notification.count({ where: { serviceRequestId: request.id, code: "visitReminder" } });
+    if (already > 0) continue;
+    await createCustomerNotification(request.customerId, request.id, `Reminder: your visit for ${formatRequestId(request.displayId)} is scheduled soon`, "visitReminder", {
+      displayId: request.displayId,
+      at: request.scheduledAt?.toISOString(),
+    });
+    sent += 1;
+  }
+  return sent;
+}
+
+export async function runHousekeeping() {
+  const expired = await expireOldEstimates();
+  const reminders = await sendVisitReminders();
+  return { expired, reminders };
+}

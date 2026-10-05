@@ -7,5 +7,5 @@ export function canConfirmPickup(request: {
 }) {
   if (request.pickupConfirmedAt) return false;
   if (request.locationType !== "in_shop") return false;
-  return request.status === "completed";
+  return request.status === "ready" || request.status === "completed";
 }

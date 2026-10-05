@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { computeWarrantyStatus, money, toDateOnly } from "./warranty.js";
 import { jobTimer } from "./techBoard.js";
+import { isDoneStatus, isTerminalStatus } from "./status.js";
 
 export const requestInclude = Prisma.validator<Prisma.ServiceRequestInclude>()({
   customer: { select: { id: true, name: true, phone: true, address: true, regionCode: true } },
@@ -8,6 +9,9 @@ export const requestInclude = Prisma.validator<Prisma.ServiceRequestInclude>()({
   assignedTechnician: { select: { id: true, name: true, technicianType: true, isAvailable: true } },
   sale: { include: { product: true } },
   pauses: { where: { resumedAt: null }, take: 1 },
+  payments: { select: { kind: true, amount: true } },
+  estimates: { orderBy: { createdAt: "desc" }, take: 1, select: { id: true, status: true, validUntil: true } },
+  serviceCenter: { select: { id: true, name: true } },
 });
 
 export type RequestRecord = Prisma.ServiceRequestGetPayload<{ include: typeof requestInclude }>;
@@ -33,6 +37,14 @@ export function serializeLocation(value: Prisma.JsonValue | null): CustomerLocat
   };
 }
 
+function paymentBreakdown(request: Pick<RequestRecord, "payments" | "finalCost" | "estimatedCost">) {
+  const paid = request.payments.filter((row) => row.kind === "payment").reduce((sum, row) => sum + money(row.amount), 0);
+  const refunded = request.payments.filter((row) => row.kind === "refund").reduce((sum, row) => sum + money(row.amount), 0);
+  const due = request.finalCost != null ? money(request.finalCost) : request.estimatedCost != null ? money(request.estimatedCost) : 0;
+  const net = paid - refunded;
+  return { due, paid, refunded, balance: Math.max(0, due - net) };
+}
+
 export function serializeRequest(request: RequestRecord) {
   const activePause = request.pauses.find((pause) => pause.resumedAt == null) ?? null;
   const timer = jobTimer(request.status, request, activePause);
@@ -51,6 +63,35 @@ export function serializeRequest(request: RequestRecord) {
     issueDescription: request.issueDescription,
     defectType: request.defectType,
     resolutionType: request.resolutionType,
+    decision: request.decision,
+    decisionNote: request.decisionNote,
+    rejectionReason: request.rejectionReason,
+    serialNumber: request.serialNumber,
+    scheduledAt: request.scheduledAt?.toISOString() ?? null,
+    enRouteAt: request.enRouteAt?.toISOString() ?? null,
+    legalDueAt: request.legalDueAt?.toISOString() ?? null,
+    isLegallyOverdue: Boolean(request.legalDueAt) && request.legalDueAt!.getTime() < Date.now() && !isDoneStatus(request.status) && !isTerminalStatus(request.status),
+    isRepeat: request.isRepeat,
+    repeatOfId: request.repeatOfId,
+    repairWarrantyUntil: request.repairWarrantyUntil ? toDateOnly(request.repairWarrantyUntil) : null,
+    fiscalReceiptNumber: request.fiscalReceiptNumber,
+    intakeChecklist: Array.isArray(request.intakeChecklist) ? (request.intakeChecklist as string[]) : [],
+    intakeNotes: request.intakeNotes,
+    intakeSignatureUrl: request.intakeSignatureUrl,
+    defectCodeId: request.defectCodeId,
+    returnReasonId: request.returnReasonId,
+    serviceCenter: request.serviceCenter,
+    trackingToken: request.trackingToken,
+    estimate: request.estimates[0]
+      ? {
+          id: request.estimates[0].id,
+          status:
+            request.estimates[0].status === "sent" && request.estimates[0].validUntil.getTime() < Date.now()
+              ? "expired"
+              : request.estimates[0].status,
+        }
+      : null,
+    payment: paymentBreakdown(request),
     locationType: request.locationType,
     customerLocation: serializeLocation(request.customerLocation),
     technicianTypeRequired: request.technicianTypeRequired,

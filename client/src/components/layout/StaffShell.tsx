@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useStaffAuth } from "../../features/auth/StaffAuthContext";
 import { formatPhone, technicianTypeLabel } from "../../lib/format";
+import { homePathFor } from "../../lib/home";
 import type { StaffUser } from "../../lib/types";
 import { useStaffRealtime } from "../../lib/useStaffRealtime";
 import { StaffAlertBell } from "../../features/alerts/StaffAlertBell";
@@ -38,7 +39,8 @@ export function StaffShell() {
   }
 
   const isAdmin = user.role === "admin";
-  const onToggleAvailability = isAdmin ? undefined : () => setAvailability(!user.isAvailable);
+  const isOffice = isAdmin || user.role === "receptionist";
+  const onToggleAvailability = isOffice ? undefined : () => setAvailability(!user.isAvailable);
   const fullBleed = FULL_BLEED_PATHS.includes(location.pathname);
   const userCard = <StaffUserCard user={user} onToggleAvailability={onToggleAvailability} onLogout={onLogout} />;
 
@@ -46,16 +48,16 @@ export function StaffShell() {
     <div className="min-h-dvh bg-[#F5F7FA] print:bg-white">
       <header className="sticky top-0 z-[70] border-b border-gray-200 bg-white print:hidden">
         <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 sm:flex-nowrap sm:gap-3 lg:h-16 lg:py-0 lg:pr-6 lg:pl-0">
-          <Link to="/app" className="mr-auto flex shrink-0 items-center sm:mr-0 lg:w-64 lg:justify-center" aria-label={t("brand.staff")}>
+          <Link to={homePathFor(user.role)} className="mr-auto flex shrink-0 items-center sm:mr-0 lg:w-64 lg:justify-center" aria-label={t("brand.staff")}>
             <RizoServiceLockup />
           </Link>
           {/* On phones the admin search wraps onto a second row, next to the menu button. */}
-          {isAdmin ? (
+          {isOffice ? (
             <div className="order-last flex min-w-0 flex-1 basis-48 sm:order-none sm:basis-0">
               <QuickSearch />
             </div>
           ) : null}
-          {isAdmin ? null : <div className="flex-1" />}
+          {isOffice ? null : <div className="flex-1" />}
           {isAdmin ? <StaffAlertBell /> : null}
           <LanguageSwitcher />
           <AccountMenu name={user.name} detail={staffUserDetail(user, t)} onLogout={onLogout}>
@@ -124,7 +126,7 @@ export function StaffShell() {
 
 function staffUserDetail(user: StaffUser, t: (key: string) => string) {
   const role =
-    user.role === "admin" ? t("shell.adminRole") : technicianTypeLabel(user.technicianType) ?? t("role.technician");
+    user.role === "admin" ? t("shell.adminRole") : user.role === "receptionist" ? t("shell.receptionistRole") : technicianTypeLabel(user.technicianType) ?? t("role.technician");
   return `${role} · ${formatPhone(user.phone)}`;
 }
 

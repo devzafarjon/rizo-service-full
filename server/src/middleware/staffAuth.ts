@@ -49,7 +49,7 @@ export async function staffAuth(req: Request, _res: Response, next: NextFunction
   }
 }
 
-export function requireStaffRole(...roles: Array<"admin" | "technician">) {
+export function requireStaffRole(...roles: Array<"admin" | "technician" | "receptionist">) {
   return (req: Request, _res: Response, next: NextFunction) => {
     if (!req.staff) {
       next(new HttpError(401, "Sign in required"));
@@ -61,4 +61,12 @@ export function requireStaffRole(...roles: Array<"admin" | "technician">) {
     }
     next();
   };
+}
+
+/** Admins and the front desk (receptionists): the "office" that handles requests, customers and payments. */
+export const requireOffice = requireStaffRole("admin", "receptionist");
+
+/** Reads are open to the office; writes stay with admins. */
+export function officeReadAdminWrite(req: Request, res: Response, next: NextFunction) {
+  return (req.method === "GET" ? requireOffice : requireStaffRole("admin"))(req, res, next);
 }

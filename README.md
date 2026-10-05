@@ -13,6 +13,7 @@ Keep this file in sync with the product. After any user-visible change, re-check
 | Interface | Who | Where |
 | --- | --- | --- |
 | Staff dashboard | Admin / dispatcher | `/app` |
+| Front desk | Receptionist (`receptionist` role: board, requests, customers, sales, calendar, map, part orders, kiosk — no reports, catalog costs, settings or staff) | `/app/kanban` |
 | Technician panel | Mobile or service-center technician | `/app/my-jobs` |
 | Customer portal | Product owner | `/portal` |
 
@@ -91,6 +92,7 @@ Phone + password. Staff and customers use **separate JWT scopes** — a staff to
 | Admin / dispatcher | `998900000001` | `admin123` |
 | Technician (mobile) | `998900000002` | `tech123` |
 | Technician (service center) | `998900000004` | `tech123` |
+| Front desk (receptionist) | `998900000005` | `desk123` |
 | Customer (Dilnoza) | `998900000003` | `customer123` |
 
 Seed also creates extra customers (Jasur, Malika), invoices `RZ-1001` … `RZ-1004`, a catalog with cost prices, and — on an empty database — one request in every board column (an overdue New job, an on-site job in progress, a paused job, a completed in-shop job awaiting pickup, and a picked-up job with a rating). Login is rate limited (10 failed attempts per phone per 15 minutes).
@@ -122,6 +124,9 @@ Translation files: `client/src/i18n/locales/{uz,ru,en}.json`. Add keys there whe
 | `/login` | Staff sign-in |
 | `/portal/login` | Customer sign-in |
 | `/portal/signup` | Customer registration (sends current language) |
+| `/track` | Track a request by request number + phone (rate limited, no login) |
+| `/t/:token` | Public tracking page from the unguessable link in the SMS / QR; the customer can approve or decline an estimate here |
+| `/centers` | Directory of active service centers |
 | `/portal/forgot` | Password reset — a new password is sent **by SMS only** (console driver until a gateway is configured); the reply never reveals whether the number exists |
 
 ### Staff (admin)
@@ -151,6 +156,18 @@ Translation files: `client/src/i18n/locales/{uz,ru,en}.json`. Add keys there whe
 | `/app/scan` | Camera / manual QR lookup |
 | `/app/schedule` | Technician working / off calendar (14 days) |
 | `/app/audit` | Activity log + SMS/Telegram send queue |
+| `/app/calendar` | Scheduled visits per technician and day (admin + receptionist) |
+| `/app/map` | Open on-site jobs on an OpenStreetMap (Leaflet) map; jobs without coordinates are listed below |
+| `/app/part-orders` | Part orders (requested → ordered → received) plus low-stock suggestions; receiving an order resumes the waiting jobs |
+| `/app/centers` | Service centers (address, hours, coordinates, authorised flag) |
+| `/app/staff` | Staff accounts: create, role, technician type, pay rate, activate, reset password (admin) |
+| `/app/serials/:serial` | Serial-number card: sale, warranty, every visit, repeat count |
+| `/app/sales/:id/warranty-card` | Printable warranty card |
+| `/app/reports/defects` | Top defect codes, repeat-repair rate per product |
+| `/app/reports/outcomes` | Repair / replacement / refund / rejection: count, charged, cost |
+| `/app/reports/legal` | On-time rate against the legal repair limit, overdue open jobs |
+| `/app/reports/debts` | Jobs and customers with an unpaid balance |
+| `/app/reports/payroll` | Technician pay: % of labour + fixed per job + bonus/penalty adjustments |
 | `/app/kiosk` | Counter pickup confirmation for in-shop jobs (tap or signature) |
 | `/app/customers/duplicates` | Merge customers that share a phone |
 
@@ -167,6 +184,7 @@ Header search finds phone, name, invoice, or request ID. The top-right account m
 | `/app/my-jobs/:id/receipt` | Print the same receipt |
 | `/app/scan` | Scan a device tag and open the job |
 | `/app/my-schedule` | Mark working days / days off |
+| `/app/my-earnings` | Own pay for the period (percentage + fixed per job + adjustments) |
 
 Phone-friendly. Desktop still uses the staff shell. The header account menu is on every technician page, including job complete and receipt print.
 
@@ -175,8 +193,9 @@ Phone-friendly. Desktop still uses the staff shell. The header account menu is o
 | Path | Screen |
 | --- | --- |
 | `/portal` | My requests, filters, ratings after completion |
-| `/portal/new` | New request from a past purchase or catalog product. |
-| `/portal/requests/:id` | Live status in friendly wording, technician first name only, in-shop pickup confirmation (tap or signature), rating with quick tags |
+| `/portal/new` | New request from a past purchase or catalog product, with serial number, preferred visit time and service-center choice. |
+| `/portal/register` | Register a product bought elsewhere (unverified until the office verifies it) |
+| `/portal/requests/:id` | Live status in friendly wording, technician first name only, in-shop pickup confirmation (tap or signature), rating with quick tags, estimate approval (choose optional lines), messages to the service, "technician is on the way", payments and balance |
 
 Notification bell translates from `code` + `params`. Socket room `customer:{id}`. The header account menu signs out from every portal page.
 
@@ -200,30 +219,50 @@ Region codes: `01` Toshkent shahri, `10` Toshkent viloyati, `20` Sirdaryo, `25` 
 
 ## Statuses
 
-One model for both repair and installation:
+One model for repair and installation (follows `Rizo.xlsx` #4):
 
-`new → in_progress → paused → completed → picked_up`, plus `cancelled`.
+`new → diagnosing → awaiting_decision → awaiting_parts → in_progress ⇄ paused → ready | completed | replaced → picked_up`, plus `refunded`, `rejected` and `cancelled`.
 
-| Status | Meaning | Timer |
-| --- | --- | --- |
-| New | Waiting for the technician | 1 day (from assignment) |
-| In progress | Work started (`accepted_at`; on-site jobs also record `arrived_at` via “I’ve arrived”) | 3 days (from accept) |
-| Paused | Needs a **reason** and a technician-set duration; each pause is stored with start/end | the chosen duration |
-| Completed | Photos (≥1), services, parts, extras recorded; cost is automatic | — |
-| Picked up | In-shop jobs only: customer taps “I received my device” or signs | — |
-| Cancelled | Admin action; leaves the boards, can be reopened to New | — |
+| Status | Meaning |
+| --- | --- |
+| New | Created, waiting for the technician (timer 1 day from assignment) |
+| Diagnosing | Repair: the technician is diagnosing (repairs only) |
+| Awaiting decision | Waiting for the customer (estimate sent) or the office decision |
+| Awaiting parts | A part is on order; resumes automatically when the order is received |
+| In progress | Work started (`accepted_at`; on-site jobs also record `arrived_at`) — timer 3 days |
+| Paused | Needs a **reason** and a duration; each pause is stored |
+| Ready | Finished in-shop repair waiting at the counter |
+| Completed | Finished on-site repair or installation |
+| Replaced / Refunded / Rejected | Outcomes of the decision (rejection needs a reason shown to the customer) |
+| Picked up | In-shop jobs: customer taps “I received my device” or signs; blocked while a balance is unpaid unless staff allow it |
+| Cancelled | Admin / front desk; leaves the boards |
 
-Timers are green → yellow (last quarter) → red (expired). The technician board shows New, In progress, Paused, Completed (completed + picked up). The admin board adds Picked up. Admin transitions are validated server-side (`server/src/lib/statusChange.ts`); a technician can pause, resume and complete only their own jobs.
+Installation uses the short path `new → in_progress → completed` (plus paused / cancelled). **Installation is always on site** (in-shop installation is rejected by the API). The technician board shows four columns (New, In progress, Paused, Completed); the extra statuses are folded into them (`lib/techBoard.ts`). The staff board shows all columns for the chosen type. Transitions are validated server-side (`server/src/lib/status.ts` + `statusChange.ts`; the client mirrors the tables in `client/src/lib/status.ts`).
 
-Completion needs at least one photo, a service when the product category has any, and — when a repair is resolved by **replacement** — the new product and serial number (no service line required). Cost is 0 when in warranty (extra expenses are still charged), otherwise services + parts + extras.
+### Decision, estimate (smeta), payments
 
-Installation is always on site at the customer's address (in-shop installation is rejected by the API and not offered in the forms). Repair can be in shop or on site, chosen when the request is created; on-site requests need an address.
+- After diagnosis the office or technician sets a **decision**: warranty repair, paid repair, replace, refund or reject (`/api/staff/requests/:id/decision`).
+- A **paid repair needs an approved estimate** before work starts (setting `require_estimate_for_paid_repair`, default on). The estimate lists services, parts (taken from stock) and labour; lines can be **optional** — the customer chooses. The customer approves from the portal or the public tracking link, or staff approve on the phone. If a part is short a **part order** is created and the job waits in *Awaiting parts*. Estimates expire (default 7 days).
+- **Payments / refunds** are recorded per request (cash, card, transfer, Payme, Click, other) with a **fiscal receipt number**; `payment_status` is `not_required | pending | partial | paid`.
+- **Repeat failures** (same serial, 12 months) are flagged; a repair-warranty window (default 30 days) makes a repeat free. Duplicate open requests for the same product are blocked (`duplicateRequest`, staff can override). The **legal repair limit** (default 20 days) drives the legal-overdue KPI and report.
+- **Intake**: checklist, notes and customer signature at the counter. **Defect codes** and return reasons are managed in the catalog and drive the defect report.
+- **Warranty rules per product** (months, start from installation or sale, covers labour / parts); a sale can be extended, voided (with reason) and restored; customer-registered products stay *unverified* until verified.
+
+Timers are green → yellow (last quarter) → red (expired). Completion needs at least one photo, a service when the product category has any (not for replacements) and, for replacements, the new product + serial number. Cost is 0 when covered by warranty (extras are still charged), otherwise services + parts + extras.
+
+Repairs can be in shop or on site, chosen when the request is created; on-site requests need an address.
 
 ---
 
 ## Domain model (short)
 
-- **StaffUser** — `admin` or `technician` (`mobile` / `service_center`), availability, `is_active`, locale
+- **StaffUser** — `admin`, `receptionist` or `technician` (`mobile` / `service_center`), availability, `is_active`, locale, pay percent / fixed per job, service center
+- **ServiceCenter** — branch directory (address, hours, coordinates, authorised flag)
+- **Estimate / EstimateLine** — draft → sent → approved / declined / expired; optional lines, part lines fulfilled from stock
+- **Payment** — payment or refund per request, method, fiscal receipt number
+- **PartOrder** — requested → ordered → received for missing stock, linked to the waiting job
+- **DefectCode** — defect or return-reason code (optionally per product category)
+- **PayAdjustment** — bonus / penalty used by payroll
 - **Customer** — phone login, address, region, locale
 - **ProductCategory / Product** — categories are a table; products reference one by name
 - **Product** — SKU, category, translated names
@@ -237,7 +276,7 @@ Installation is always on site at the customer's address (in-shop installation i
 - **TechnicianSchedule** — per-day working / off (+ optional hours); auto-assign skips off technicians
 - **AuditLog** — status, cost, role, pickup, merge
 - **OutboundMessage** — SMS / Telegram queue (`pending` / `sent` / `failed`)
-- **AppSetting** — `block_zero_stock` (admin catalog toggle)
+- **AppSetting** — `block_zero_stock`, `repair_warranty_days`, `repair_legal_days`, `estimate_valid_days`, `pickup_storage_days`, `require_estimate_for_paid_repair`
 
 ---
 
@@ -265,8 +304,12 @@ Staff routes sit under `/api/staff/…` with a staff JWT. Customer routes sit un
 | `/api/staff/reports/technicians` | Technician performance |
 | `/api/staff/reports/warranty` | Warranty vs paid |
 | `/api/staff/reports/sources` | Request source mix |
+| `/api/staff/requests/:id/…` | `decision`, `estimates` (+ `/:estimateId/send|approve|decline`), `payments`, `notes`, `pickup` |
+| `/api/staff/part-orders`, `/defect-codes`, `/service-centers`, `/serials/:serial`, `/payroll`, `/staff` | Part orders, codes, branches, serial card, payroll + adjustments, staff admin |
+| `/api/staff/reports/defects`, `/outcomes`, `/debts`, `/legal` | New reports (the dashboard also returns previous-period deltas) |
+| `/api/public/track`, `/track/:token`, `/centers` | No login: tracking by token or request number + phone (rate limited), estimate approve / decline, service-center directory |
 | `/api/staff/my-jobs` | Technician jobs: move, `arrived`, `resolution` (repair / replace + serial), services, parts, extras, photos, complete, own schedule |
-| `/api/staff/settings` | Admin flags (block zero-stock) |
+| `/api/staff/settings` | Rules and flags (read: staff, change: admin) |
 | `/api/staff/alerts` | Admin low-stock / overdue inbox |
 | `/api/staff/audit` | Activity log |
 | `/api/staff/outbound` | SMS / Telegram send log |
@@ -276,6 +319,15 @@ Staff routes sit under `/api/staff/…` with a staff JWT. Customer routes sit un
 Errors return `{ error, code, details }`. The client maps `code` to `errors.*` translation keys.
 
 Socket.io rooms: `staff` and `customer:{id}`. Events include request created/updated and new notifications.
+
+---
+
+## Integrations and what is still manual
+
+- **SMS**: console driver by default. Set `SMS_PROVIDER` / `SMS_HTTP_URL` / `SMS_HTTP_TOKEN` for a real gateway (Eskiz, Playmobile …). Creation, estimate, en-route, part-arrived and visit-reminder messages include the tracking link.
+- **Telegram bot** (`server/src/lib/telegramBot.ts`): long polling starts only when `TELEGRAM_BOT_TOKEN` is set and the provider is not `console`. Customers can look up a request by number.
+- **Not integrated (needs your accounts/contracts)**: Payme / Click merchant payments, fiscal receipt (OFD) devices — the app records the payment method and the fiscal receipt number but does not charge cards or print fiscal receipts; persistent photo storage on hosts with an ephemeral disk (Render free tier wipes `uploads/` on deploy).
+- Change the demo passwords (`npm run set-password -- staff <phone> <new password>`) before going live.
 
 ---
 

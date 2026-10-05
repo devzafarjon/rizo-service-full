@@ -6,7 +6,8 @@ import { runDatabaseBackup } from "./lib/backup.js";
 import { tashkentCalendarDate } from "./lib/displayId.js";
 import { verifyToken } from "./lib/jwt.js";
 import { bindIo } from "./lib/realtime.js";
-import { syncOverdueRequests } from "./lib/sla.js";
+import { runHousekeeping, syncOverdueRequests } from "./lib/sla.js";
+import { startTelegramBot } from "./lib/telegramBot.js";
 
 const app = createApp();
 const server = http.createServer(app);
@@ -44,6 +45,9 @@ function startOpsJobs() {
     void syncOverdueRequests().catch((error) => {
       console.error("[sla]", error);
     });
+    void runHousekeeping().catch((error) => {
+      console.error("[housekeeping]", error);
+    });
   };
   runSla();
   setInterval(runSla, 60_000);
@@ -69,4 +73,5 @@ function startOpsJobs() {
 server.listen(env.port, () => {
   console.log(`RIZO Service API listening on http://localhost:${env.port}`);
   startOpsJobs();
+  startTelegramBot();
 });

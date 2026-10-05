@@ -10,24 +10,27 @@ After-sales service management for RIZO market (Uzbekistan). Web only; technicia
 - Cost: 0 if in warranty (extras are still charged), otherwise services + parts + extra expenses. Profit = revenue − part **cost price** (snapshotted per line) − extra expenses.
 
 ## Roles
-`admin` (dispatcher), `technician` (`mobile` | `service_center`), `customer`. Phone + password for all three; customers use a separate login and JWT scope. Reports, dashboard, inventory, schedule, audit, duplicates and settings are admin-only **at the API** (`requireStaffRole("admin")`). Customer queries are always scoped to the token's customer id. Deactivated staff (`is_active=false`) cannot sign in and lose API access within ~15s.
+`admin` (dispatcher), `receptionist` (front desk: board, requests, customers, sales, calendar, map, part orders, kiosk — no reports/settings/staff/catalog), `technician` (`mobile` | `service_center`), `customer`. Phone + password for all three; customers use a separate login and JWT scope. Reports, dashboard, inventory, schedule, audit, duplicates, staff admin and settings changes are admin-only **at the API** (`requireStaffRole("admin")`). Customer queries are always scoped to the token's customer id. Deactivated staff (`is_active=false`) cannot sign in and lose API access within ~15s.
 
-## Status model (one model for both types)
-`new → in_progress → paused → completed → picked_up`, plus `cancelled`.
-- Technician board columns: New, In progress, Paused, Completed (completed + picked_up). Cancelled jobs leave the boards.
-- Timers: New 1 day (from assignment), In progress 3 days (from accept), Paused = technician-set hours. A pause **requires a reason**.
-- `picked_up` only follows `completed` for in-shop jobs (customer tap or signature).
-- Completion needs ≥1 photo, a service when the category has any (not for replacements), and — for replacements — the new product + serial number.
-- All transitions go through `server/src/lib/statusChange.ts` (`changeRequestStatus`); pickup through `lib/pickup.ts`.
+## Status model (one model for both types, per `Rizo.xlsx` #4)
+`new → diagnosing → awaiting_decision → awaiting_parts → in_progress ⇄ paused → ready | completed | replaced → picked_up`, plus `refunded`, `rejected`, `cancelled`. Installation is `new → in_progress → completed` (+ paused/cancelled). Tables live in `server/src/lib/status.ts` (mirrored in `client/src/lib/status.ts`); the technician board folds them into 4 columns (`lib/techBoard.ts`).
+- Repair flow: diagnose → **decision** (warranty_repair / paid_repair / replace / refund / reject, reject needs a reason) → paid repair needs an **approved estimate** (setting `require_estimate_for_paid_repair`) → part shortage creates a **PartOrder** and `awaiting_parts` → completion (`ready` in shop, `completed` on site, `replaced`).
+- Timers: New 1 day, In progress 3 days, Paused = technician-set hours, awaiting_* from `status_changed_at`. A pause **requires a reason**.
+- Pickup only follows `ready`/`completed` for in-shop jobs and is blocked while a balance is unpaid (staff can pass `allowUnpaid`).
+- Completion needs ≥1 photo, a service when the category has any (not for replacements) and — for replacements — the new product + serial.
+- All transitions go through `server/src/lib/statusChange.ts` (`changeRequestStatus`); decisions through `lib/decision.ts`, estimates `lib/estimates.ts`, payments `lib/payments.ts`, part orders `lib/partOrders.ts`, pickup `lib/pickup.ts`, request creation (staff + portal) `lib/createRequest.ts`.
+- Rules (AppSetting): `repair_warranty_days` 30, `repair_legal_days` 20, `estimate_valid_days` 7, `pickup_storage_days` 14. Repeat failure = same serial within 12 months; duplicate open request → 409 `duplicateRequest`.
+- Public (no login) tracking: `/t/:token` and `/track` (request number + phone, rate limited); service centers at `/centers`.
+- Telegram bot long-polls only when `TELEGRAM_BOT_TOKEN` is set and the provider is not `console`.
 
 ## Stack and layout
-React 19 + Vite + TS + Tailwind 4 + React Router + TanStack Query + Headless UI + lucide-react + @dnd-kit + Recharts + html5-qrcode + react-i18next (client/); Express + TS + Zod + Prisma + PostgreSQL + Socket.io + JWT/bcrypt (server/). npm workspaces.
+React 19 + Vite + TS + Tailwind 4 + React Router + TanStack Query + Headless UI + lucide-react + @dnd-kit + Recharts + html5-qrcode + Leaflet + react-i18next (client/); Express + TS + Zod + Prisma + PostgreSQL + Socket.io + JWT/bcrypt (server/). npm workspaces.
 
 - `server/src/routes/*` thin routes, `server/src/lib/*` domain logic (assignment, displayId, statusChange, pickup, sla, notify*, reportJobs…), `server/prisma/` schema, migrations, seed.
 - `client/src/features/<area>/` screens, `client/src/components/` shared UI, `client/src/lib/` helpers, `client/src/i18n/locales/{uz,ru,en}.json`.
 
 ## Conventions
-- **i18n**: Uzbek default, Russian, English. No hardcoded UI strings; add keys to all three locale files. Server errors are English with a `code`; the client maps `errors.<code>`. Add new messages to `MESSAGE_CODES` in `server/src/middleware/error.ts` (or throw `HttpError` with an explicit code). Run `node server/scripts/i18n-scan.mjs` — `portal.pendingFeedback` / `portal.photoCount` show as "missing" only because they are plural keys.
+- **i18n**: Uzbek default, Russian, English. No hardcoded UI strings; add keys to all three locale files. Server errors are English with a `code`; the client maps `errors.<code>`. Add new messages to `MESSAGE_CODES` in `server/src/middleware/error.ts` (or throw `HttpError` with an explicit code). `audit.action.*` keys are flat dotted keys (`"request.status"`) — never nest them next to each other or i18next stops resolving the flat ones. Run `node server/scripts/i18n-scan.mjs` — `portal.pendingFeedback` / `portal.photoCount` show as "missing" only because they are plural keys.
 - **Request ID** `display_id` = `DDMMYY` (Tashkent) + 2-digit region + 4-digit daily sequence (one counter per day, atomic upsert), shown as `#…`.
 - **Brand**: purple `#7B00E0`, orange `#F7941E` as accents on a light neutral base (never a full purple screen). Staff app = white header; customer portal = purple-tint header with orange rule and badge. Logo: `client/public/rizo-logo.svg` (do not redraw it).
 - Requests are never hard-deleted. Everything audit-worthy goes through `writeAudit`.

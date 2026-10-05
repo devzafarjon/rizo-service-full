@@ -30,7 +30,7 @@ function isOffNow(row: { isWorking: boolean; startTime: string | null; endTime: 
   return false;
 }
 
-export async function pickAvailableTechnician(technicianType: TechnicianType) {
+export async function pickAvailableTechnician(technicianType: TechnicianType, options?: { serviceCenterId?: string | null }) {
   const today = new Date(`${tashkentCalendarDate(new Date())}T00:00:00.000Z`);
   const todayRows = await prisma.technicianSchedule.findMany({
     where: { date: today },
@@ -43,6 +43,8 @@ export async function pickAvailableTechnician(technicianType: TechnicianType) {
       technicianType,
       isAvailable: true,
       isActive: true,
+      // A request for a specific service center goes to that center's technicians when it has any.
+      ...(options?.serviceCenterId && technicianType === "service_center" ? { serviceCenterId: options.serviceCenterId } : {}),
       ...(offIds.length ? { id: { notIn: offIds } } : {}),
     },
     select: { id: true, name: true, phone: true, technicianType: true, isAvailable: true },

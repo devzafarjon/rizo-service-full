@@ -15,6 +15,7 @@ import { useStaffAuth } from "../auth/StaffAuthContext";
 import { api, apiErrorMessage } from "../../lib/api";
 import { formatMoney, SUGGESTED_CATEGORIES } from "../../lib/format";
 import { categoryLabel, localizedName, namedFields } from "../../lib/localized";
+import { DefectCodesPanel } from "./DefectCodesPanel";
 import type { CatalogService, Product, SparePart } from "../../lib/types";
 import { segmentedGroupClass, segmentedTabClass } from "../../components/segmented";
 
@@ -51,6 +52,7 @@ export function CatalogPage() {
     { id: "products", label: t("catalog.products") },
     { id: "services", label: t("catalog.services") },
     { id: "parts", label: t("catalog.parts") },
+    { id: "codes", label: t("defectCodes.tab") },
   ];
 
   return (
@@ -78,6 +80,9 @@ export function CatalogPage() {
           <TabPanel>
             <PartsPanel items={parts.data?.parts ?? []} categories={categoryOptions} />
           </TabPanel>
+          <TabPanel>
+            <DefectCodesPanel categories={categoryOptions} />
+          </TabPanel>
         </TabPanels>
       </TabGroup>
     </div>
@@ -93,11 +98,11 @@ function ProductsPanel({ items, categories }: { items: Product[]; categories: st
   const [editing, setEditing] = useState<Product | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Product | null>(null);
-  const [form, setForm] = useState({ nameUz: "", nameRu: "", nameEn: "", sku: "", category: "" });
+  const [form, setForm] = useState({ nameUz: "", nameRu: "", nameEn: "", sku: "", category: "", warrantyMonths: "12", warrantyStartsOn: "installation", warrantyCoversLabor: true, warrantyCoversParts: true });
 
   const save = useMutation({
     mutationFn: () => {
-      const body = JSON.stringify(form);
+      const body = JSON.stringify({ ...form, warrantyMonths: Number(form.warrantyMonths) || 0 });
       return editing
         ? api(`/api/staff/products/${editing.id}`, { method: "PATCH", token, body })
         : api("/api/staff/products", { method: "POST", token, body });
@@ -123,7 +128,7 @@ function ProductsPanel({ items, categories }: { items: Product[]; categories: st
 
   function start(product: Product | null) {
     setEditing(product);
-    setForm({ ...namedFields(product), sku: product?.sku ?? "", category: product?.category ?? "" });
+    setForm({ ...namedFields(product), sku: product?.sku ?? "", category: product?.category ?? "", warrantyMonths: String(product?.warrantyMonths ?? 12), warrantyStartsOn: product?.warrantyStartsOn ?? "installation", warrantyCoversLabor: product?.warrantyCoversLabor ?? true, warrantyCoversParts: product?.warrantyCoversParts ?? true });
     setError(null);
     setOpen(true);
   }
@@ -139,6 +144,7 @@ function ProductsPanel({ items, categories }: { items: Product[]; categories: st
               <Th>{t("common.name")}</Th>
               <Th>{t("common.sku")}</Th>
               <Th>{t("common.category")}</Th>
+              <Th>{t("sales.warrantyMonths")}</Th>
               <Th>{t("catalog.salesCount")}</Th>
               <Th className="text-right">{t("common.actions")}</Th>
             </tr>
@@ -149,6 +155,7 @@ function ProductsPanel({ items, categories }: { items: Product[]; categories: st
                 <Td className="font-semibold">{localizedName(product)}</Td>
                 <Td>{product.sku}</Td>
                 <Td>{categoryLabel(product.category)}</Td>
+                <Td>{product.warrantyMonths}</Td>
                 <Td>{product.salesCount}</Td>
                 <Td className="text-right">
                   <button type="button" className="mr-2 text-sm font-semibold text-neutral-600 hover:text-[#7B00E0]" onClick={() => start(product)}>
@@ -183,6 +190,31 @@ function ProductsPanel({ items, categories }: { items: Product[]; categories: st
               ))}
             </datalist>
           </Field>
+          <div className="rounded-2xl border border-neutral-200 p-4">
+            <p className="text-sm font-bold">{t("catalog.warrantyRules")}</p>
+            <p className="mt-1 text-xs text-neutral-500">{t("catalog.warrantyRulesHint")}</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <Field label={t("sales.warrantyMonths")}>
+                <input className={inputClass} type="number" min={0} max={120} value={form.warrantyMonths} onChange={(event) => setForm({ ...form, warrantyMonths: event.target.value })} />
+              </Field>
+              <Field label={t("catalog.warrantyStarts")}>
+                <select className={`${inputClass} bg-white`} value={form.warrantyStartsOn} onChange={(event) => setForm({ ...form, warrantyStartsOn: event.target.value as "installation" | "sale" })}>
+                  <option value="installation">{t("warrantyCard.startsOn.installation")}</option>
+                  <option value="sale">{t("warrantyCard.startsOn.sale")}</option>
+                </select>
+              </Field>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-4 text-sm font-semibold">
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={form.warrantyCoversLabor} onChange={(event) => setForm({ ...form, warrantyCoversLabor: event.target.checked })} />
+                {t("catalog.coversLabor")}
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={form.warrantyCoversParts} onChange={(event) => setForm({ ...form, warrantyCoversParts: event.target.checked })} />
+                {t("catalog.coversParts")}
+              </label>
+            </div>
+          </div>
           {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
           <FormActions pending={save.isPending} onCancel={() => setOpen(false)} submitLabel={editing ? t("common.save") : t("catalog.addProduct")} />
         </form>

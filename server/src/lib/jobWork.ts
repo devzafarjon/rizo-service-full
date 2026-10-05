@@ -14,7 +14,7 @@ export const workInclude = Prisma.validator<Prisma.ServiceRequestInclude>()({
 
 export type JobWorkRecord = {
   warrantyStatus: WarrantyStatus;
-  resolutionType?: "repair" | "replace" | null;
+  resolutionType?: "repair" | "replace" | "refund" | null;
   replacement?: { id: string; productId: string; serialNumber: string; product: NamedRecord & { sku: string } } | null;
   isPaidRepair?: boolean;
   serviceLines: Array<{
@@ -43,8 +43,17 @@ export type JobWorkRecord = {
   }>;
 };
 
+/** What the manufacturer warranty pays for: labor (services) and parts; extra expenses are always charged. */
+export type WarrantyCoverage = { labor: boolean; parts: boolean };
+const FULL_COVERAGE: WarrantyCoverage = { labor: true, parts: true };
+
+export function coverageOf(product: { warrantyCoversLabor: boolean; warrantyCoversParts: boolean } | null | undefined): WarrantyCoverage {
+  return product ? { labor: product.warrantyCoversLabor, parts: product.warrantyCoversParts } : FULL_COVERAGE;
+}
+
 export function computeJobCost(
   work: Pick<JobWorkRecord, "warrantyStatus" | "isPaidRepair" | "serviceLines" | "partLines" | "extraExpenses">,
+  coverage: WarrantyCoverage = FULL_COVERAGE,
 ) {
   const servicesTotal = work.serviceLines.reduce((sum, line) => sum + money(line.priceAtTime), 0);
   const partsTotal = work.partLines.reduce((sum, line) => sum + money(line.priceAtTime) * line.quantity, 0);
@@ -52,18 +61,20 @@ export function computeJobCost(
   const catalogTotal = servicesTotal + partsTotal;
   const workTotal = catalogTotal + extrasTotal;
   const coveredByWarranty = work.warrantyStatus === "in_warranty" && !work.isPaidRepair;
+  const waived = coveredByWarranty ? (coverage.labor ? servicesTotal : 0) + (coverage.parts ? partsTotal : 0) : 0;
   return {
     servicesTotal,
     partsTotal,
     extrasTotal,
     catalogTotal,
     workTotal,
-    chargedTotal: coveredByWarranty ? extrasTotal : workTotal,
+    waivedTotal: waived,
+    chargedTotal: workTotal - waived,
     coveredByWarranty,
   };
 }
 
-export type CompletionGap = "service" | "part" | "photo" | "replacement";
+export type CompletionGap = "service" | "part" | "photo" | "replacement" | "estimate";
 
 export function completionGaps(
   work: Pick<JobWorkRecord, "serviceLines" | "partLines" | "photos" | "resolutionType" | "replacement">,
@@ -82,15 +93,18 @@ export function resolveJobFinancials(
   work: Pick<JobWorkRecord, "warrantyStatus" | "isPaidRepair" | "serviceLines" | "partLines" | "extraExpenses">,
   type: ServiceType,
   sale: { warrantyMonths: number; warrantyExpiry: Date } | null,
+  options?: { coverage?: WarrantyCoverage; forcePaid?: boolean; forceFree?: boolean },
 ) {
   const warrantyStatus = sale
     ? computeWarrantyStatus(sale.warrantyMonths, sale.warrantyExpiry)
     : work.warrantyStatus;
   const payment = paymentFor(type, warrantyStatus);
-  const cost = computeJobCost({ ...work, warrantyStatus, isPaidRepair: payment.isPaidRepair });
+  // A staff decision ("paid repair" / "warranty repair") overrides what the dates alone would say.
+  const isPaidRepair = options?.forcePaid ? true : options?.forceFree ? false : payment.isPaidRepair;
+  const cost = computeJobCost({ ...work, warrantyStatus, isPaidRepair }, options?.coverage);
   return {
     warrantyStatus,
-    isPaidRepair: payment.isPaidRepair,
+    isPaidRepair,
     estimatedCost: cost.workTotal,
     finalCost: cost.chargedTotal,
     paymentStatus: (cost.chargedTotal === 0 ? "not_required" : "pending") as PaymentStatus,
@@ -104,11 +118,17 @@ export function serializeJobWork(
     requireService?: boolean;
     type?: ServiceType;
     sale?: { warrantyMonths: number; warrantyExpiry: Date } | null;
+    coverage?: WarrantyCoverage;
+    decision?: "warranty_repair" | "paid_repair" | "replace" | "refund" | "reject" | null;
   },
 ) {
   const cost = options?.type
-    ? resolveJobFinancials(work, options.type, options.sale ?? null).cost
-    : computeJobCost(work);
+    ? resolveJobFinancials(work, options.type, options.sale ?? null, {
+        coverage: options.coverage,
+        forcePaid: options.decision === "paid_repair",
+        forceFree: options.decision === "warranty_repair",
+      }).cost
+    : computeJobCost(work, options?.coverage);
   const gaps = completionGaps(work, { requireService: options?.requireService });
   return {
     serviceLines: work.serviceLines.map((line) => ({

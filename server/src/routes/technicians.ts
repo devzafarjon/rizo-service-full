@@ -8,14 +8,14 @@ import { HttpError } from "../lib/httpError.js";
 import { parseBody } from "../lib/parse.js";
 import { prisma } from "../lib/prisma.js";
 import { parseDateOnly, toDateOnly } from "../lib/warranty.js";
-import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
+import { officeReadAdminWrite, requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
 import { staffActor, writeAudit } from "../lib/audit.js";
 import { forgetStaffActiveCache } from "../middleware/staffAuth.js";
 
 const TYPES: TechnicianType[] = ["service_center", "mobile"];
 
 export const techniciansRouter = Router();
-techniciansRouter.use(staffAuth, requireStaffRole("admin"));
+techniciansRouter.use(staffAuth, officeReadAdminWrite);
 
 techniciansRouter.get(
   "/",
@@ -38,6 +38,8 @@ techniciansRouter.get(
         technicianType: true,
         isAvailable: true,
         isActive: true,
+        serviceCenterId: true,
+        role: true,
       },
     });
     const workload = await technicianWorkload(technicians.map((tech) => tech.id));
@@ -136,6 +138,9 @@ techniciansRouter.patch(
         technicianType: z.enum(["service_center", "mobile"]).optional().nullable(),
         isAvailable: z.boolean().optional(),
         isActive: z.boolean().optional(),
+        serviceCenterId: z.string().min(1).nullable().optional(),
+        payPercent: z.coerce.number().min(0).max(100).optional(),
+        payFixedPerJob: z.coerce.number().min(0).optional(),
       }),
       req.body,
     );
@@ -149,6 +154,9 @@ techniciansRouter.patch(
         ...(body.technicianType !== undefined ? { technicianType: body.technicianType } : {}),
         ...(body.isAvailable !== undefined ? { isAvailable: body.isAvailable } : {}),
         ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
+        ...(body.serviceCenterId !== undefined ? { serviceCenterId: body.serviceCenterId } : {}),
+        ...(body.payPercent !== undefined ? { payPercent: body.payPercent } : {}),
+        ...(body.payFixedPerJob !== undefined ? { payFixedPerJob: body.payFixedPerJob } : {}),
       },
     });
     forgetStaffActiveCache(tech.id);
@@ -181,6 +189,9 @@ techniciansRouter.patch(
         technicianType: updated.technicianType,
         isAvailable: updated.isAvailable,
         isActive: updated.isActive,
+        serviceCenterId: updated.serviceCenterId,
+        payPercent: Number(updated.payPercent),
+        payFixedPerJob: Number(updated.payFixedPerJob),
       },
     });
   }),

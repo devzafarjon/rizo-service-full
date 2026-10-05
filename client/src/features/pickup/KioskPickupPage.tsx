@@ -6,7 +6,7 @@ import { inputClass } from "../../components/Field";
 import { useToast } from "../../components/toast";
 import { useStaffAuth } from "../auth/StaffAuthContext";
 import { api, apiErrorMessage } from "../../lib/api";
-import { formatPhone, formatRequestId } from "../../lib/format";
+import { formatMoney, formatPhone, formatRequestId } from "../../lib/format";
 import { localizedName } from "../../lib/localized";
 import { parseRequestTag } from "../../lib/qrTag";
 import { canConfirmPickup } from "../../lib/pickup";
@@ -81,6 +81,11 @@ export function KioskPickupPage() {
             <p className="text-sm text-neutral-500">
               {localizedName(request.product)} · {formatPhone(request.customer.phone)}
             </p>
+            {request.payment && request.payment.balance > 0 && !request.pickupConfirmedAt ? (
+              <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm font-bold text-red-700">
+                {t("pickup.unpaid", { amount: formatMoney(request.payment.balance) })}
+              </p>
+            ) : null}
             {request.pickupConfirmedAt ? <p className="mt-3 text-sm font-bold text-emerald-700">{t("pickup.already")}</p> : null}
             {!request.pickupConfirmedAt && request.locationType !== "in_shop" ? (
               <p className="mt-3 text-sm text-neutral-500">{t("pickup.notAtCounter")}</p>

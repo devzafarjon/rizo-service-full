@@ -6,7 +6,7 @@ import { parseBody } from "../lib/parse.js";
 import { prisma } from "../lib/prisma.js";
 import { handlePrismaError } from "../lib/prismaErrors.js";
 import { namedFromInput, namedSearch, serializeNamed } from "../lib/named.js";
-import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
+import { officeReadAdminWrite, requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
 import { ensureCategories } from "../lib/categories.js";
 
 const productSchema = z.object({
@@ -16,6 +16,10 @@ const productSchema = z.object({
   nameEn: z.string().trim().optional(),
   sku: z.string().trim().min(1, "SKU is required"),
   category: z.string().trim().min(1, "Category is required"),
+  warrantyMonths: z.coerce.number().int().min(0).max(120).optional(),
+  warrantyStartsOn: z.enum(["installation", "sale"]).optional(),
+  warrantyCoversLabor: z.boolean().optional(),
+  warrantyCoversParts: z.boolean().optional(),
 }).superRefine((data, ctx) => {
   if (!(data.name || data.nameUz || data.nameRu || data.nameEn)) {
     ctx.addIssue({ code: "custom", message: "Name is required", path: ["name"] });
@@ -29,10 +33,14 @@ const productPatchSchema = z.object({
   nameEn: z.string().trim().optional(),
   sku: z.string().trim().min(1, "SKU is required").optional(),
   category: z.string().trim().min(1, "Category is required").optional(),
+  warrantyMonths: z.coerce.number().int().min(0).max(120).optional(),
+  warrantyStartsOn: z.enum(["installation", "sale"]).optional(),
+  warrantyCoversLabor: z.boolean().optional(),
+  warrantyCoversParts: z.boolean().optional(),
 });
 
 export const productsRouter = Router();
-productsRouter.use(staffAuth, requireStaffRole("admin"));
+productsRouter.use(staffAuth, officeReadAdminWrite);
 
 productsRouter.get(
   "/",
@@ -67,7 +75,15 @@ productsRouter.post(
     await ensureCategories([body.category]);
     try {
       const product = await prisma.product.create({
-        data: { ...namedFromInput(body), sku: body.sku.toUpperCase(), category: body.category },
+        data: {
+          ...namedFromInput(body),
+          sku: body.sku.toUpperCase(),
+          category: body.category,
+          ...(body.warrantyMonths !== undefined ? { warrantyMonths: body.warrantyMonths } : {}),
+          ...(body.warrantyStartsOn ? { warrantyStartsOn: body.warrantyStartsOn } : {}),
+          ...(body.warrantyCoversLabor !== undefined ? { warrantyCoversLabor: body.warrantyCoversLabor } : {}),
+          ...(body.warrantyCoversParts !== undefined ? { warrantyCoversParts: body.warrantyCoversParts } : {}),
+        },
         include: { _count: { select: { sales: true, requests: true } } },
       });
       res.status(201).json({ product: serializeProduct(product) });
@@ -91,6 +107,10 @@ productsRouter.patch(
             : {}),
           ...(body.sku !== undefined ? { sku: body.sku.toUpperCase() } : {}),
           ...(body.category !== undefined ? { category: body.category } : {}),
+          ...(body.warrantyMonths !== undefined ? { warrantyMonths: body.warrantyMonths } : {}),
+          ...(body.warrantyStartsOn ? { warrantyStartsOn: body.warrantyStartsOn } : {}),
+          ...(body.warrantyCoversLabor !== undefined ? { warrantyCoversLabor: body.warrantyCoversLabor } : {}),
+          ...(body.warrantyCoversParts !== undefined ? { warrantyCoversParts: body.warrantyCoversParts } : {}),
         },
         include: { _count: { select: { sales: true, requests: true } } },
       });
@@ -127,6 +147,10 @@ function serializeProduct(product: {
   nameEn: string;
   sku: string;
   category: string;
+  warrantyMonths: number;
+  warrantyStartsOn: string;
+  warrantyCoversLabor: boolean;
+  warrantyCoversParts: boolean;
   createdAt: Date;
   _count: { sales: number; requests: number };
 }) {
@@ -135,6 +159,10 @@ function serializeProduct(product: {
     ...serializeNamed(product),
     sku: product.sku,
     category: product.category,
+    warrantyMonths: product.warrantyMonths,
+    warrantyStartsOn: product.warrantyStartsOn,
+    warrantyCoversLabor: product.warrantyCoversLabor,
+    warrantyCoversParts: product.warrantyCoversParts,
     createdAt: product.createdAt.toISOString(),
     salesCount: product._count.sales,
     requestsCount: product._count.requests,

@@ -41,6 +41,17 @@ async function main() {
     },
   });
 
+  await prisma.staffUser.upsert({
+    where: { phone: "998900000005" },
+    update: {},
+    create: {
+      name: "Nigora Sodiqova",
+      phone: "998900000005",
+      passwordHash: await password("desk123"),
+      role: StaffRole.receptionist,
+    },
+  });
+
   const mobileTech = await prisma.staffUser.upsert({
     where: { phone: "998900000002" },
     update: {},
@@ -51,6 +62,8 @@ async function main() {
       role: StaffRole.technician,
       technicianType: TechnicianType.mobile,
       isAvailable: true,
+      payPercent: 20,
+      payFixedPerJob: 15000,
     },
   });
 
@@ -64,6 +77,8 @@ async function main() {
       role: StaffRole.technician,
       technicianType: TechnicianType.service_center,
       isAvailable: true,
+      payPercent: 25,
+      payFixedPerJob: 10000,
     },
   });
 
@@ -215,6 +230,7 @@ async function main() {
       installationDate: fridgeSaleDate,
       warrantyExpiry: addMonths(fridgeSaleDate, 24),
       invoiceNumber: "RZ-1001",
+      serialNumber: "RF280-A1001",
     },
   });
 
@@ -230,6 +246,7 @@ async function main() {
       warrantyMonths: 12,
       warrantyExpiry: addMonths(tvSaleDate, 12),
       invoiceNumber: "RZ-1002",
+      serialNumber: "TV43-B2002",
     },
   });
 
@@ -245,6 +262,7 @@ async function main() {
       warrantyMonths: 18,
       warrantyExpiry: addMonths(acSaleDate, 18),
       invoiceNumber: "RZ-1003",
+      serialNumber: "AC12-C3003",
     },
   });
 
@@ -260,8 +278,33 @@ async function main() {
       warrantyMonths: 24,
       warrantyExpiry: addMonths(utcMonthsAgo(1), 24),
       invoiceNumber: "RZ-1004",
+      serialNumber: "WM7-D4004",
     },
   });
+
+  const centers = [
+    { name: "RIZO Service — Chilonzor", regionCode: "01", address: "Chilonzor 9, Tashkent", phone: "+998712000001", workingHours: "Mon–Sat 09:00–18:00", lat: 41.2755, lng: 69.2035 },
+    { name: "RIZO Service — Samarqand", regionCode: "30", address: "Registon ko‘chasi 12, Samarkand", phone: "+998662000002", workingHours: "Mon–Sat 09:00–18:00", lat: 39.6542, lng: 66.9597 },
+  ];
+  for (const center of centers) {
+    if (!(await prisma.serviceCenter.findFirst({ where: { name: center.name } }))) await prisma.serviceCenter.create({ data: center });
+  }
+  const shopCenter = await prisma.serviceCenter.findFirstOrThrow({ where: { regionCode: "01" } });
+  await prisma.staffUser.updateMany({ where: { phone: "998900000004" }, data: { serviceCenterId: shopCenter.id } });
+
+  const defectCodes = [
+    { kind: "defect" as const, code: "D01", name: "Does not power on", nameUz: "Yoqilmaydi", nameRu: "Не включается", nameEn: "Does not power on", productCategory: null },
+    { kind: "defect" as const, code: "D02", name: "Cooling failure", nameUz: "Sovutmaydi", nameRu: "Не охлаждает", nameEn: "Cooling failure", productCategory: "Refrigerators" },
+    { kind: "defect" as const, code: "D03", name: "Leak", nameUz: "Suv oqadi", nameRu: "Протечка", nameEn: "Leak", productCategory: "Washing machines" },
+    { kind: "defect" as const, code: "D04", name: "Screen defect", nameUz: "Ekran nosozligi", nameRu: "Дефект экрана", nameEn: "Screen defect", productCategory: "Televisions" },
+    { kind: "defect" as const, code: "D05", name: "Noise or vibration", nameUz: "Shovqin yoki tebranish", nameRu: "Шум или вибрация", nameEn: "Noise or vibration", productCategory: null },
+    { kind: "return_reason" as const, code: "R01", name: "Defective on arrival", nameUz: "Brak keldi", nameRu: "Брак при получении", nameEn: "Defective on arrival", productCategory: null },
+    { kind: "return_reason" as const, code: "R02", name: "Cannot be repaired", nameUz: "Ta’mirlab bo‘lmaydi", nameRu: "Не подлежит ремонту", nameEn: "Cannot be repaired", productCategory: null },
+    { kind: "return_reason" as const, code: "R03", name: "Customer changed their mind", nameUz: "Mijoz fikridan qaytdi", nameRu: "Клиент передумал", nameEn: "Customer changed their mind", productCategory: null },
+  ];
+  for (const code of defectCodes) {
+    await prisma.defectCode.upsert({ where: { kind_code: { kind: code.kind, code: code.code } }, update: {}, create: code });
+  }
 
   const tvSale = await prisma.sale.findUniqueOrThrow({ where: { invoiceNumber: "RZ-1002" } });
   const acSale = await prisma.sale.findUniqueOrThrow({ where: { invoiceNumber: "RZ-1003" } });
@@ -325,6 +368,8 @@ async function main() {
           paymentStatus: input.warranty === "in_warranty" ? "not_required" : "pending",
           acceptedAt: worked ? new Date(createdAt.getTime() + 30 * 60_000) : null,
           arrivedAt: worked && input.location === "on_site" ? new Date(createdAt.getTime() + 45 * 60_000) : null,
+          legalDueAt: input.type === "repair" ? new Date(createdAt.getTime() + 20 * 86_400_000) : null,
+          statusChangedAt: hoursAgo(Math.min(input.createdHoursAgo, 8)),
           createdAt,
         },
       });
@@ -358,11 +403,11 @@ async function main() {
     const done = await seedRequest({
       type: ServiceType.repair, customer: dilnoza, product: fridge, sale: fridgeSale, defect: "failed_during_use",
       issue: "Door does not seal and the fridge warms up.", location: LocationType.in_shop, tech: shopTech,
-      status: RequestStatus.completed, createdHoursAgo: 52, warranty: WarrantyStatus.in_warranty,
+      status: RequestStatus.ready, createdHoursAgo: 52, warranty: WarrantyStatus.in_warranty,
     });
     await prisma.serviceRequest.update({
       where: { id: done.id },
-      data: { completedAt: hoursAgo(4), resolutionType: "repair", estimatedCost: 190000, finalCost: 0 },
+      data: { completedAt: hoursAgo(4), resolutionType: "repair", estimatedCost: 190000, finalCost: 0, decision: "warranty_repair", decidedAt: hoursAgo(40), repairWarrantyUntil: new Date(Date.now() + 30 * 86_400_000), serialNumber: "RF280-A1001", workedMinutes: 95 },
     });
     await prisma.requestServiceLine.create({ data: { serviceRequestId: done.id, serviceCatalogItemId: diagnostic.id, priceAtTime: diagnostic.price } });
     await prisma.requestPartLine.create({
@@ -400,6 +445,73 @@ async function main() {
     await prisma.feedback.create({
       data: { serviceRequestId: picked.id, customerId: dilnoza.id, rating: 5, comment: "Fast and polite service.", tags: ["fast", "polite"] },
     });
+    await prisma.payment.create({
+      data: { serviceRequestId: picked.id, kind: "payment", method: "cash", amount: 85000, createdByName: shopTech.name, note: "Paid at the counter" },
+    });
+    await prisma.serviceRequest.update({
+      where: { id: picked.id },
+      data: { decision: "paid_repair", decidedAt: hoursAgo(140), serialNumber: "TV43-B2002", repairWarrantyUntil: new Date(Date.now() + 14 * 86_400_000), workedMinutes: 70 },
+    });
+
+    // Waiting for the customer: an estimate was sent and not answered yet.
+    const decisionJob = await seedRequest({
+      type: ServiceType.repair, customer: jasur, product: tv, sale: null, defect: "failed_during_use",
+      issue: "TV has vertical lines on the screen.", location: LocationType.in_shop, tech: shopTech,
+      status: RequestStatus.awaiting_decision, createdHoursAgo: 12, warranty: WarrantyStatus.not_applicable,
+    });
+    const tvService = await prisma.serviceCatalogItem.findFirstOrThrow({ where: { name: "TV wall mount & setup" } });
+    await prisma.serviceRequest.update({ where: { id: decisionJob.id }, data: { decision: "paid_repair", isPaidRepair: true, serialNumber: "TV43-X9999" } });
+    const estimate = await prisma.estimate.create({
+      data: {
+        serviceRequestId: decisionJob.id,
+        status: "sent",
+        sentAt: hoursAgo(10),
+        validUntil: new Date(Date.now() + 6 * 86_400_000),
+        createdByName: shopTech.name,
+        note: "Panel cable replacement and testing",
+        lines: {
+          create: [
+            { kind: "labor", name: "Diagnostics and panel cable replacement", quantity: 1, unitPrice: 160000 },
+            { kind: "part", sparePartId: remote.id, name: remote.name, quantity: 1, unitPrice: remote.price, isOptional: true },
+            { kind: "service", serviceCatalogItemId: tvService.id, name: tvService.name, quantity: 1, unitPrice: 75000, isOptional: true },
+          ],
+        },
+      },
+    });
+    void estimate;
+
+    // Waiting for a part that is on order.
+    const partsJob = await seedRequest({
+      type: ServiceType.repair, customer: jasur, product: washer, sale: washerSale, defect: "failed_during_use",
+      issue: "Drains slowly and leaks from the bottom.", location: LocationType.on_site, tech: mobileTech,
+      status: RequestStatus.awaiting_parts, createdHoursAgo: 40, warranty: WarrantyStatus.in_warranty,
+    });
+    const drainPump = await prisma.sparePart.findFirstOrThrow({ where: { name: "Drain pump" } });
+    await prisma.serviceRequest.update({ where: { id: partsJob.id }, data: { decision: "warranty_repair", decidedAt: hoursAgo(30), serialNumber: "WM7-D4004" } });
+    await prisma.partOrder.create({
+      data: { sparePartId: drainPump.id, quantity: 2, status: "ordered", supplier: "Maishiy Texnika Ltd", serviceRequestId: partsJob.id, expectedAt: new Date(Date.now() + 3 * 86_400_000), note: "For a warranty repair" },
+    });
+
+    // Closed without a repair: replaced under warranty, and a rejected claim with a reason.
+    const replacedJob = await seedRequest({
+      type: ServiceType.repair, customer: dilnoza, product: ac, sale: null, defect: "dead_on_arrival",
+      issue: "Unit does not start from the first day.", location: LocationType.in_shop, tech: shopTech,
+      status: RequestStatus.replaced, createdHoursAgo: 200, warranty: WarrantyStatus.in_warranty,
+    });
+    await prisma.serviceRequest.update({
+      where: { id: replacedJob.id },
+      data: { completedAt: hoursAgo(180), resolutionType: "replace", decision: "replace", decidedAt: hoursAgo(190), finalCost: 0, estimatedCost: 0, paymentStatus: "not_required", serialNumber: "AC12-OLD-1" },
+    });
+    await prisma.replacementItem.create({ data: { serviceRequestId: replacedJob.id, productId: ac.id, serialNumber: "AC12-NEW-7781" } });
+    const rejectedJob = await seedRequest({
+      type: ServiceType.repair, customer: jasur, product: fridge, sale: null, defect: "failed_during_use",
+      issue: "Door glass cracked.", location: LocationType.in_shop, tech: shopTech,
+      status: RequestStatus.rejected, createdHoursAgo: 260, warranty: WarrantyStatus.not_applicable,
+    });
+    await prisma.serviceRequest.update({
+      where: { id: rejectedJob.id },
+      data: { completedAt: hoursAgo(250), decision: "reject", decidedAt: hoursAgo(250), rejectionReason: "Physical damage is not covered by the warranty", paymentStatus: "not_required" },
+    });
 
     // The fridge was installed the day it was sold.
     const install = await seedRequest({
@@ -420,10 +532,20 @@ async function main() {
     });
   }
 
+  // A couple of upcoming visits so the calendar is not empty in a fresh demo.
+  const upcoming = await prisma.serviceRequest.findMany({ where: { status: "new", scheduledAt: null }, orderBy: { createdAt: "asc" }, take: 2, select: { id: true } });
+  for (const [index, job] of upcoming.entries()) {
+    const visit = new Date();
+    visit.setDate(visit.getDate() + index + 1);
+    visit.setHours(10 + index * 3, 0, 0, 0);
+    await prisma.serviceRequest.update({ where: { id: job.id }, data: { scheduledAt: visit } });
+  }
+
   console.log("Seeded demo accounts and catalog:");
   console.log("  Admin      998900000001 / admin123");
   console.log("  Technician 998900000002 / tech123  (mobile)");
   console.log("  Technician 998900000004 / tech123  (service center)");
+  console.log("  Front desk 998900000005 / desk123  (receptionist)");
   console.log("  Customer   998900000003 / customer123");
   console.log("  Invoices   RZ-1001, RZ-1002, RZ-1003, RZ-1004");
 

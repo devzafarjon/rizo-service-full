@@ -76,6 +76,8 @@ const MESSAGE_CODES: Record<string, string> = {
   "Installation is only done at the customer's address": "installationOnSiteOnly",
   "Customer location is required for on-site jobs": "locationRequired",
   "Add your address for an on-site visit": "locationRequired",
+  "Password must be at least 8 characters": "passwordLength8",
+  "Choose the technician type": "technicianTypeRequired",
   "Select at least one product category": "categoriesRequired",
   "Category name is required": "categoryRequired",
   "Cost price cannot be negative": "negativeCost",

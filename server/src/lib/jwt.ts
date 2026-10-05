@@ -4,7 +4,7 @@ import { env } from "../config.js";
 export type StaffTokenPayload = {
   sub: string;
   scope: "staff";
-  role: "admin" | "technician";
+  role: "admin" | "technician" | "receptionist";
   name: string;
   phone: string;
 };

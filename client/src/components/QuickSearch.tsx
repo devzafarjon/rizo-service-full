@@ -35,13 +35,15 @@ export function QuickSearch() {
   return (
     <Combobox
       value={null}
-      onChange={(value: { kind: "customer" | "sale" | "request"; id: string; extra?: string } | null) => {
+      onChange={(value: { kind: "customer" | "sale" | "request"; id: string; extra?: string; serial?: string } | null) => {
         if (!value) return;
         setQuery("");
         if (value.kind === "customer") {
           navigate(`/app/customers/${value.id}`);
         } else if (value.kind === "request") {
           navigate(`/app/requests/${value.id}`);
+        } else if (value.serial) {
+          navigate(`/app/serials/${encodeURIComponent(value.serial)}`);
         } else {
           navigate(`/app/sales?invoice=${encodeURIComponent(value.extra ?? "")}`);
         }
@@ -75,7 +77,12 @@ export function QuickSearch() {
           {sales.map((sale) => (
             <ComboboxOption
               key={sale.id}
-              value={{ kind: "sale" as const, id: sale.id, extra: sale.invoiceNumber }}
+              value={{
+                kind: "sale" as const,
+                id: sale.id,
+                extra: sale.invoiceNumber,
+                serial: sale.serialNumber && sale.serialNumber.toLowerCase() === query.trim().toLowerCase() ? sale.serialNumber : undefined,
+              }}
               className="cursor-pointer px-4 py-2.5 data-focus:bg-[#FFF4E5]"
             >
               <div className="flex items-center justify-between gap-3">
@@ -83,6 +90,7 @@ export function QuickSearch() {
                   <p className="text-sm font-semibold text-neutral-900">{sale.invoiceNumber}</p>
                   <p className="text-xs text-neutral-500">
                     {sale.customer.name} · {localizedName(sale.product)}
+                    {sale.serialNumber ? ` · S/N ${sale.serialNumber}` : ""}
                   </p>
                 </div>
                 <WarrantyBadge status={sale.warrantyStatus} />

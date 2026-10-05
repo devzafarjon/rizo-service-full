@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { PageSkeleton } from "../../components/PageSkeleton";
 import { useStaffAuth } from "./StaffAuthContext";
+import { homePathFor } from "../../lib/home";
 import type { StaffRole } from "../../lib/types";
 
 export function StaffProtectedRoute() {
@@ -28,7 +29,7 @@ export function RoleRoute({ roles }: { roles: StaffRole[] }) {
     return <Navigate to="/login" replace />;
   }
   if (!roles.includes(user.role)) {
-    return <Navigate to={user.role === "technician" ? "/app/my-jobs" : "/app"} replace />;
+    return <Navigate to={homePathFor(user.role)} replace />;
   }
   return <Outlet />;
 }

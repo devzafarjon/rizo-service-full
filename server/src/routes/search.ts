@@ -4,10 +4,10 @@ import { normalizeDisplayIdQuery } from "../lib/displayId.js";
 import { normalizePhone } from "../lib/phone.js";
 import { prisma } from "../lib/prisma.js";
 import { computeWarrantyStatus, money, toDateOnly } from "../lib/warranty.js";
-import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
+import { requireOffice, requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
 
 export const searchRouter = Router();
-searchRouter.use(staffAuth, requireStaffRole("admin"));
+searchRouter.use(staffAuth, requireOffice);
 
 searchRouter.get(
   "/",
@@ -35,6 +35,7 @@ searchRouter.get(
         where: {
           OR: [
             { invoiceNumber: { contains: q, mode: "insensitive" } },
+            { serialNumber: { contains: q, mode: "insensitive" } },
             ...(digits.length >= 3 ? [{ customer: { phone: { contains: digits } } }] : []),
           ],
         },
@@ -49,6 +50,7 @@ searchRouter.get(
         where: {
           OR: [
             { displayId: { contains: displayId, mode: "insensitive" } },
+            { serialNumber: { contains: q, mode: "insensitive" } },
             { id: { contains: q, mode: "insensitive" } },
           ],
         },
@@ -70,6 +72,7 @@ searchRouter.get(
       sales: sales.map((sale) => ({
         id: sale.id,
         invoiceNumber: sale.invoiceNumber,
+        serialNumber: sale.serialNumber,
         saleDate: toDateOnly(sale.saleDate),
         pricePaid: money(sale.pricePaid),
         warrantyExpiry: toDateOnly(sale.warrantyExpiry),

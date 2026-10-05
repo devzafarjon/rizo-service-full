@@ -68,7 +68,9 @@
     "skip": "O‘tkazib yuborish",
     "moreInfo": "Qo‘shimcha ma’lumot",
     "stepOf": "{{current}}-qadam / {{total}}",
-    "priority": "Ustuvorlik"
+    "priority": "Ustuvorlik",
+    "region": "Hudud",
+    "remove": "Olib tashlash"
   },
   "languages": {
     "uz": "Oʻzbekcha",
@@ -86,7 +88,9 @@
     "staff": "Xodimlar kirishi",
     "staffContinue": "Xodim sifatida davom etish",
     "portal": "Mijoz portali",
-    "portalContinue": "Portalga o‘tish"
+    "portalContinue": "Portalga o‘tish",
+    "track": "Buyurtmani kuzatish",
+    "centers": "Servis markazlari"
   },
   "auth": {
     "staffTitle": "Xodimlar kirishi",
@@ -150,7 +154,14 @@
     "analytics": "Analitika",
     "inventory": "Ombor",
     "duplicates": "Takroriy mijozlar",
-    "settings": "Zaxira sozlamalari"
+    "settings": "Zaxira sozlamalari",
+    "calendar": "Kalendar",
+    "map": "Xarita",
+    "partOrders": "Ehtiyot qism buyurtmalari",
+    "centers": "Servis markazlari",
+    "staff": "Xodimlar",
+    "myEarnings": "Mening daromadim",
+    "registerProduct": "Mahsulot qo‘shish"
   },
   "staffHome": {
     "welcome": "Xush kelibsiz",
@@ -183,12 +194,17 @@
     "viewFull": "To‘liq analitikani ko‘rish",
     "viewSummary": "Qisqa ko‘rinishga qaytish",
     "techPerformance": "Texniklar samaradorligi",
-    "techPerformanceBody": "Yakunlangan ishlar, baholar va vaqt uchun texnik hisobotini oching."
+    "techPerformanceBody": "Yakunlangan ishlar, baholar va vaqt uchun texnik hisobotini oching.",
+    "legalOverdue": "Qonuniy muddati o‘tgan",
+    "debt": "Mijozlar qarzi",
+    "avgWork": "O‘rtacha ish vaqti",
+    "vsPrevious": "oldingi davrga nisbatan"
   },
   "shell": {
     "adminRole": "Admin / dispetcher",
     "available": "Bo‘sh",
-    "busy": "Band"
+    "busy": "Band",
+    "receptionistRole": "Qabul operatori"
   },
   "status": {
     "new": "Yangi",
@@ -196,7 +212,14 @@
     "paused": "To‘xtatilgan",
     "completed": "Yakunlangan",
     "picked_up": "Olib ketilgan",
-    "cancelled": "Bekor qilingan"
+    "cancelled": "Bekor qilingan",
+    "diagnosing": "Diagnostika",
+    "awaiting_decision": "Qaror kutilmoqda",
+    "awaiting_parts": "Ehtiyot qism kutilmoqda",
+    "ready": "Tayyor",
+    "replaced": "Almashtirilgan",
+    "refunded": "Pul qaytarilgan",
+    "rejected": "Rad etilgan"
   },
   "type": {
     "installation": "O‘rnatish",
@@ -225,11 +248,13 @@
   "payment": {
     "not_required": "Kerak emas",
     "pending": "Kutilmoqda",
-    "paid": "To‘langan"
+    "paid": "To‘langan",
+    "partial": "Qisman to‘langan"
   },
   "role": {
     "admin": "Admin",
-    "technician": "Texnik"
+    "technician": "Texnik",
+    "receptionist": "Qabul operatori"
   },
   "techType": {
     "service_center": "Servis markazi",
@@ -331,14 +356,48 @@
     "pauseActive": "{{reason}} · reja {{planned}} · hali to‘xtatilgan",
     "pauseDone": "{{reason}} · reja {{planned}} · davom etdi {{lasted}}",
     "assigned": "Texnikka biriktirildi",
-    "pickedUp": "Olib ketildi"
+    "pickedUp": "Olib ketildi",
+    "enRoute": "Texnik yo‘lga chiqdi",
+    "status": {
+      "diagnosing": "Diagnostika boshlandi",
+      "awaiting_decision": "Mijoz qarori kutilmoqda",
+      "awaiting_parts": "Ehtiyot qism kutilmoqda",
+      "ready": "Olib ketishga tayyor",
+      "replaced": "Almashtirildi",
+      "refunded": "Pul qaytarildi",
+      "rejected": "Rad etildi",
+      "cancelled": "Bekor qilindi"
+    },
+    "decision": {
+      "warranty_repair": "Qaror: kafolat bo‘yicha ta’mir",
+      "paid_repair": "Qaror: pullik ta’mir",
+      "replace": "Qaror: almashtirish",
+      "refund": "Qaror: pulni qaytarish",
+      "reject": "Qaror: rad etish"
+    },
+    "estimate": {
+      "create": "Smeta tuzildi",
+      "send": "Smeta mijozga yuborildi",
+      "approve": "Smeta tasdiqlandi",
+      "decline": "Smeta rad etildi"
+    }
   },
   "notify": {
     "createdByCustomer": "{{product}} uchun {{type}} so‘rovingiz qabul qilindi.",
     "createdByStaff": "{{product}} uchun {{type}} so‘rovi yaratildi.",
     "status": "{{product}} bo‘yicha {{type}} endi: {{status}}.",
     "overdue": "{{id}} muddati o‘tib ketdi.",
-    "lowStock": "{{product}} ombori kam ({{count}})."
+    "lowStock": "{{product}} ombori kam ({{count}}).",
+    "estimateSent": "{{id}} uchun smeta tayyor. Iltimos, tasdiqlang.",
+    "estimateExpired": "{{id}} uchun smeta muddati tugadi.",
+    "estimateApproved": "{{id}} uchun smeta tasdiqlandi.",
+    "estimateDeclined": "{{id}} uchun smeta rad etildi.",
+    "enRoute": "Texnikingiz yo‘lga chiqdi.",
+    "partArrived": "Ehtiyot qism keldi, ta’mirni davom ettiramiz.",
+    "visitReminder": "Eslatma: {{id}} bo‘yicha tashrifingiz yaqin.",
+    "message": "{{id}}: {{text}}",
+    "customerMessage": "{{id}} bo‘yicha mijozdan yangi xabar.",
+    "productRegistered": "Mijoz mahsulot qo‘shdi: {{product}} ({{serial}})."
   },
   "notifications": {
     "title": "Bildirishnomalar",
@@ -405,7 +464,12 @@
     "applicableCategoriesHint": "Texniklar bu elementni faqat shu turkumdagi ishlarda ko‘radi.",
     "newCategoryPlaceholder": "Yangi turkum",
     "addCategory": "Qo‘shish",
-    "pickCategory": "Kamida bitta turkumni tanlang"
+    "pickCategory": "Kamida bitta turkumni tanlang",
+    "warrantyRules": "Kafolat qoidalari",
+    "warrantyRulesHint": "Shu mahsulot uchun kafolat nimani qoplashi va qachondan boshlanishi.",
+    "warrantyStarts": "Kafolat boshlanishi",
+    "coversLabor": "Ish haqini qoplaydi",
+    "coversParts": "Ehtiyot qismlarni qoplaydi"
   },
   "customers": {
     "title": "Mijozlar",
@@ -488,7 +552,25 @@
     "invoiceHint": "Keyingi RZ raqamini avtomatik berish uchun bo‘sh qoldiring.",
     "warrantyExpiry": "Kafolat tugashi",
     "save": "Sotuvni saqlash",
-    "record": "Sotuvni yozish"
+    "record": "Sotuvni yozish",
+    "serialHint": "Mahsulot korpusidagi raqam (ixtiyoriy).",
+    "extend": "Kafolatni uzaytirish",
+    "extendTitle": "Kafolatni uzaytirish",
+    "extendHint": "Mijozga qo‘shimcha kafolat oylarini bering.",
+    "extendMonths": "Qo‘shimcha oylar",
+    "void": "Kafolatni bekor qilish",
+    "voidTitle": "Kafolatni bekor qilish",
+    "voidHint": "Masalan, noto‘g‘ri foydalanish yoki muhr buzilgan bo‘lsa. Sabab yozing.",
+    "reason": "Sabab",
+    "restore": "Kafolatni tiklash",
+    "voided": "Bekor qilingan",
+    "voidedBecause": "Kafolat bekor qilingan: {{reason}}",
+    "unverified": "Tasdiqlanmagan",
+    "verify": "Tasdiqlash",
+    "warrantyCard": "Kafolat talon",
+    "warrantyUpdated": "Kafolat yangilandi",
+    "installedOn": "O‘rnatilgan sana",
+    "warrantyUntil": "Kafolat muddati"
   },
   "requests": {
     "title": "Xizmat so‘rovlari",
@@ -560,7 +642,16 @@
     "selectProductFilter": "Xizmatlar va ehtiyot qismlarni filtrlash uchun mahsulot tanlang.",
     "noServices": "Bu turkumda xizmat yo‘q.",
     "noParts": "Bu turkumda qism yo‘q.",
-    "installationOnlyOnSite": "O‘rnatish doim mijoz manzilida, joyida bajariladi."
+    "installationOnlyOnSite": "O‘rnatish doim mijoz manzilida, joyida bajariladi.",
+    "visitTime": "Tashrif vaqti",
+    "appointment": "Servisga kelish vaqti",
+    "visitTimeHint": "Ixtiyoriy. Kalendarda va eslatmalarda ishlatiladi.",
+    "duplicateTitle": "Shunga o‘xshash ochiq so‘rov bor",
+    "duplicateBody": "{{id}} raqamli so‘rov shu mahsulot uchun ochiq.",
+    "openExisting": "Mavjud so‘rovni ochish",
+    "createAnyway": "Baribir yaratish",
+    "repeatFound": "Takroriy nosozlik aniqlandi ({{id}})",
+    "repeatFree": "Takroriy nosozlik ({{id}}) — ta’mir bepul"
   },
   "detail": {
     "job": "Ish",
@@ -594,7 +685,21 @@
     "saleLine": "{{invoice}} · tugash {{date}}",
     "notLinked": "Bog‘lanmagan",
     "location": "Joy",
-    "pickup": "Olib ketish tasdig‘i"
+    "pickup": "Olib ketish tasdig‘i",
+    "copyTrackLink": "Kuzatuv havolasini nusxalash",
+    "linkCopied": "Havola nusxalandi",
+    "allowUnpaid": "Qarz bilan ham topshirishga ruxsat",
+    "rejectedBecause": "Rad etish sababi: {{reason}}",
+    "repeatOf": "Takroriy nosozlik, oldingi so‘rov:",
+    "repeat": "Takroriy",
+    "repeatFree": "bepul ta’mirlash",
+    "legalDue": "Qonuniy muddat",
+    "legalOverdue": "Qonuniy muddat o‘tgan",
+    "repairWarranty": "Ta’mir kafolati",
+    "scheduled": "Rejalashtirilgan vaqt",
+    "enRoute": "Yo‘lga chiqdi",
+    "owes": "Qarz {{amount}}",
+    "defectCode": "Nosozlik kodi"
   },
   "kanban": {
     "title": "Jo‘natish doskasi",
@@ -610,7 +715,8 @@
     "drag": "{{name}} ni sudrang",
     "updateFailed": "Holatni yangilab bo‘lmadi",
     "overdue": "Muddati o‘tgan",
-    "overdueList": "Muddati o‘tgan so‘rovlar"
+    "overdueList": "Muddati o‘tgan so‘rovlar",
+    "useDecision": "Bu holatga o‘tish uchun so‘rov ichida «Qaror»dan foydalaning."
   },
   "tech": {
     "title": "Mening ishlarim",
@@ -642,7 +748,21 @@
     "hoursShort": "{{count}} soat",
     "moreActions": "Yana amallar",
     "arrivedAt": "Yetib kelindi: {{time}}",
-    "arrivedSaved": "Yetib kelish qayd etildi"
+    "arrivedSaved": "Yetib kelish qayd etildi",
+    "startDiagnosis": "Diagnostikani boshlash",
+    "startRepair": "Ta’mirni boshlash",
+    "needParts": "Ehtiyot qism kerak",
+    "partsArrived": "Qism keldi, davom etish",
+    "estimateAction": "Smeta tuzish",
+    "waitingDecision": "Mijoz qarori kutilmoqda",
+    "openJob": "Ishni ochish",
+    "enRoute": "Yo‘ldaman",
+    "enRouteSaved": "Mijozga xabar yuborildi",
+    "enRouteSince": "Yo‘lga chiqdi {{time}}",
+    "scheduledFor": "Tashrif: {{time}}",
+    "diagnosisHint": "Diagnostika natijasiga ko‘ra nosozlik kodini tanlang.",
+    "workflow": "Ish jarayoni",
+    "workflowHint": "Diagnostika → smeta → ta’mir. Mijoz qarori kerak bo‘lsa, ish kutish holatiga o‘tadi."
   },
   "job": {
     "timeline": "Vaqt chizig‘i",
@@ -658,7 +778,8 @@
       "service": "kamida bitta xizmat",
       "part": "kamida bitta ehtiyot qism",
       "photo": "kamida bitta rasm",
-      "replacement": "almashtirilgan mahsulot va seriya raqami"
+      "replacement": "almashtirilgan mahsulot va seriya raqami",
+      "estimate": "tasdiqlangan smeta"
     },
     "addService": "Xizmat qo‘shish",
     "addPart": "Qism qo‘shish",
@@ -726,7 +847,8 @@
     "staffFallback": "RIZO xodimi",
     "printReceipt": "Kvitansiyani chop etish",
     "searchPlaceholder": "Mijoz, mahsulot, texnik yoki ID",
-    "openRequests": "So‘rovlarni ochish"
+    "openRequests": "So‘rovlarni ochish",
+    "trackQr": "Ish holatini kuzatish uchun QR kodni skanerlang"
   },
   "reports": {
     "title": "Hisobotlar",
@@ -817,13 +939,48 @@
       "warranty": "Kafolat holati bo‘yicha",
       "warrantyBody": "Kafolatdagi (bepul) va kafolatsiz (pullik) so‘rovlar soni va qiymati vaqt bo‘yicha.",
       "sources": "So‘rov manbasi bo‘yicha",
-      "sourcesBody": "RIZO market orqali kelgan so‘rovlar va RIZO Service yoki mijoz portalidan ochilgan ishlar."
+      "sourcesBody": "RIZO market orqali kelgan so‘rovlar va RIZO Service yoki mijoz portalidan ochilgan ishlar.",
+      "defects": "Nosozliklar bo‘yicha",
+      "defectsBody": "Eng ko‘p uchraydigan nosozlik kodlari va mahsulotlar bo‘yicha takroriy ta’mirlar ulushi.",
+      "outcomes": "Natijalar bo‘yicha",
+      "outcomesBody": "Ta’mir, almashtirish, pul qaytarish va rad etish: soni, summasi va xarajati.",
+      "legal": "Qonuniy muddat",
+      "legalBody": "Qonuniy muddatda bajarilgan ishlar ulushi va muddati o‘tgan ochiq ishlar.",
+      "debts": "Qarzlar",
+      "debtsBody": "To‘lanmagan qoldig‘i bor ishlar va mijozlar.",
+      "payroll": "Ish haqi",
+      "payrollBody": "Texniklarning foiz, belgilangan summa va mukofot/jarimalar bo‘yicha hisoblangan ish haqi."
     },
     "source": {
       "rizo_market": "RIZO market",
       "rizo_service": "RIZO Service (xodim)",
       "portal": "Mijoz portali"
-    }
+    },
+    "avgCost": "O‘rtacha xarajat",
+    "avgDays": "O‘rtacha muddat (kun)",
+    "byCode": "Kodlar bo‘yicha",
+    "charged": "Mijozdan olingan",
+    "claimRate": "Murojaat ulushi",
+    "cost": "Xarajat",
+    "days": "Kun",
+    "debtJobs": "Qarzdor ishlar",
+    "debtors": "Qarzdor mijozlar",
+    "late": "Muddati o‘tgan",
+    "lateAndOpen": "Muddati o‘tgan ochiq ishlar",
+    "lateDays": "Kechikish (kun)",
+    "noCodes": "Kodlar hali belgilanmagan.",
+    "noDebts": "Qarzlar yo‘q",
+    "noDebtsBody": "Barcha ishlar bo‘yicha to‘lovlar yopilgan.",
+    "nothingLate": "Muddati o‘tgan ishlar yo‘q.",
+    "onTimeRate": "Muddatda bajarilgan",
+    "outcome": "Natija",
+    "outcomeNote": "Almashtirish va pul qaytarish xarajatlari ta’mirdan alohida hisoblanadi.",
+    "repairs": "Ta’mirlar",
+    "repeats": "Takroriy",
+    "topDefects": "Eng ko‘p nosozliklar",
+    "totalDebt": "Jami qarz",
+    "unitsSold": "Sotilgan",
+    "withoutCode": "Kodsiz"
   },
   "portal": {
     "homeTitle": "Xizmat so‘rovlaringiz",
@@ -875,7 +1032,34 @@
     "review": "Tekshiruv",
     "photoCount_one": "{{count}} ta rasm qo‘shildi",
     "photoCount_other": "{{count}} ta rasm qo‘shildi",
-    "installationOnlyOnSite": "O‘rnatish doim sizning manzilingizda bajariladi."
+    "installationOnlyOnSite": "O‘rnatish doim sizning manzilingizda bajariladi.",
+    "estimateTitle": "Narx smetasi",
+    "estimateAsk": "Iltimos, {{date}} gacha javob bering.",
+    "estimateFine": "Ixtiyoriy qatorlarni o‘zingiz tanlaysiz.",
+    "estimatePending": "{{id}} — smetani tasdiqlang",
+    "approve": "Tasdiqlash — {{amount}}",
+    "decline": "Rad etish",
+    "declineReason": "Sababi (ixtiyoriy)",
+    "estimateApproved": "Smeta tasdiqlandi. Ish davom etadi.",
+    "estimateDeclined": "Smeta rad etildi",
+    "dueBy": "Bajarish muddati",
+    "messages": "Xabarlar",
+    "noMessages": "Hali xabarlar yo‘q.",
+    "messagePlaceholder": "Servisga xabar yozing…",
+    "sendMessage": "Yuborish",
+    "you": "Siz",
+    "service": "Servis",
+    "preferredTime": "Qulay tashrif vaqti",
+    "preferredVisit": "Servisga kelish vaqti",
+    "preferredTimeHint": "Ixtiyoriy. Biz imkon qadar shu vaqtga moslashamiz.",
+    "rejectedBecause": "Rad etish sababi: {{reason}}",
+    "repairWarranty": "Ta’mir kafolati",
+    "repairWarrantyUntil": "{{date}} gacha",
+    "shareLink": "Kuzatuv havolasini ulashish",
+    "technicianOnTheWay": "{{name}} sizga yo‘lga chiqdi",
+    "toPay": "To‘lanadi",
+    "visitTime": "Tashrif vaqti",
+    "waitingParts": "Ehtiyot qism kutilmoqda. Kelishi bilan ta’mirni davom ettiramiz."
   },
   "tour": {
     "skip": "Ekskursiyani o‘tkazib yuborish",
@@ -912,7 +1096,21 @@
     "restoreBody": "APIni to‘xtating, .sql faylni psql orqali DATABASE_URL ga tiklang, keyin APIni qayta ishga tushiring. Tiklashdan keyin db:reset qilmang.",
     "stockTitle": "Ombor sozlamasi",
     "stockBody": "Nol qoldiqni bloklash tugmasi ehtiyot qismlar bilan Ombor bo‘limida.",
-    "openCatalog": "Omborni ochish"
+    "openCatalog": "Omborni ochish",
+    "centersBody": "Filiallarni qo‘shish va tahrirlash.",
+    "staffBody": "Xodimlar, rollar, parollar va ish haqi stavkalari.",
+    "rulesTitle": "Servis qoidalari",
+    "rulesBody": "Muddatlar va smeta qoidalari butun tizim uchun amal qiladi.",
+    "legalDays": "Ta’mirlash qonuniy muddati (kun)",
+    "legalDaysHint": "Shundan oshsa, ish «qonuniy muddat buzilgan» deb belgilanadi.",
+    "repairWarrantyDays": "Ta’mirdan keyingi kafolat (kun)",
+    "repairWarrantyDaysHint": "Shu muddatda bir xil nosozlik qaytsa, bepul ta’mirlanadi.",
+    "estimateDays": "Smeta amal qilish muddati (kun)",
+    "estimateDaysHint": "Mijoz javob bermasa, smeta shu muddatdan keyin eskiradi.",
+    "storageDays": "Tayyor texnikani saqlash (kun)",
+    "storageDaysHint": "Tayyor texnika shu muddat saqlanadi.",
+    "requireEstimate": "Pullik ta’mirdan oldin smeta tasdig‘i shart",
+    "requireEstimateTip": "Yoqilsa, texnik mijoz smetani tasdiqlamaguncha pullik ta’mirni boshlay olmaydi."
   },
   "feedback": {
     "thanks": "Fikr-mulohaza uchun rahmat",
@@ -977,7 +1175,8 @@
       "hint": "Qurilmangizni olganingizdan keyin tugmani bosing. Xohlasangiz, barmoq bilan imzo ham qo‘yishingiz mumkin.",
       "tap": "Qurilmani oldim",
       "confirm": "Tasdiqlash"
-    }
+    },
+    "unpaid": "To‘lanmagan qoldiq: {{amount}}"
   },
   "kiosk": {
     "title": "Kassa olib ketish",
@@ -1003,12 +1202,31 @@
     "outbound": "SMS / Telegram navbati",
     "outboundEmpty": "Navbatda xabar yo‘q.",
     "action": {
-      "request.status": "So‘rov holati o‘zgardi",
+      "customer.merge": "Mijozlar birlashtirildi",
+      "estimate.approve": "Smeta tasdiqlandi",
+      "estimate.create": "Smeta tuzildi",
+      "estimate.decline": "Smeta rad etildi",
+      "estimate.send": "Smeta yuborildi",
+      "partOrder.update": "Ehtiyot qism buyurtmasi yangilandi",
+      "payment.add": "To‘lov qayd etildi",
+      "payment.refund": "Pul qaytarildi",
+      "payroll.adjustment": "Mukofot/jarima kiritildi",
+      "request.assign": "Texnik tayinlandi",
       "request.cost": "So‘rov narxi tahrirlandi",
+      "request.decision": "Qaror qabul qilindi",
       "request.overdue": "So‘rov muddati o‘tdi",
       "request.pickup": "Olib ketish tasdiqlandi",
-      "staff.role": "Xodim roli o‘zgardi",
-      "customer.merge": "Mijozlar birlashtirildi"
+      "request.status": "So‘rov holati o‘zgardi",
+      "request.update": "So‘rov tahrirlandi",
+      "sale.verify": "Sotuv tasdiqlandi",
+      "sale.warranty.extend": "Kafolat uzaytirildi",
+      "sale.warranty.restore": "Kafolat tiklandi",
+      "sale.warranty.void": "Kafolat bekor qilindi",
+      "settings.update": "Sozlamalar o‘zgardi",
+      "staff.active": "Xodim holati o‘zgardi",
+      "staff.create": "Xodim yaratildi",
+      "staff.password": "Xodim paroli almashtirildi",
+      "staff.role": "Xodim roli o‘zgardi"
     }
   },
   "errors": {
@@ -1075,9 +1293,9 @@
     "pickupNotReady": "Bu so‘rov olib ketish tasdiqini kutmayapti",
     "invalidSignature": "Imzo rasmi noto‘g‘ri",
     "mergeSameCustomer": "Ikkita turli mijozni tanlang",
-    "statusNotAllowed": "So‘rovni «{{from}}» holatidan «{{to}}» holatiga o‘tkazib bo‘lmaydi",
-    "rateLimited": "Urinishlar juda ko‘p. Bir necha daqiqadan keyin qayta urinib ko‘ring.",
-    "accountInactive": "Bu akkaunt o‘chirilgan. Administrator bilan bog‘laning.",
+    "statusNotAllowed": "«{{from}}» holatidan «{{to}}» holatiga o‘tish mumkin emas",
+    "rateLimited": "Juda ko‘p urinish. Birozdan so‘ng qayta urinib ko‘ring.",
+    "accountInactive": "Bu hisob o‘chirib qo‘yilgan",
     "pauseReasonRequired": "To‘xtatish sababi shart",
     "pauseHoursRequired": "To‘xtatish davomiyligini belgilang",
     "pauseHoursInvalid": "To‘xtatish davomiyligi 0 dan katta bo‘lishi kerak",
@@ -1091,7 +1309,28 @@
     "technicianInactive": "Bu texnik faol emas",
     "cannotDeactivateSelf": "O‘z akkauntingizni o‘chira olmaysiz",
     "installationOnSiteOnly": "O‘rnatish faqat mijoz manzilida bajariladi",
-    "locationRequired": "Joyida bajariladigan ish uchun mijoz manzilini kiriting"
+    "locationRequired": "Joyida bajariladigan ish uchun mijoz manzilini kiriting",
+    "passwordLength8": "Parol kamida 8 belgidan iborat bo‘lsin",
+    "technicianTypeRequired": "Texnik turini tanlang",
+    "decisionRepairOnly": "Qaror faqat ta’mirlash so‘rovlari uchun",
+    "duplicateRequest": "Shu mahsulot uchun ochiq so‘rov allaqachon bor",
+    "estimateClosed": "Bu so‘rov bo‘yicha smeta o‘zgartirib bo‘lmaydi",
+    "estimateEmpty": "Smetaga kamida bitta qator qo‘shing",
+    "estimateExpired": "Smeta muddati tugagan",
+    "estimateLineName": "Har bir qator nomi bo‘lishi kerak",
+    "estimateNotPending": "Bu smeta tasdiq kutmayapti",
+    "estimateRequired": "Pullik ta’mirni boshlashdan oldin mijoz smetani tasdiqlashi kerak",
+    "futureDate": "Sana kelajakda bo‘lmasligi kerak",
+    "orderClosed": "Bu buyurtma yopilgan",
+    "refundTooLarge": "Qaytariladigan summa to‘langan summadan oshmasligi kerak",
+    "rejectionReasonRequired": "Rad etish sababini yozing",
+    "requestClosed": "So‘rov yopilgan",
+    "serialExists": "Bu seriya raqami allaqachon kiritilgan",
+    "serialNotFound": "Seriya raqami topilmadi",
+    "trackNotFound": "Bunday so‘rov topilmadi. Raqam va telefonni tekshiring.",
+    "unpaidBalance": "To‘lanmagan qoldiq bor: {{balance}}",
+    "warrantyEnded": "Kafolat muddati tugagan",
+    "warrantyVoided": "Kafolat bekor qilingan"
   },
   "customerStatus": {
     "new": "Qabul qilindi",
@@ -1099,7 +1338,14 @@
     "paused": "Kutishda",
     "completed": "Yakunlandi",
     "picked_up": "Topshirildi",
-    "cancelled": "Bekor qilindi"
+    "cancelled": "Bekor qilindi",
+    "diagnosing": "Diagnostika qilinmoqda",
+    "awaiting_decision": "Qaroringiz kutilmoqda",
+    "awaiting_parts": "Ehtiyot qism kutilmoqda",
+    "ready": "Olib ketishga tayyor",
+    "replaced": "Almashtirildi",
+    "refunded": "Pul qaytarildi",
+    "rejected": "Rad etildi"
   },
   "slideOver": {
     "saved": "Saqlandi",
@@ -1115,11 +1361,337 @@
   },
   "resolution": {
     "repair": "Ta’mirlandi",
-    "replace": "Almashtirildi"
+    "replace": "Almashtirildi",
+    "refund": "Pul qaytarildi",
+    "reject": "Rad etildi"
   },
   "errorBoundary": {
     "title": "Bu sahifada xatolik yuz berdi",
     "body": "Sahifani qayta yuklang. Takrorlansa, administratorga xabar bering.",
     "reload": "Qayta yuklash"
+  },
+  "outcome": {
+    "repair": "Ta’mirlandi",
+    "replace": "Almashtirildi",
+    "refund": "Pul qaytarildi",
+    "reject": "Rad etildi"
+  },
+  "calendar": {
+    "title": "Tashriflar kalendari",
+    "intro": "Texniklar bo‘yicha rejalashtirilgan tashriflar va qabullar.",
+    "free": "Bo‘sh",
+    "today": "Bugun"
+  },
+  "map": {
+    "title": "Ish xaritasi",
+    "intro": "Ochiq uyga chiqish ishlari xaritada. Binafsha — texnik tayinlangan, to‘q sariq — tayinlanmagan.",
+    "assigned": "Tayinlangan",
+    "unassigned": "Tayinlanmagan",
+    "count": "Xaritada {{count}} ta ish",
+    "noCoords": "{{count}} ta ishda koordinata yo‘q, shuning uchun xaritada ko‘rinmaydi.",
+    "open": "Ochish"
+  },
+  "warrantyCard": {
+    "startsOn": {
+      "installation": "O‘rnatilgan sanadan",
+      "sale": "Sotilgan sanadan"
+    },
+    "title": "Kafolat talon",
+    "coverage": "Kafolat shartlari",
+    "laborCovered": "Ta’mirlash ishi haqi kafolatga kiradi.",
+    "laborNotCovered": "Ta’mirlash ishi haqi kafolatga kirmaydi.",
+    "partsCovered": "Ehtiyot qismlar kafolatga kiradi.",
+    "partsNotCovered": "Ehtiyot qismlar kafolatga kirmaydi.",
+    "starts": "Kafolat muddati {{when}} hisoblanadi.",
+    "exclusions": "Noto‘g‘ri foydalanish, suv tegishi, mexanik shikast va ruxsatsiz ta’mirlash kafolatga kirmaydi.",
+    "sellerSign": "Sotuvchi imzosi",
+    "customerSign": "Mijoz imzosi",
+    "voided": "Kafolat bekor qilingan: {{reason}}"
+  },
+  "centers": {
+    "title": "Servis markazlari",
+    "intro": "Filiallar va servis nuqtalari. Mijozlar ularni ochiq sahifada ko‘radi.",
+    "new": "Yangi servis markazi",
+    "edit": "Servis markazini tahrirlash",
+    "name": "Nomi",
+    "hours": "Ish vaqti",
+    "lat": "Kenglik",
+    "lng": "Uzunlik",
+    "active": "Faol",
+    "inactive": "Nofaol",
+    "authorized": "Rasmiy",
+    "saved": "Servis markazi saqlandi",
+    "emptyTitle": "Hali servis markazlari yo‘q",
+    "emptyBody": "Birinchi filialni qo‘shing.",
+    "center": "Servis markazi",
+    "auto": "Avtomatik tanlash",
+    "pickHint": "Qaysi markazga borishni xohlasangiz, tanlang.",
+    "public": {
+      "title": "Servis markazlari",
+      "intro": "Sizga eng yaqin RIZO servis markazini toping."
+    }
+  },
+  "estimate": {
+    "title": "Smeta",
+    "hint": "Mijozga ko‘rsatiladigan ishlar, ehtiyot qismlar va narx. Mijoz tasdiqlagach ish boshlanadi.",
+    "techHint": "Pullik ta’mir uchun smeta tuzing — mijoz tasdiqlamaguncha ish boshlanmaydi.",
+    "newEstimate": "Yangi smeta",
+    "addLabor": "Ish haqi qo‘shish",
+    "addPart": "Ehtiyot qism qo‘shish",
+    "addService": "Xizmat qo‘shish",
+    "customName": "Ish nomi",
+    "empty": "Hali qatorlar yo‘q. Xizmat, ehtiyot qism yoki ish haqini qo‘shing.",
+    "note": "Mijozga izoh",
+    "optional": "Ixtiyoriy (mijoz tanlaydi)",
+    "ifChosen": "tanlansa",
+    "total": "Jami",
+    "saveDraft": "Qoralama sifatida saqlash",
+    "saveSend": "Saqlash va mijozga yuborish",
+    "sendToCustomer": "Mijozga yuborish",
+    "saved": "Smeta saqlandi",
+    "sent": "Smeta mijozga yuborildi",
+    "sentAt": "Yuborildi",
+    "validUntil": "Amal qilish muddati",
+    "approvedAt": "Tasdiqlandi {{when}} · {{by}}",
+    "approveForCustomer": "Mijoz nomidan tasdiqlash",
+    "approveHint": "Mijoz telefon orqali rozi bo‘lgan bo‘lsa, shu yerdan tasdiqlang.",
+    "decline": "Rad etish",
+    "declineForCustomer": "Mijoz nomidan rad etish",
+    "declineReason": "Rad etish sababi",
+    "declinedBecause": "Sabab: {{reason}}",
+    "onOrder": "Buyurtmada",
+    "kind": {
+      "service": "Xizmat",
+      "part": "Ehtiyot qism",
+      "labor": "Ish haqi",
+      "other": "Boshqa"
+    },
+    "status": {
+      "draft": "Qoralama",
+      "sent": "Tasdiq kutilmoqda",
+      "approved": "Tasdiqlangan",
+      "declined": "Rad etilgan",
+      "expired": "Muddati o‘tgan"
+    }
+  },
+  "decision": {
+    "title": "Qaror",
+    "hint": "Diagnostikadan keyin shu so‘rov bo‘yicha nima qilinishini belgilang.",
+    "apply": "Qarorni qo‘llash",
+    "applied": "Qaror qo‘llandi",
+    "warranty_repair": "Kafolat bo‘yicha ta’mirlash",
+    "paid_repair": "Pullik ta’mirlash",
+    "replace": "Almashtirish",
+    "refund": "Pulni qaytarish",
+    "reject": "Rad etish",
+    "warranty_repairHint": "Ish va ehtiyot qismlar bepul bo‘ladi.",
+    "paid_repairHint": "Mijoz to‘laydi. Avval smeta tasdiqlanadi.",
+    "replaceHint": "Mijozga yangi mahsulot beriladi.",
+    "refundHint": "Mijozga pul qaytariladi.",
+    "rejectHint": "Kafolat holati emas yoki ta’mirlab bo‘lmaydi. Sabab shart.",
+    "goodwill": "Yaxshi niyat (bepul)",
+    "goodwillHint": "Kafolat tugagan bo‘lsa ham bepul ta’mirlanadi.",
+    "newSerial": "Yangi seriya raqami",
+    "newSerialHint": "Almashtirilgan mahsulotning seriya raqami.",
+    "note": "Izoh",
+    "paidNext": "Keyingi qadam: smeta tuzib, mijozga yuboring.",
+    "refundAmount": "Qaytariladigan summa",
+    "rejectReason": "Rad etish sababi",
+    "rejectReasonHint": "Mijoz buni ko‘radi.",
+    "returnReason": "Qaytarish sababi"
+  },
+  "payments": {
+    "title": "To‘lovlar",
+    "due": "To‘lanishi kerak",
+    "paid": "To‘langan",
+    "refunded": "Qaytarilgan",
+    "balance": "Qoldiq",
+    "none": "To‘lovlar hali yo‘q.",
+    "payment": "To‘lov",
+    "refund": "Qaytarish",
+    "record": "To‘lovni qayd etish",
+    "recordRefund": "Qaytarishni qayd etish",
+    "amount": "Summa",
+    "method": "To‘lov usuli",
+    "note": "Izoh",
+    "fiscal": "Fiskal chek raqami",
+    "fiscalHint": "Kassa apparatidan chiqqan chek raqami.",
+    "fillBalance": "Qoldiqni kiritish",
+    "saved": "To‘lov saqlandi",
+    "methods": {
+      "cash": "Naqd",
+      "card": "Karta",
+      "transfer": "O‘tkazma",
+      "payme": "Payme",
+      "click": "Click",
+      "other": "Boshqa"
+    }
+  },
+  "notes": {
+    "title": "Izohlar va yozishmalar",
+    "hint": "Ichki izohlar faqat xodimlarga ko‘rinadi. Mijozga yuborilgan xabarni mijoz o‘z kabinetida ko‘radi.",
+    "techHint": "Mijoz yoki ofis uchun qisqa izoh qoldiring.",
+    "placeholder": "Izoh yozing…",
+    "sendToCustomer": "Mijozga ko‘rinsin",
+    "send": "Mijozga yuborish",
+    "save": "Izohni saqlash",
+    "saved": "Saqlandi",
+    "none": "Hali izohlar yo‘q.",
+    "staff": "Xodim",
+    "customer": "Mijoz",
+    "fromCustomer": "Mijozdan",
+    "visible": "Mijozga ko‘rinadi",
+    "internal": "Ichki",
+    "templateNames": {
+      "ready": "Tayyor",
+      "needParts": "Qism kerak",
+      "needCall": "Qo‘ng‘iroq kerak",
+      "bringReceipt": "Chek"
+    },
+    "templates": {
+      "ready": "Texnikangiz tayyor, olib ketishingiz mumkin.",
+      "needParts": "Ta’mir uchun ehtiyot qism kerak, buyurtma berdik.",
+      "needCall": "Iltimos, biz bilan bog‘laning — qaror kerak.",
+      "bringReceipt": "Olib ketishda xarid chekini olib keling."
+    }
+  },
+  "parts": {
+    "ordersTitle": "Ehtiyot qism buyurtmalari",
+    "ordersIntro": "Ombordagi yetishmayotgan qismlar. Buyurtma kelganda ish avtomatik davom etadi.",
+    "newOrder": "Yangi buyurtma",
+    "order": "Buyurtma",
+    "orders": "Ehtiyot qism buyurtmalari",
+    "ordersHint": "Ombor yetmasa, shu yerdan qism so‘rang.",
+    "orderCreated": "Buyurtma yaratildi",
+    "orderSent": "Buyurtma yuborildi",
+    "selectPart": "Ehtiyot qismni tanlang",
+    "supplier": "Yetkazib beruvchi",
+    "expected": "Kutilayotgan sana",
+    "forRequest": "So‘rov",
+    "markOrdered": "Buyurtma berildi",
+    "markReceived": "Qabul qilindi",
+    "noOrdersTitle": "Buyurtmalar yo‘q",
+    "noOrdersBody": "Ehtiyot qism yetmaganda buyurtmalar shu yerda paydo bo‘ladi.",
+    "suggestions": "Tavsiya: tez tugayotgan qismlar",
+    "status": {
+      "requested": "So‘ralgan",
+      "ordered": "Buyurtma berilgan",
+      "received": "Qabul qilingan",
+      "cancelled": "Bekor qilingan"
+    },
+    "filter": {
+      "open": "Ochiq",
+      "received": "Qabul qilingan",
+      "all": "Hammasi"
+    }
+  },
+  "intake": {
+    "title": "Qabul tekshiruvi",
+    "hint": "Qabul paytidagi holatni belgilang — keyin bahslarda yordam beradi.",
+    "notes": "Holat bo‘yicha izoh",
+    "notesPlaceholder": "Chiziqlar, komplektatsiya, aksessuarlar…",
+    "signature": "Mijoz imzosi",
+    "items": {
+      "powers_on": "Yoqiladi",
+      "screen_ok": "Ekran/panel soz",
+      "body_scratches": "Korpusda chiziqlar bor",
+      "accessories_included": "Aksessuarlar bilan",
+      "original_packaging": "Asl qadoq bor",
+      "water_damage_signs": "Suv tekkan izlari"
+    }
+  },
+  "serial": {
+    "label": "Seriya raqami",
+    "hint": "Mahsulot korpusidagi seriya raqami. Takroriy nosozliklarni aniqlashga yordam beradi.",
+    "portalHint": "Mahsulotdagi stikerda yoziladi (ixtiyoriy).",
+    "card": "Seriya kartasi",
+    "history": "Ta’mir tarixi",
+    "noSale": "Bu seriya raqami bo‘yicha sotuv topilmadi.",
+    "noVisits": "Bu mahsulot hali servisga kelmagan.",
+    "notFoundTitle": "Seriya raqami topilmadi",
+    "notFoundBody": "Bu raqam bo‘yicha sotuv ham, so‘rov ham yo‘q.",
+    "summary": "Ta’mirlar: {{repairs}} · takroriy: {{repeats}}"
+  },
+  "staffAdmin": {
+    "title": "Xodimlar",
+    "intro": "Administratorlar, qabul operatorlari va texniklar. Ish haqi stavkalari shu yerda.",
+    "new": "Yangi xodim",
+    "edit": "Xodimni tahrirlash",
+    "saved": "Xodim saqlandi",
+    "role": "Rol",
+    "roles": {
+      "admin": "Administrator",
+      "technician": "Texnik",
+      "receptionist": "Qabul operatori"
+    },
+    "technicianType": "Texnik turi",
+    "password": "Parol",
+    "passwordHint": "Kamida 8 belgi.",
+    "passwordSaved": "Parol yangilandi",
+    "resetPassword": "Parolni almashtirish",
+    "resetFor": "{{name}} uchun yangi parol o‘rnating.",
+    "activate": "Faollashtirish",
+    "deactivate": "O‘chirib qo‘yish",
+    "pay": "Ish haqi",
+    "payPercent": "Ish haqidan foiz (%)",
+    "payPercentHint": "Bajarilgan ishlar summasidan texnikka beriladigan ulush.",
+    "payFixed": "Har ish uchun belgilangan summa",
+    "payFixedHint": "Foizga qo‘shimcha ravishda har bir yakunlangan ish uchun."
+  },
+  "register": {
+    "title": "Mahsulotni ro‘yxatdan o‘tkazish",
+    "intro": "Boshqa joyda sotib olgan mahsulotingizni kiriting — kafolat va servis tarixi bir joyda bo‘ladi.",
+    "selectProduct": "Mahsulotni tanlang",
+    "invoice": "Chek / hisob-faktura raqami",
+    "invoiceHint": "Ixtiyoriy. Tasdiqlash uchun kerak bo‘lishi mumkin.",
+    "purchaseDate": "Sotib olingan sana",
+    "serialHint": "Mahsulot stikeridagi raqam.",
+    "submit": "Ro‘yxatdan o‘tkazish",
+    "saved": "Mahsulot qo‘shildi",
+    "verifyNote": "Ofis xodimi tekshirgach, kafolat tasdiqlanadi."
+  },
+  "track": {
+    "title": "Buyurtmani kuzatish",
+    "hint": "So‘rov raqami va telefon raqamingizni kiriting.",
+    "find": "Topish",
+    "another": "Boshqasini kuzatish",
+    "footer": "RIZO Service — sotuvdan keyingi xizmat",
+    "notFoundTitle": "So‘rov topilmadi",
+    "notFoundBody": "Raqam va telefonni tekshirib, qayta urinib ko‘ring.",
+    "readyForPickup": "Texnikangiz tayyor — servisga kelib olib ketishingiz mumkin."
+  },
+  "payroll": {
+    "total": "Hisoblangan",
+    "jobs": "Ishlar",
+    "jobsTotal": "Ishlar summasi",
+    "grandTotal": "Jami to‘lov",
+    "explain": "Hisob: ish haqidan foiz + har ish uchun belgilangan summa + mukofot − jarima.",
+    "adjustments": "Mukofot va jarimalar",
+    "addAdjustment": "Mukofot yoki jarima qo‘shish",
+    "adjustmentSaved": "Saqlandi",
+    "amount": "Summa",
+    "amountHint": "Mukofot — musbat, jarima — manfiy son.",
+    "reason": "Sabab",
+    "myTitle": "Mening daromadim",
+    "myIntro": "Ish haqingiz: ish qiymatidan {{percent}}% va har ish uchun {{fixed}}.",
+    "noJobs": "Bu davrda yakunlangan ishlar yo‘q.",
+    "labor": "Ish haqi"
+  },
+  "defectCodes": {
+    "tab": "Kodlar",
+    "intro": "Nosozlik va qaytarish sabablari kodlari. Hisobotlar shular bo‘yicha tuziladi.",
+    "new": "Yangi kod",
+    "edit": "Kodni tahrirlash",
+    "code": "Kod",
+    "kind": "Turi",
+    "kinds": {
+      "defect": "Nosozlik",
+      "return_reason": "Qaytarish sababi"
+    },
+    "allCategories": "Barcha toifalar",
+    "categoryHint": "Bo‘sh qoldirsangiz, barcha toifalarga amal qiladi.",
+    "saved": "Kod saqlandi",
+    "emptyTitle": "Kodlar hali yo‘q",
+    "emptyBody": "Birinchi nosozlik kodini qo‘shing."
   }
 }

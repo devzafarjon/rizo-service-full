@@ -48,6 +48,7 @@ export function PrintTagPage() {
         <p className="mt-2 font-mono text-sm font-extrabold">{formatRequestId(request.displayId)}</p>
         <p className="mt-1 truncate text-xs font-bold">{request.customer.name}</p>
         <p className="truncate text-[11px] text-neutral-500">{localizedName(request.product)}</p>
+        {request.serialNumber ? <p className="truncate font-mono text-[10px] text-neutral-500">{request.serialNumber}</p> : null}
       </article>
     </div>
   );

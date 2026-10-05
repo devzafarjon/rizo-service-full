@@ -10,8 +10,9 @@ import { PageSkeleton } from "../../components/PageSkeleton";
 import { Spinner } from "../../components/Spinner";
 import { useToast } from "../../components/toast";
 import { useStaffAuth } from "../auth/StaffAuthContext";
-import { api, apiErrorMessage } from "../../lib/api";
-import { formatMoney, formatPhone, technicianTypeLabel } from "../../lib/format";
+import { ApiError, api, apiErrorMessage } from "../../lib/api";
+import { SignaturePad } from "../../components/SignaturePad";
+import { formatMoney, formatPhone, formatRequestId, technicianTypeLabel } from "../../lib/format";
 import { categoryLabel, localizedName } from "../../lib/localized";
 import type {
   CatalogService,
@@ -19,6 +20,7 @@ import type {
   Priority,
   Product,
   Sale,
+  ServiceCenter,
   ServiceRequest,
   ServiceType,
   SparePart,
@@ -30,6 +32,7 @@ import type {
 const TYPES: ServiceType[] = ["installation", "repair"];
 const PRIORITIES: Priority[] = ["low", "medium", "high", "urgent"];
 const ASSIGNMENT_MODES = ["auto", "manual", "unassigned"] as const;
+const INTAKE_ITEMS = ["powers_on", "screen_ok", "body_scratches", "accessories_included", "original_packaging", "water_damage_signs"];
 
 type AssignmentMode = (typeof ASSIGNMENT_MODES)[number];
 
@@ -57,6 +60,13 @@ export function NewRequestPage() {
   const [assignedTechnicianId, setAssignedTechnicianId] = useState("");
   const [priority, setPriority] = useState<Priority>("medium");
   const [source, setSource] = useState<"rizo_service" | "rizo_market">("rizo_service");
+  const [serialNumber, setSerialNumber] = useState("");
+  const [scheduledAt, setScheduledAt] = useState("");
+  const [serviceCenterId, setServiceCenterId] = useState("");
+  const [checklist, setChecklist] = useState<string[]>([]);
+  const [intakeNotes, setIntakeNotes] = useState("");
+  const [signature, setSignature] = useState<string | null>(null);
+  const [duplicate, setDuplicate] = useState<{ id: string; displayId: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const customersQuery = useQuery({
@@ -83,6 +93,11 @@ export function NewRequestPage() {
     queryKey: ["staff", "technicians"],
     enabled: Boolean(token),
     queryFn: () => api<{ technicians: TechnicianSummary[] }>("/api/staff/technicians", { token }),
+  });
+  const centersQuery = useQuery({
+    queryKey: ["staff", "service-centers"],
+    enabled: Boolean(token),
+    queryFn: () => api<{ centers: ServiceCenter[] }>("/api/staff/service-centers", { token }),
   });
 
   const customers = customersQuery.data?.customers ?? [];
@@ -116,6 +131,7 @@ export function NewRequestPage() {
   useEffect(() => {
     if (selectedSale) {
       setProductId(selectedSale.productId);
+      if (selectedSale.serialNumber) setSerialNumber(selectedSale.serialNumber);
     }
   }, [selectedSale]);
 
@@ -127,7 +143,7 @@ export function NewRequestPage() {
 
   const create = useMutation({
     mutationFn: (values: Record<string, unknown>) =>
-      api<{ request: ServiceRequest; assignment: { mode: string; note: string; technicianName?: string | null } }>(
+      api<{ request: ServiceRequest; repeat: { displayId: string; free: boolean } | null; assignment: { mode: string; note: string; technicianName?: string | null } }>(
         "/api/staff/requests",
         {
           method: "POST",
@@ -144,9 +160,17 @@ export function NewRequestPage() {
       } else {
         notify(t("newRequest.savedUnassigned"));
       }
+      if (data.repeat) notify(data.repeat.free ? t("newRequest.repeatFree", { id: data.repeat.displayId }) : t("newRequest.repeatFound", { id: data.repeat.displayId }));
       navigate(`/app/requests/${data.request.id}`);
     },
-    onError: (err) => setError(apiErrorMessage(err, t)),
+    onError: (err) => {
+      if (err instanceof ApiError && err.code === "duplicateRequest" && err.details) {
+        setDuplicate({ id: String(err.details.id), displayId: String(err.details.displayId) });
+        setError(null);
+        return;
+      }
+      setError(apiErrorMessage(err, t));
+    },
   });
 
   function chooseLocation(next: LocationType) {
@@ -186,9 +210,10 @@ export function NewRequestPage() {
     );
   }
 
-  function handleSubmit(event: FormEvent) {
+  function handleSubmit(event: FormEvent, allowDuplicate = false) {
     event.preventDefault();
     setError(null);
+    setDuplicate(null);
     const latNumber = lat.trim() === "" ? null : Number(lat);
     const lngNumber = lng.trim() === "" ? null : Number(lng);
     create.mutate({
@@ -212,6 +237,14 @@ export function NewRequestPage() {
       assignedTechnicianId: assignmentMode === "manual" ? assignedTechnicianId : null,
       priority,
       source,
+      serialNumber: serialNumber.trim() || null,
+      scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+      serviceCenterId: locationType === "in_shop" && type === "repair" && serviceCenterId ? serviceCenterId : null,
+      allowDuplicate,
+      intake:
+        type === "repair" && locationType === "in_shop" && (checklist.length > 0 || intakeNotes.trim() || signature)
+          ? { checklist, notes: intakeNotes.trim() || null, signatureDataUrl: signature }
+          : null,
     });
   }
 
@@ -430,6 +463,76 @@ export function NewRequestPage() {
               </Field>
             ) : null}
           </section>
+
+          <section className="grid gap-4 rounded-2xl border border-neutral-200 bg-white p-5 sm:grid-cols-2">
+            <Field label={t("serial.label")} hint={t("serial.hint")}>
+              <input className={inputClass} value={serialNumber} onChange={(event) => setSerialNumber(event.target.value)} maxLength={80} />
+            </Field>
+            <Field label={locationType === "on_site" || type === "installation" ? t("newRequest.visitTime") : t("newRequest.appointment")} hint={t("newRequest.visitTimeHint")}>
+              <input className={inputClass} type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} />
+            </Field>
+            {locationType === "in_shop" && type === "repair" ? (
+              <Field label={t("centers.center")} hint={t("centers.pickHint")}>
+                <select className={`${inputClass} bg-white`} value={serviceCenterId} onChange={(event) => setServiceCenterId(event.target.value)}>
+                  <option value="">{t("centers.auto")}</option>
+                  {(centersQuery.data?.centers ?? [])
+                    .filter((center) => center.isActive)
+                    .map((center) => (
+                      <option key={center.id} value={center.id}>
+                        {center.name}
+                      </option>
+                    ))}
+                </select>
+              </Field>
+            ) : null}
+          </section>
+
+          {type === "repair" && locationType === "in_shop" ? (
+            <section className="rounded-2xl border border-neutral-200 bg-white p-5">
+              <p className="text-sm font-semibold text-neutral-700">{t("intake.title")}</p>
+              <p className="mt-1 text-xs text-neutral-500">{t("intake.hint")}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {INTAKE_ITEMS.map((item) => {
+                  const on = checklist.includes(item);
+                  return (
+                    <button
+                      key={item}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => setChecklist(on ? checklist.filter((entry) => entry !== item) : [...checklist, item])}
+                      className={`h-10 rounded-full px-4 text-sm font-bold ${on ? "bg-[#7B00E0] text-white" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"}`}
+                    >
+                      {t(`intake.items.${item}`)}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="mt-4">
+                <Field label={t("intake.notes")}>
+                  <textarea className={textareaClass} value={intakeNotes} onChange={(event) => setIntakeNotes(event.target.value)} maxLength={1000} placeholder={t("intake.notesPlaceholder")} />
+                </Field>
+              </div>
+              <div className="mt-4">
+                <p className="mb-1.5 text-[10.24px] font-bold tracking-wide text-gray-700 uppercase">{t("intake.signature")}</p>
+                <SignaturePad value={signature} onChange={setSignature} disabled={create.isPending} />
+              </div>
+            </section>
+          ) : null}
+
+          {duplicate ? (
+            <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+              <p className="font-bold">{t("newRequest.duplicateTitle")}</p>
+              <p className="mt-1">
+                {t("newRequest.duplicateBody", { id: formatRequestId(duplicate.displayId) })}{" "}
+                <Link to={`/app/requests/${duplicate.id}`} className="font-bold underline">
+                  {t("newRequest.openExisting")}
+                </Link>
+              </p>
+              <button type="button" onClick={(event) => handleSubmit(event as unknown as FormEvent, true)} className="mt-3 h-10 rounded-lg bg-amber-600 px-4 text-sm font-bold text-white">
+                {t("newRequest.createAnyway")}
+              </button>
+            </div>
+          ) : null}
 
           {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
           <button

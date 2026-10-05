@@ -7,11 +7,8 @@ import type { PortalNotification, StaffAlert } from "./types";
 const LEGACY_STATUS: Record<string, string> = {
   scheduled: "new",
   received: "new",
-  diagnosing: "in_progress",
-  awaiting_parts: "in_progress",
   repairing: "in_progress",
-  ready_for_pickup: "completed",
-  replaced: "completed",
+  ready_for_pickup: "ready",
   closed: "completed",
 };
 
@@ -24,8 +21,11 @@ const STATUS_FROM_EN: Record<string, string> = {
   Repairing: "repairing",
   "In progress": "in_progress",
   Paused: "paused",
-  "Ready for pickup": "ready_for_pickup",
+  "Ready for pickup": "ready",
   Replaced: "replaced",
+  Refunded: "refunded",
+  Rejected: "rejected",
+  "Awaiting decision": "awaiting_decision",
   Completed: "completed",
   "Picked up": "picked_up",
   Cancelled: "cancelled",
@@ -73,7 +73,7 @@ export function notificationText(item: PortalNotification | StaffAlert, t: TFunc
   const displayId = typeof item.params?.displayId === "string" ? formatRequestId(item.params.displayId) : "";
   const count = item.params?.stockQuantity ?? item.params?.count;
   if (code) {
-    return t(`notify.${code}`, { type, product, status, id: displayId, count, defaultValue: item.message });
+    return t(`notify.${code}`, { ...item.params, type, product, status, id: displayId, count, defaultValue: item.message });
   }
   return item.message;
 }

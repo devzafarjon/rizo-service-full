@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import {
   BarChart3,
   Bell,
+  Building2,
+  CalendarClock,
   CalendarDays,
   ChevronDown,
   ClipboardList,
@@ -11,14 +13,18 @@ import {
   Database,
   Kanban,
   LayoutDashboard,
+  Map as MapIcon,
   Package,
+  PackageCheck,
   Plus,
   QrCode,
   Receipt,
   ScrollText,
   ShoppingBag,
   Store,
+  UserCog,
   Users,
+  Wallet,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
@@ -36,30 +42,38 @@ export type NavItem = {
 
 const ANALYTICS_PATH = "/app?view=full";
 
+const OFFICE: StaffRole[] = ["admin", "receptionist"];
+
 export const ADMIN_DAILY: NavItem[] = [
-  { to: "/app/kanban", labelKey: "nav.board", icon: Kanban, roles: ["admin"], tour: "kanban" },
-  { to: "/app/requests/new", labelKey: "nav.newRequest", icon: Plus, roles: ["admin"], end: true, tour: "new-request" },
-  { to: "/app/customers", labelKey: "nav.customers", icon: Users, roles: ["admin"], end: true },
+  { to: "/app/kanban", labelKey: "nav.board", icon: Kanban, roles: OFFICE, tour: "kanban" },
+  { to: "/app/requests/new", labelKey: "nav.newRequest", icon: Plus, roles: OFFICE, end: true, tour: "new-request" },
+  { to: "/app/customers", labelKey: "nav.customers", icon: Users, roles: OFFICE, end: true },
   { to: "/app/alerts", labelKey: "nav.notifications", icon: Bell, roles: ["admin"], tour: "notifications" },
 ];
 
 export const ADMIN_MANAGEMENT: NavItem[] = [
   { to: "/app/reports", labelKey: "nav.reports", icon: BarChart3, roles: ["admin"], tour: "reports" },
   { to: ANALYTICS_PATH, labelKey: "nav.analytics", icon: LayoutDashboard, roles: ["admin"] },
+  { to: "/app/requests", labelKey: "nav.requests", icon: ClipboardList, roles: OFFICE, end: true },
+  { to: "/app/calendar", labelKey: "nav.calendar", icon: CalendarClock, roles: OFFICE },
+  { to: "/app/map", labelKey: "nav.map", icon: MapIcon, roles: OFFICE },
   { to: "/app/catalog", labelKey: "nav.inventory", icon: Package, roles: ["admin"] },
+  { to: "/app/part-orders", labelKey: "nav.partOrders", icon: PackageCheck, roles: OFFICE },
+  { to: "/app/sales", labelKey: "nav.sales", icon: ShoppingBag, roles: OFFICE },
+  { to: "/app/receipts", labelKey: "nav.receipts", icon: Receipt, roles: OFFICE },
+  { to: "/app/kiosk", labelKey: "nav.kiosk", icon: Store, roles: OFFICE },
+  { to: "/app/scan", labelKey: "nav.scan", icon: QrCode, roles: OFFICE },
   { to: "/app/schedule", labelKey: "nav.schedule", icon: CalendarDays, roles: ["admin"] },
+  { to: "/app/centers", labelKey: "nav.centers", icon: Building2, roles: OFFICE },
+  { to: "/app/staff", labelKey: "nav.staff", icon: UserCog, roles: ["admin"] },
   { to: "/app/audit", labelKey: "nav.activity", icon: ScrollText, roles: ["admin"] },
   { to: "/app/customers/duplicates", labelKey: "nav.duplicates", icon: Copy, roles: ["admin"] },
   { to: "/app/settings", labelKey: "nav.settings", icon: Database, roles: ["admin"] },
-  { to: "/app/sales", labelKey: "nav.sales", icon: ShoppingBag, roles: ["admin"] },
-  { to: "/app/requests", labelKey: "nav.requests", icon: ClipboardList, roles: ["admin"], end: true },
-  { to: "/app/receipts", labelKey: "nav.receipts", icon: Receipt, roles: ["admin"] },
-  { to: "/app/kiosk", labelKey: "nav.kiosk", icon: Store, roles: ["admin"] },
-  { to: "/app/scan", labelKey: "nav.scan", icon: QrCode, roles: ["admin"] },
 ];
 
 export const TECH_NAV: NavItem[] = [
   { to: "/app/my-jobs", labelKey: "nav.myJobs", icon: Wrench, roles: ["technician"] },
+  { to: "/app/my-earnings", labelKey: "nav.myEarnings", icon: Wallet, roles: ["technician"] },
 ];
 
 // Every management link except analytics, which lives on /app behind a query param.
@@ -189,7 +203,7 @@ export function StaffNavLinks({
   return (
     <nav className={navClass}>
       <p className="px-2 pt-1 pb-1 text-[11px] font-bold tracking-wide text-gray-500 uppercase">{t("nav.dailyUse")}</p>
-      {ADMIN_DAILY.map((item) => (
+      {ADMIN_DAILY.filter((item) => item.roles.includes(role)).map((item) => (
         <NavItemLink key={item.to} item={item} onNavigate={onNavigate} />
       ))}
 
@@ -205,7 +219,7 @@ export function StaffNavLinks({
         <ChevronDown size={16} className={`transition ${mgmtOpen ? "rotate-180" : ""}`} />
       </button>
       {mgmtOpen
-        ? ADMIN_MANAGEMENT.map((item) => <NavItemLink key={item.to} item={item} onNavigate={onNavigate} />)
+        ? ADMIN_MANAGEMENT.filter((item) => item.roles.includes(role)).map((item) => <NavItemLink key={item.to} item={item} onNavigate={onNavigate} />)
         : null}
     </nav>
   );

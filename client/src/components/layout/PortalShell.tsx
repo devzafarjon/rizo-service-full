@@ -1,4 +1,4 @@
-import { ClipboardList, Plus } from "lucide-react";
+import { ClipboardList, MapPin, PackagePlus, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useCustomerAuth } from "../../features/auth/CustomerAuthContext";
@@ -27,6 +27,8 @@ export function PortalShell() {
   const links = [
     { to: "/portal", label: t("nav.myRequests"), icon: ClipboardList, end: true },
     { to: "/portal/new", label: t("nav.newRequest"), icon: Plus, end: false },
+    { to: "/portal/register", label: t("nav.registerProduct"), icon: PackagePlus, end: false },
+    { to: "/centers", label: t("nav.centers"), icon: MapPin, end: false },
   ];
 
   return (
@@ -68,7 +70,7 @@ export function PortalShell() {
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white pb-[env(safe-area-inset-bottom)] sm:hidden">
-        <div className="grid grid-cols-2">
+        <div className="grid grid-cols-4">
           {links.map((item) => {
             const Icon = item.icon;
             return (

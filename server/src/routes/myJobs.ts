@@ -3,15 +3,19 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { HttpError } from "../lib/httpError.js";
-import { serializeJobWork, workInclude } from "../lib/jobWork.js";
+import { coverageOf, serializeJobWork, workInclude } from "../lib/jobWork.js";
 import { serializeNamed } from "../lib/named.js";
 import { parseBody } from "../lib/parse.js";
 import { prisma } from "../lib/prisma.js";
 import { publishRequest } from "../lib/realtime.js";
-import { buildTimeline, serializePauses } from "../lib/timeline.js";
-import { serializeRequest, type RequestRecord } from "../lib/serializeRequest.js";
+import { loadTimeline, serializePauses } from "../lib/timeline.js";
+import { requestInclude, serializeRequest, type RequestRecord } from "../lib/serializeRequest.js";
 import { techColumn } from "../lib/techBoard.js";
 import { changeRequestStatus } from "../lib/statusChange.js";
+import { finishedStatusFor } from "../lib/status.js";
+import { createEstimate, estimateInclude, fulfilPendingParts, sendEstimate, serializeEstimate } from "../lib/estimates.js";
+import { createPartOrder } from "../lib/partOrders.js";
+import { createCustomerNotification } from "../lib/notifyCustomer.js";
 import { staffActor } from "../lib/audit.js";
 import { acceptJobPhotos, publicPhotoUrl, removeUploadedFile } from "../lib/uploads.js";
 import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
@@ -19,27 +23,24 @@ import { getAppSettings, isBlockZeroStock } from "../lib/settings.js";
 import { maybeAlertLowStock } from "../lib/stockAlerts.js";
 import { normalizeDisplayIdQuery, tashkentCalendarDate } from "../lib/displayId.js";
 import { parseDateOnly, toDateOnly } from "../lib/warranty.js";
+import { earningsFor } from "./payroll.js";
+import { parseReportRange, serializeWindow } from "../lib/reportRange.js";
 
 const jobInclude = Prisma.validator<Prisma.ServiceRequestInclude>()({
-  customer: { select: { id: true, name: true, phone: true, address: true, regionCode: true } },
-  product: true,
-  assignedTechnician: { select: { id: true, name: true, technicianType: true, isAvailable: true } },
-  sale: { include: { product: true } },
+  ...requestInclude,
   pauses: { orderBy: { pausedAt: "desc" } },
 });
 
 const jobDetailInclude = Prisma.validator<Prisma.ServiceRequestInclude>()({
-  customer: { select: { id: true, name: true, phone: true, address: true, regionCode: true } },
-  product: true,
-  assignedTechnician: { select: { id: true, name: true, technicianType: true, isAvailable: true } },
-  sale: { include: { product: true } },
+  ...requestInclude,
   pauses: { orderBy: { pausedAt: "desc" } },
   ...workInclude,
 });
 
 const moveSchema = z
   .object({
-    column: z.enum(["new", "in_progress", "paused", "completed"]),
+    column: z.enum(["new", "in_progress", "paused", "completed"]).optional(),
+    status: z.enum(["diagnosing", "awaiting_decision", "awaiting_parts", "in_progress", "paused"]).optional(),
     pauseReason: z
       .string()
       .trim()
@@ -55,7 +56,10 @@ const moveSchema = z
       }),
   })
   .superRefine((data, ctx) => {
-    if (data.column === "paused") {
+    if (!data.column && !data.status) {
+      ctx.addIssue({ code: "custom", message: "Choose where to move the job", path: ["status"] });
+    }
+    if (data.column === "paused" || data.status === "paused") {
       if (!data.pauseReason) {
         ctx.addIssue({ code: "custom", message: "A pause reason is required", path: ["pauseReason"] });
       }
@@ -98,6 +102,14 @@ const extraSchema = z.object({
 
 export const myJobsRouter = Router();
 myJobsRouter.use(staffAuth, requireStaffRole("technician"));
+
+myJobsRouter.get(
+  "/earnings",
+  asyncHandler(async (req, res) => {
+    const window = parseReportRange({ preset: typeof req.query.preset === "string" ? req.query.preset : "month", from: req.query.from, to: req.query.to });
+    res.json({ range: serializeWindow(window), ...(await earningsFor(req.staff!.sub, window)) });
+  }),
+);
 
 myJobsRouter.get(
   "/schedule",
@@ -206,17 +218,111 @@ myJobsRouter.patch(
     if (current === "completed") {
       throw new HttpError(400, "Completed jobs cannot be moved on this board");
     }
-    if (current === body.column) {
+    if (body.column === "completed") {
+      res.json(await finishJob(existing.id, req));
+      return;
+    }
+    // Board columns map onto the detailed repair statuses.
+    let next = body.status;
+    if (!next) {
+      if (body.column === "paused") next = "paused";
+      else next = existing.status === "new" && existing.type === "repair" ? "diagnosing" : "in_progress";
+    }
+    if (next === existing.status) {
       res.json({ job: serializeTechJob(existing) });
       return;
     }
     await changeRequestStatus({
       requestId: existing.id,
-      next: body.column,
+      next,
       actor: { audit: staffActor(req.staff), role: "technician" },
       pause: { reason: body.pauseReason, hours: body.pauseHours as number | undefined },
     });
+    if (existing.status === "awaiting_parts" && next === "in_progress") await fulfilPendingParts(existing.id);
     res.json(await jobWorkPayload(await loadOwnedJob(req.staff!.sub, existing.id)));
+  }),
+);
+
+myJobsRouter.post(
+  "/:id/en-route",
+  asyncHandler(async (req, res) => {
+    const job = await loadOpenJob(req.staff!.sub, req.params.id);
+    if (job.locationType !== "on_site") throw new HttpError(400, "Only on-site jobs have a trip", "arrivalOnSiteOnly");
+    if (!job.enRouteAt) {
+      await prisma.serviceRequest.update({ where: { id: job.id }, data: { enRouteAt: new Date() } });
+      await createCustomerNotification(job.customerId, job.id, "Your technician is on the way", "enRoute", {
+        displayId: job.displayId,
+        technician: job.assignedTechnician?.name.trim().split(/\s+/)[0] ?? "",
+      });
+      publishRequest("request:updated", serializeRequest((await loadOwnedJob(req.staff!.sub, job.id)) as RequestRecord));
+    }
+    res.json(await jobWorkPayload(await loadOwnedJob(req.staff!.sub, job.id)));
+  }),
+);
+
+myJobsRouter.put(
+  "/:id/diagnosis",
+  asyncHandler(async (req, res) => {
+    const body = parseBody(z.object({ defectCodeId: z.string().min(1).nullable() }), req.body);
+    const job = await loadOpenJob(req.staff!.sub, req.params.id);
+    if (body.defectCodeId) {
+      const code = await prisma.defectCode.findFirst({ where: { id: body.defectCodeId, kind: "defect" } });
+      if (!code) throw new HttpError(400, "Defect code not found");
+    }
+    await prisma.serviceRequest.update({ where: { id: job.id }, data: { defectCodeId: body.defectCodeId } });
+    res.json(await jobWorkPayload(await loadOwnedJob(req.staff!.sub, job.id)));
+  }),
+);
+
+myJobsRouter.post(
+  "/:id/estimates",
+  asyncHandler(async (req, res) => {
+    const body = parseBody(
+      z.object({
+        note: z.string().trim().max(500).optional().nullable(),
+        send: z.boolean().optional(),
+        lines: z
+          .array(
+            z.object({
+              kind: z.enum(["service", "part", "labor", "other"]),
+              serviceCatalogItemId: z.string().optional().nullable(),
+              sparePartId: z.string().optional().nullable(),
+              name: z.string().trim().max(120).optional(),
+              quantity: z.coerce.number().int().min(1).max(99).optional(),
+              unitPrice: z.coerce.number().nonnegative().optional(),
+              isOptional: z.boolean().optional(),
+            }),
+          )
+          .min(1, "Add at least one line to the estimate")
+          .max(40),
+      }),
+      req.body,
+    );
+    const job = await loadOpenJob(req.staff!.sub, req.params.id);
+    if (job.type !== "repair") throw new HttpError(400, "Only repairs have an estimate", "decisionRepairOnly");
+    const actor = staffActor(req.staff);
+    const created = await createEstimate({ requestId: job.id, lines: body.lines, note: body.note, actor });
+    if (body.send) {
+      await sendEstimate(created.id, actor);
+      if (["new", "diagnosing"].includes(job.status)) {
+        await changeRequestStatus({ requestId: job.id, next: "awaiting_decision", actor: { audit: actor, role: "system" } });
+      }
+    }
+    res.status(201).json(await jobWorkPayload(await loadOwnedJob(req.staff!.sub, job.id)));
+  }),
+);
+
+myJobsRouter.post(
+  "/:id/part-orders",
+  asyncHandler(async (req, res) => {
+    const body = parseBody(z.object({ sparePartId: z.string().min(1), quantity: z.coerce.number().int().min(1).max(99), note: z.string().trim().max(200).optional().nullable() }), req.body);
+    const job = await loadOpenJob(req.staff!.sub, req.params.id);
+    await createPartOrder({ sparePartId: body.sparePartId, quantity: body.quantity, serviceRequestId: job.id, note: body.note, createdById: req.staff!.sub });
+    // Waiting for the part: the job moves to Awaiting parts so the timer and the board show it.
+    if (["new", "diagnosing", "in_progress"].includes(job.status) && job.type === "repair") {
+      await changeRequestStatus({ requestId: job.id, next: "awaiting_parts", actor: { audit: staffActor(req.staff), role: "technician" } });
+    }
+    res.status(201).json(await jobWorkPayload(await loadOwnedJob(req.staff!.sub, job.id)));
   }),
 );
 
@@ -246,15 +352,7 @@ myJobsRouter.post(
 myJobsRouter.post(
   "/:id/complete",
   asyncHandler(async (req, res) => {
-    const existing = await loadOwnedJob(req.staff!.sub, req.params.id);
-    if (techColumn(existing.status) !== "completed") {
-      await changeRequestStatus({
-        requestId: existing.id,
-        next: "completed",
-        actor: { audit: staffActor(req.staff), role: "technician" },
-      });
-    }
-    res.json(await jobWorkPayload(await loadOwnedJob(req.staff!.sub, existing.id)));
+    res.json(await finishJob(req.params.id, req));
   }),
 );
 
@@ -502,6 +600,19 @@ myJobsRouter.delete(
 
 type OwnedJob = Prisma.ServiceRequestGetPayload<{ include: typeof jobDetailInclude }>;
 
+async function finishJob(id: string, req: { staff?: { sub: string; name: string } | undefined; params: Record<string, string> }) {
+  const existing = await loadOwnedJob(req.staff!.sub, id);
+  if (techColumn(existing.status) !== "completed") {
+    const next = finishedStatusFor(existing.type, existing.locationType, existing.resolutionType);
+    await changeRequestStatus({
+      requestId: existing.id,
+      next,
+      actor: { audit: staffActor(req.staff as { sub: string; name: string }), role: "technician" },
+    });
+  }
+  return jobWorkPayload(await loadOwnedJob(req.staff!.sub, existing.id));
+}
+
 async function loadOwnedJob(technicianId: string, id: string) {
   const job = await prisma.serviceRequest.findUnique({
     where: { id },
@@ -522,7 +633,7 @@ async function loadOpenJob(technicianId: string, id: string) {
 }
 
 async function jobWorkPayload(job: OwnedJob) {
-  const [services, parts, replacementProducts] = await Promise.all([
+  const [services, parts, replacementProducts, estimates, defectCodes, partOrders, notes] = await Promise.all([
     prisma.serviceCatalogItem.findMany({
       where: { productCategories: { has: job.product.category } },
       orderBy: { name: "asc" },
@@ -534,16 +645,43 @@ async function jobWorkPayload(job: OwnedJob) {
     job.type === "repair"
       ? prisma.product.findMany({ where: { category: job.product.category }, orderBy: { name: "asc" } })
       : Promise.resolve([]),
+    prisma.estimate.findMany({ where: { serviceRequestId: job.id }, orderBy: { createdAt: "desc" }, include: estimateInclude }),
+    prisma.defectCode.findMany({
+      where: { kind: "defect", isActive: true, OR: [{ productCategory: null }, { productCategory: job.product.category }] },
+      orderBy: { code: "asc" },
+    }),
+    prisma.partOrder.findMany({ where: { serviceRequestId: job.id }, orderBy: { createdAt: "desc" }, include: { sparePart: true } }),
+    prisma.requestNote.findMany({ where: { serviceRequestId: job.id }, orderBy: { createdAt: "asc" }, include: { staffUser: { select: { name: true } }, customer: { select: { name: true } } } }),
   ]);
   return {
     job: serializeTechJob(job),
     pauses: serializePauses(job.pauses),
-    timeline: buildTimeline(job),
+    timeline: await loadTimeline(job),
+    decision: job.decision,
     ...serializeJobWork(job, {
       requireService: services.length > 0,
       type: job.type,
       sale: job.sale,
+      coverage: coverageOf(job.product),
+      decision: job.decision,
     }),
+    estimates: await Promise.all(estimates.map(serializeEstimate)),
+    defectCodes: defectCodes.map((row) => ({ id: row.id, code: row.code, ...serializeNamed(row) })),
+    partOrders: partOrders.map((row) => ({
+      id: row.id,
+      quantity: row.quantity,
+      status: row.status,
+      ...serializeNamed(row.sparePart),
+      createdAt: row.createdAt.toISOString(),
+    })),
+    notes: notes.map((row) => ({
+      id: row.id,
+      text: row.noteText,
+      authorScope: row.authorScope,
+      authorName: row.authorScope === "customer" ? (row.customer?.name ?? null) : (row.staffUser?.name ?? null),
+      isVisibleToCustomer: row.isVisibleToCustomer,
+      createdAt: row.createdAt.toISOString(),
+    })),
     catalog: {
       replacementProducts: replacementProducts.map((item) => ({
         id: item.id,

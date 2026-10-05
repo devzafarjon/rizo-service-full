@@ -39,6 +39,7 @@ export function PortalHomePage() {
   }, [list.data?.requests, type, scope]);
 
   const pendingFeedback = (list.data?.requests ?? []).filter((request) => request.canFeedback);
+  const pendingEstimates = (list.data?.requests ?? []).filter((request) => request.estimate?.status === "sent");
 
   if (list.isLoading) {
     return <PageSkeleton />;
@@ -49,6 +50,16 @@ export function PortalHomePage() {
       <p className="text-sm font-semibold text-[#7B00E0]">{t("portal.hello", { name: user?.name.split(" ")[0] })}</p>
       <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{t("portal.homeTitle")}</h1>
       <p className="mt-2 text-sm text-neutral-500">{t("portal.homeIntro")}</p>
+
+      {pendingEstimates.map((request) => (
+        <Link
+          key={request.id}
+          to={`/portal/requests/${request.id}`}
+          className="mt-4 block rounded-2xl bg-[#F5EBFD] px-4 py-3 text-sm font-semibold text-[#7B00E0]"
+        >
+          {t("portal.estimatePending", { id: formatRequestId(request.displayId) })}
+        </Link>
+      ))}
 
       {pendingFeedback.length > 0 ? (
         <div className="mt-4 rounded-2xl bg-[#FFF4E5] px-4 py-3 text-sm font-semibold text-[#C56A00]">

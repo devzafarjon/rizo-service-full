@@ -1,3 +1,4 @@
+import { homePathFor } from "../../lib/home";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { BrandChrome } from "../../components/BrandChrome";
@@ -9,7 +10,7 @@ export function HomePage() {
   const { user: staff } = useStaffAuth();
   const { user: customer } = useCustomerAuth();
 
-  const staffTo = staff ? (staff.role === "technician" ? "/app/my-jobs" : "/app") : "/login";
+  const staffTo = staff ? homePathFor(staff.role) : "/login";
   const portalTo = customer ? "/portal" : "/portal/login";
 
   return (
@@ -31,6 +32,14 @@ export function HomePage() {
           </Link>
           <Link to={portalTo} className="btn-rizo-orange w-full sm:w-auto">
             {customer ? t("home.portalContinue") : t("home.portal")}
+          </Link>
+        </div>
+        <div className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm font-semibold text-[#7B00E0]">
+          <Link to="/track" className="hover:underline">
+            {t("home.track")}
+          </Link>
+          <Link to="/centers" className="hover:underline">
+            {t("home.centers")}
           </Link>
         </div>
       </section>

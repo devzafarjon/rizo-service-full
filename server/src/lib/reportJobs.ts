@@ -40,6 +40,11 @@ export type ReportJob = {
   extrasTotal: number;
   rating: number | null;
   paused: boolean;
+  workedMinutes: number | null;
+  resolutionType: "repair" | "replace" | "refund" | null;
+  isRepeat: boolean;
+  defectCode: { id: string; code: string; name: string; nameUz: string; nameRu: string; nameEn: string } | null;
+  repairCompletedAt: Date | null;
 };
 
 export function average(values: number[]): number | null {
@@ -101,6 +106,10 @@ export async function loadReportJobs(window: ReportWindow, productId?: string): 
       createdAt: true,
       receivedAt: true,
       completedAt: true,
+      workedMinutes: true,
+      resolutionType: true,
+      isRepeat: true,
+      defectCode: { select: { id: true, code: true, name: true, nameUz: true, nameRu: true, nameEn: true } },
       product: { select: { id: true, name: true, nameUz: true, nameRu: true, nameEn: true, sku: true, category: true } },
       assignedTechnician: { select: { id: true, name: true, technicianType: true } },
       partLines: {
@@ -144,6 +153,11 @@ export async function loadReportJobs(window: ReportWindow, productId?: string): 
     extrasTotal: row.extraExpenses.reduce((sum, line) => sum + money(line.price), 0),
     rating: row.feedback?.rating ?? null,
     paused: !isDoneStatus(row.status) && row.pauses.length > 0,
+    workedMinutes: row.workedMinutes,
+    resolutionType: row.resolutionType,
+    isRepeat: row.isRepeat,
+    defectCode: row.defectCode,
+    repairCompletedAt: row.completedAt,
   }));
 }
 

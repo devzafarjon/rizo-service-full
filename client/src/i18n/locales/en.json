@@ -68,7 +68,9 @@
     "skip": "Skip",
     "moreInfo": "More information",
     "stepOf": "Step {{current}} of {{total}}",
-    "priority": "Priority"
+    "priority": "Priority",
+    "region": "Region",
+    "remove": "Remove"
   },
   "languages": {
     "uz": "Oʻzbekcha",
@@ -86,7 +88,9 @@
     "staff": "Staff sign in",
     "staffContinue": "Continue as staff",
     "portal": "Customer portal",
-    "portalContinue": "Continue to portal"
+    "portalContinue": "Continue to portal",
+    "track": "Track a request",
+    "centers": "Service centers"
   },
   "auth": {
     "staffTitle": "Staff sign in",
@@ -150,7 +154,14 @@
     "analytics": "Dashboard analytics",
     "inventory": "Inventory",
     "duplicates": "Duplicate customers",
-    "settings": "Backup settings"
+    "settings": "Backup settings",
+    "calendar": "Calendar",
+    "map": "Map",
+    "partOrders": "Part orders",
+    "centers": "Service centers",
+    "staff": "Staff",
+    "myEarnings": "My earnings",
+    "registerProduct": "Register product"
   },
   "staffHome": {
     "welcome": "Welcome back",
@@ -183,12 +194,17 @@
     "viewFull": "View full analytics",
     "viewSummary": "Back to summary",
     "techPerformance": "Technician performance",
-    "techPerformanceBody": "Open the technician report for completed jobs, ratings, and time on job."
+    "techPerformanceBody": "Open the technician report for completed jobs, ratings, and time on job.",
+    "legalOverdue": "Legally overdue",
+    "debt": "Customer debt",
+    "avgWork": "Avg work time",
+    "vsPrevious": "vs previous period"
   },
   "shell": {
     "adminRole": "Admin / dispatcher",
     "available": "Available",
-    "busy": "Busy"
+    "busy": "Busy",
+    "receptionistRole": "Receptionist"
   },
   "status": {
     "new": "New",
@@ -196,7 +212,14 @@
     "paused": "Paused",
     "completed": "Completed",
     "picked_up": "Picked up",
-    "cancelled": "Cancelled"
+    "cancelled": "Cancelled",
+    "diagnosing": "Diagnosing",
+    "awaiting_decision": "Awaiting decision",
+    "awaiting_parts": "Awaiting parts",
+    "ready": "Ready for pickup",
+    "replaced": "Replaced",
+    "refunded": "Refunded",
+    "rejected": "Rejected"
   },
   "type": {
     "installation": "Installation",
@@ -225,11 +248,13 @@
   "payment": {
     "not_required": "Not required",
     "pending": "Pending",
-    "paid": "Paid"
+    "paid": "Paid",
+    "partial": "Partly paid"
   },
   "role": {
     "admin": "Admin",
-    "technician": "Technician"
+    "technician": "Technician",
+    "receptionist": "Receptionist"
   },
   "techType": {
     "service_center": "Service center",
@@ -331,14 +356,48 @@
     "pauseActive": "{{reason}} · planned {{planned}} · still paused",
     "pauseDone": "{{reason}} · planned {{planned}} · lasted {{lasted}}",
     "assigned": "Assigned to technician",
-    "pickedUp": "Picked up"
+    "pickedUp": "Picked up",
+    "enRoute": "Technician on the way",
+    "status": {
+      "diagnosing": "Diagnosis started",
+      "awaiting_decision": "Waiting for customer decision",
+      "awaiting_parts": "Waiting for a part",
+      "ready": "Ready for pickup",
+      "replaced": "Replaced",
+      "refunded": "Refunded",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
+    },
+    "decision": {
+      "warranty_repair": "Decision: warranty repair",
+      "paid_repair": "Decision: paid repair",
+      "replace": "Decision: replacement",
+      "refund": "Decision: refund",
+      "reject": "Decision: rejected"
+    },
+    "estimate": {
+      "create": "Estimate prepared",
+      "send": "Estimate sent to customer",
+      "approve": "Estimate approved",
+      "decline": "Estimate declined"
+    }
   },
   "notify": {
     "createdByCustomer": "We received your {{type}} request for {{product}}.",
     "createdByStaff": "A {{type}} request was created for your {{product}}.",
     "status": "Your {{type}} for {{product}} is now {{status}}.",
     "overdue": "{{id}} is overdue and needs attention.",
-    "lowStock": "{{product}} is low on stock ({{count}})."
+    "lowStock": "{{product}} is low on stock ({{count}}).",
+    "estimateSent": "The estimate for {{id}} is ready. Please review it.",
+    "estimateExpired": "The estimate for {{id}} has expired.",
+    "estimateApproved": "The estimate for {{id}} was approved.",
+    "estimateDeclined": "The estimate for {{id}} was declined.",
+    "enRoute": "Your technician is on the way.",
+    "partArrived": "The part has arrived, we are continuing the repair.",
+    "visitReminder": "Reminder: your visit for {{id}} is coming up.",
+    "message": "{{id}}: {{text}}",
+    "customerMessage": "New customer message on {{id}}.",
+    "productRegistered": "A customer registered a product: {{product}} ({{serial}})."
   },
   "notifications": {
     "title": "Notifications",
@@ -405,7 +464,12 @@
     "applicableCategoriesHint": "Technicians only see this item on jobs for these categories.",
     "newCategoryPlaceholder": "New category",
     "addCategory": "Add",
-    "pickCategory": "Pick at least one category"
+    "pickCategory": "Pick at least one category",
+    "warrantyRules": "Warranty rules",
+    "warrantyRulesHint": "What the warranty covers for this product and when it starts.",
+    "warrantyStarts": "Warranty starts",
+    "coversLabor": "Covers labour",
+    "coversParts": "Covers parts"
   },
   "customers": {
     "title": "Customers",
@@ -488,7 +552,25 @@
     "invoiceHint": "Leave blank to auto-assign the next RZ number.",
     "warrantyExpiry": "Warranty expiry",
     "save": "Save sale",
-    "record": "Record sale"
+    "record": "Record sale",
+    "serialHint": "The number on the body (optional).",
+    "extend": "Extend warranty",
+    "extendTitle": "Extend warranty",
+    "extendHint": "Give the customer extra months of warranty.",
+    "extendMonths": "Extra months",
+    "void": "Void warranty",
+    "voidTitle": "Void warranty",
+    "voidHint": "For example misuse or a broken seal. Give a reason.",
+    "reason": "Reason",
+    "restore": "Restore warranty",
+    "voided": "Voided",
+    "voidedBecause": "Warranty voided: {{reason}}",
+    "unverified": "Unverified",
+    "verify": "Verify",
+    "warrantyCard": "Warranty card",
+    "warrantyUpdated": "Warranty updated",
+    "installedOn": "Installed on",
+    "warrantyUntil": "Warranty until"
   },
   "requests": {
     "title": "Service requests",
@@ -560,7 +642,16 @@
     "selectProductFilter": "Select a product to filter services and spare parts.",
     "noServices": "No services for this category.",
     "noParts": "No parts for this category.",
-    "installationOnlyOnSite": "Installation is always done on site, at the customer’s address."
+    "installationOnlyOnSite": "Installation is always done on site, at the customer’s address.",
+    "visitTime": "Visit time",
+    "appointment": "Appointment time",
+    "visitTimeHint": "Optional. Used in the calendar and reminders.",
+    "duplicateTitle": "A similar open request already exists",
+    "duplicateBody": "Request {{id}} is already open for this product.",
+    "openExisting": "Open existing request",
+    "createAnyway": "Create anyway",
+    "repeatFound": "Repeat failure detected ({{id}})",
+    "repeatFree": "Repeat failure ({{id}}) — the repair is free"
   },
   "detail": {
     "job": "Job",
@@ -594,7 +685,21 @@
     "saleLine": "{{invoice}} · expires {{date}}",
     "notLinked": "Not linked",
     "location": "Location",
-    "pickup": "Pickup confirmation"
+    "pickup": "Pickup confirmation",
+    "copyTrackLink": "Copy tracking link",
+    "linkCopied": "Link copied",
+    "allowUnpaid": "Allow handover with unpaid balance",
+    "rejectedBecause": "Rejected: {{reason}}",
+    "repeatOf": "Repeat failure, earlier request:",
+    "repeat": "Repeat",
+    "repeatFree": "free repair",
+    "legalDue": "Legal deadline",
+    "legalOverdue": "Legally overdue",
+    "repairWarranty": "Repair warranty",
+    "scheduled": "Scheduled time",
+    "enRoute": "On the way since",
+    "owes": "Owes {{amount}}",
+    "defectCode": "Defect code"
   },
   "kanban": {
     "title": "Dispatch board",
@@ -610,7 +715,8 @@
     "drag": "Drag {{name}}",
     "updateFailed": "Could not update status",
     "overdue": "Overdue",
-    "overdueList": "Overdue requests"
+    "overdueList": "Overdue requests",
+    "useDecision": "Use the “Decision” panel inside the request for this move."
   },
   "tech": {
     "title": "My jobs",
@@ -642,7 +748,21 @@
     "hoursShort": "{{count}}h",
     "moreActions": "More actions",
     "arrivedAt": "Arrived {{time}}",
-    "arrivedSaved": "Arrival recorded"
+    "arrivedSaved": "Arrival recorded",
+    "startDiagnosis": "Start diagnosis",
+    "startRepair": "Start repair",
+    "needParts": "Need a part",
+    "partsArrived": "Part arrived, continue",
+    "estimateAction": "Build estimate",
+    "waitingDecision": "Waiting for the customer’s decision",
+    "openJob": "Open job",
+    "enRoute": "I’m on my way",
+    "enRouteSaved": "Customer notified",
+    "enRouteSince": "Left at {{time}}",
+    "scheduledFor": "Visit: {{time}}",
+    "diagnosisHint": "Pick the defect code from your diagnosis.",
+    "workflow": "Workflow",
+    "workflowHint": "Diagnosis → estimate → repair. If the customer must decide, the job waits."
   },
   "job": {
     "timeline": "Timeline",
@@ -658,7 +778,8 @@
       "service": "at least one service",
       "part": "at least one spare part",
       "photo": "at least one photo",
-      "replacement": "the replacement product and serial number"
+      "replacement": "the replacement product and serial number",
+      "estimate": "an approved estimate"
     },
     "addService": "Add service",
     "addPart": "Add part",
@@ -726,7 +847,8 @@
     "staffFallback": "RIZO staff",
     "printReceipt": "Print receipt",
     "searchPlaceholder": "Search customer, product, technician, or ID",
-    "openRequests": "Open requests"
+    "openRequests": "Open requests",
+    "trackQr": "Scan the QR code to follow the status"
   },
   "reports": {
     "title": "Reports",
@@ -817,13 +939,48 @@
       "warranty": "By warranty status",
       "warrantyBody": "Count and value of in-warranty (free) vs out-of-warranty (paid) jobs over time.",
       "sources": "By request source",
-      "sourcesBody": "Requests from RIZO market versus jobs opened in RIZO Service or the customer portal."
+      "sourcesBody": "Requests from RIZO market versus jobs opened in RIZO Service or the customer portal.",
+      "defects": "By defect",
+      "defectsBody": "Most frequent defect codes and repeat-repair rate per product.",
+      "outcomes": "By outcome",
+      "outcomesBody": "Repair, replacement, refund and rejection: count, amounts and cost.",
+      "legal": "Legal deadlines",
+      "legalBody": "Share of jobs finished within the legal limit and overdue open jobs.",
+      "debts": "Debts",
+      "debtsBody": "Jobs and customers with an unpaid balance.",
+      "payroll": "Payroll",
+      "payrollBody": "Technician pay: percentage, fixed amount, bonuses and penalties."
     },
     "source": {
       "rizo_market": "RIZO market",
       "rizo_service": "RIZO Service (staff)",
       "portal": "Customer portal"
-    }
+    },
+    "avgCost": "Avg cost",
+    "avgDays": "Avg duration (days)",
+    "byCode": "By code",
+    "charged": "Charged",
+    "claimRate": "Claim rate",
+    "cost": "Cost",
+    "days": "Days",
+    "debtJobs": "Jobs with debt",
+    "debtors": "Debtors",
+    "late": "Late",
+    "lateAndOpen": "Overdue open jobs",
+    "lateDays": "Days late",
+    "noCodes": "No codes assigned yet.",
+    "noDebts": "No debts",
+    "noDebtsBody": "All jobs are fully settled.",
+    "nothingLate": "Nothing is overdue.",
+    "onTimeRate": "On time",
+    "outcome": "Outcome",
+    "outcomeNote": "Replacement and refund costs are counted separately from repairs.",
+    "repairs": "Repairs",
+    "repeats": "Repeats",
+    "topDefects": "Top defects",
+    "totalDebt": "Total debt",
+    "unitsSold": "Units sold",
+    "withoutCode": "Without code"
   },
   "portal": {
     "homeTitle": "Your service requests",
@@ -875,7 +1032,34 @@
     "review": "Review",
     "photoCount_one": "{{count}} photo attached",
     "photoCount_other": "{{count}} photos attached",
-    "installationOnlyOnSite": "Installation is always done at your address."
+    "installationOnlyOnSite": "Installation is always done at your address.",
+    "estimateTitle": "Repair estimate",
+    "estimateAsk": "Please reply by {{date}}.",
+    "estimateFine": "You choose the optional lines yourself.",
+    "estimatePending": "{{id}} — approve the estimate",
+    "approve": "Approve — {{amount}}",
+    "decline": "Decline",
+    "declineReason": "Reason (optional)",
+    "estimateApproved": "Estimate approved. Work will continue.",
+    "estimateDeclined": "Estimate declined",
+    "dueBy": "Completion deadline",
+    "messages": "Messages",
+    "noMessages": "No messages yet.",
+    "messagePlaceholder": "Write a message to the service…",
+    "sendMessage": "Send",
+    "you": "You",
+    "service": "Service",
+    "preferredTime": "Preferred visit time",
+    "preferredVisit": "When you plan to come",
+    "preferredTimeHint": "Optional. We will try to fit your time.",
+    "rejectedBecause": "Declined: {{reason}}",
+    "repairWarranty": "Repair warranty",
+    "repairWarrantyUntil": "until {{date}}",
+    "shareLink": "Share tracking link",
+    "technicianOnTheWay": "{{name}} is on the way to you",
+    "toPay": "To pay",
+    "visitTime": "Visit time",
+    "waitingParts": "We are waiting for a part and will continue as soon as it arrives."
   },
   "tour": {
     "skip": "Skip tour",
@@ -912,7 +1096,21 @@
     "restoreBody": "Stop the API, restore the .sql file with psql into DATABASE_URL, then start the API again. Do not run db:reset after a restore.",
     "stockTitle": "Inventory setting",
     "stockBody": "The block-zero-stock toggle lives with spare parts in Inventory.",
-    "openCatalog": "Open inventory"
+    "openCatalog": "Open inventory",
+    "centersBody": "Add and edit branches.",
+    "staffBody": "Staff, roles, passwords and pay rates.",
+    "rulesTitle": "Service rules",
+    "rulesBody": "Deadlines and estimate rules apply system-wide.",
+    "legalDays": "Legal repair limit (days)",
+    "legalDaysHint": "Past this limit the job is flagged as legally overdue.",
+    "repairWarrantyDays": "Repair warranty (days)",
+    "repairWarrantyDaysHint": "If the same fault returns in this period, the repair is free.",
+    "estimateDays": "Estimate validity (days)",
+    "estimateDaysHint": "The estimate expires after this period if the customer does not respond.",
+    "storageDays": "Ready item storage (days)",
+    "storageDaysHint": "How long a finished item is kept at the counter.",
+    "requireEstimate": "Require an approved estimate before paid repair",
+    "requireEstimateTip": "When on, the technician cannot start a paid repair until the customer approves the estimate."
   },
   "feedback": {
     "thanks": "Thanks for the feedback",
@@ -977,7 +1175,8 @@
       "hint": "Tap the button once you have your device back. You can also sign with your finger.",
       "tap": "I received my device",
       "confirm": "Confirm"
-    }
+    },
+    "unpaid": "Unpaid balance: {{amount}}"
   },
   "kiosk": {
     "title": "Counter pickup",
@@ -1003,12 +1202,31 @@
     "outbound": "SMS / Telegram queue",
     "outboundEmpty": "No outbound messages in the queue.",
     "action": {
-      "request.status": "Request status changed",
+      "customer.merge": "Customers merged",
+      "estimate.approve": "Estimate approved",
+      "estimate.create": "Estimate created",
+      "estimate.decline": "Estimate declined",
+      "estimate.send": "Estimate sent",
+      "partOrder.update": "Part order updated",
+      "payment.add": "Payment recorded",
+      "payment.refund": "Refund recorded",
+      "payroll.adjustment": "Payroll adjustment",
+      "request.assign": "Technician assigned",
       "request.cost": "Request cost edited",
+      "request.decision": "Request decision made",
       "request.overdue": "Request flagged overdue",
       "request.pickup": "Pickup confirmed",
-      "staff.role": "Staff role changed",
-      "customer.merge": "Customers merged"
+      "request.status": "Request status changed",
+      "request.update": "Request edited",
+      "sale.verify": "Sale verified",
+      "sale.warranty.extend": "Warranty extended",
+      "sale.warranty.restore": "Warranty restored",
+      "sale.warranty.void": "Warranty voided",
+      "settings.update": "Settings updated",
+      "staff.active": "Staff activity changed",
+      "staff.create": "Staff member created",
+      "staff.password": "Staff password reset",
+      "staff.role": "Staff role changed"
     }
   },
   "errors": {
@@ -1075,9 +1293,9 @@
     "pickupNotReady": "This request is not waiting for pickup confirmation",
     "invalidSignature": "Signature image is invalid",
     "mergeSameCustomer": "Choose two different customers",
-    "statusNotAllowed": "A request cannot move from {{from}} to {{to}}",
-    "rateLimited": "Too many attempts. Please wait a few minutes and try again.",
-    "accountInactive": "This account has been deactivated. Contact your administrator.",
+    "statusNotAllowed": "You cannot move from “{{from}}” to “{{to}}”",
+    "rateLimited": "Too many attempts. Please try again shortly.",
+    "accountInactive": "This account is deactivated",
     "pauseReasonRequired": "A pause reason is required",
     "pauseHoursRequired": "Set how long this pause should last",
     "pauseHoursInvalid": "Pause duration must be greater than 0",
@@ -1091,7 +1309,28 @@
     "technicianInactive": "This technician is not active",
     "cannotDeactivateSelf": "You cannot deactivate your own account",
     "installationOnSiteOnly": "Installation is only done at the customer’s address",
-    "locationRequired": "Add the customer’s address for an on-site job"
+    "locationRequired": "Add the customer’s address for an on-site job",
+    "passwordLength8": "Password must be at least 8 characters",
+    "technicianTypeRequired": "Choose the technician type",
+    "decisionRepairOnly": "Decisions apply to repair requests only",
+    "duplicateRequest": "An open request already exists for this product",
+    "estimateClosed": "The estimate for this request can no longer be changed",
+    "estimateEmpty": "Add at least one line to the estimate",
+    "estimateExpired": "This estimate has expired",
+    "estimateLineName": "Every line needs a name",
+    "estimateNotPending": "This estimate is not waiting for approval",
+    "estimateRequired": "The customer must approve an estimate before a paid repair",
+    "futureDate": "The date cannot be in the future",
+    "orderClosed": "This order is closed",
+    "refundTooLarge": "The refund cannot exceed what was paid",
+    "rejectionReasonRequired": "Give a reason for rejecting",
+    "requestClosed": "This request is closed",
+    "serialExists": "This serial number already exists",
+    "serialNotFound": "Serial number not found",
+    "trackNotFound": "No request found. Check the number and phone.",
+    "unpaidBalance": "There is an unpaid balance: {{balance}}",
+    "warrantyEnded": "The warranty has ended",
+    "warrantyVoided": "The warranty has been voided"
   },
   "customerStatus": {
     "new": "Received",
@@ -1099,7 +1338,14 @@
     "paused": "On hold",
     "completed": "Completed",
     "picked_up": "Handed over",
-    "cancelled": "Cancelled"
+    "cancelled": "Cancelled",
+    "diagnosing": "Being diagnosed",
+    "awaiting_decision": "Waiting for your decision",
+    "awaiting_parts": "Waiting for a part",
+    "ready": "Ready for pickup",
+    "replaced": "Replaced",
+    "refunded": "Refunded",
+    "rejected": "Declined"
   },
   "slideOver": {
     "saved": "Saved",
@@ -1115,11 +1361,337 @@
   },
   "resolution": {
     "repair": "Repaired",
-    "replace": "Replaced"
+    "replace": "Replaced",
+    "refund": "Refunded",
+    "reject": "Rejected"
   },
   "errorBoundary": {
     "title": "Something went wrong on this screen",
     "body": "Please reload the page. If it keeps happening, tell your administrator.",
     "reload": "Reload"
+  },
+  "outcome": {
+    "repair": "Repaired",
+    "replace": "Replaced",
+    "refund": "Refunded",
+    "reject": "Rejected"
+  },
+  "calendar": {
+    "title": "Visit calendar",
+    "intro": "Scheduled visits and appointments by technician.",
+    "free": "Free",
+    "today": "Today"
+  },
+  "map": {
+    "title": "Dispatch map",
+    "intro": "Open on-site jobs on the map. Purple — technician assigned, orange — unassigned.",
+    "assigned": "Assigned",
+    "unassigned": "Unassigned",
+    "count": "{{count}} jobs on the map",
+    "noCoords": "{{count}} jobs have no coordinates, so they are not shown.",
+    "open": "Open"
+  },
+  "warrantyCard": {
+    "startsOn": {
+      "installation": "From installation date",
+      "sale": "From sale date"
+    },
+    "title": "Warranty card",
+    "coverage": "Coverage",
+    "laborCovered": "Repair labour is covered.",
+    "laborNotCovered": "Repair labour is not covered.",
+    "partsCovered": "Parts are covered.",
+    "partsNotCovered": "Parts are not covered.",
+    "starts": "The warranty period runs {{when}}.",
+    "exclusions": "The warranty does not cover misuse, water damage, mechanical damage or unauthorised repair.",
+    "sellerSign": "Seller signature",
+    "customerSign": "Customer signature",
+    "voided": "Warranty voided: {{reason}}"
+  },
+  "centers": {
+    "title": "Service centers",
+    "intro": "Branches and service points. Customers see them on a public page.",
+    "new": "New service center",
+    "edit": "Edit service center",
+    "name": "Name",
+    "hours": "Working hours",
+    "lat": "Latitude",
+    "lng": "Longitude",
+    "active": "Active",
+    "inactive": "Inactive",
+    "authorized": "Authorised",
+    "saved": "Service center saved",
+    "emptyTitle": "No service centers yet",
+    "emptyBody": "Add your first branch.",
+    "center": "Service center",
+    "auto": "Choose automatically",
+    "pickHint": "Choose the center you would like to visit.",
+    "public": {
+      "title": "Service centers",
+      "intro": "Find your nearest RIZO service center."
+    }
+  },
+  "estimate": {
+    "title": "Estimate",
+    "hint": "Work, parts and price shown to the customer. Work starts once they approve.",
+    "techHint": "Build an estimate for a paid repair — work will not start until the customer approves.",
+    "newEstimate": "New estimate",
+    "addLabor": "Add labour",
+    "addPart": "Add a part",
+    "addService": "Add a service",
+    "customName": "Work description",
+    "empty": "No lines yet. Add a service, part or labour.",
+    "note": "Note for the customer",
+    "optional": "Optional (customer chooses)",
+    "ifChosen": "if chosen",
+    "total": "Total",
+    "saveDraft": "Save as draft",
+    "saveSend": "Save and send to customer",
+    "sendToCustomer": "Send to customer",
+    "saved": "Estimate saved",
+    "sent": "Estimate sent to the customer",
+    "sentAt": "Sent",
+    "validUntil": "Valid until",
+    "approvedAt": "Approved {{when}} · {{by}}",
+    "approveForCustomer": "Approve on customer’s behalf",
+    "approveHint": "If the customer agreed by phone, approve it here.",
+    "decline": "Decline",
+    "declineForCustomer": "Decline on customer’s behalf",
+    "declineReason": "Reason for declining",
+    "declinedBecause": "Reason: {{reason}}",
+    "onOrder": "On order",
+    "kind": {
+      "service": "Service",
+      "part": "Part",
+      "labor": "Labour",
+      "other": "Other"
+    },
+    "status": {
+      "draft": "Draft",
+      "sent": "Awaiting approval",
+      "approved": "Approved",
+      "declined": "Declined",
+      "expired": "Expired"
+    }
+  },
+  "decision": {
+    "title": "Decision",
+    "hint": "After diagnosis, choose what happens with this request.",
+    "apply": "Apply decision",
+    "applied": "Decision applied",
+    "warranty_repair": "Warranty repair",
+    "paid_repair": "Paid repair",
+    "replace": "Replace",
+    "refund": "Refund",
+    "reject": "Reject",
+    "warranty_repairHint": "Labour and parts are free.",
+    "paid_repairHint": "The customer pays. An estimate is approved first.",
+    "replaceHint": "The customer gets a new product.",
+    "refundHint": "The customer is refunded.",
+    "rejectHint": "Not a warranty case or cannot be repaired. A reason is required.",
+    "goodwill": "Goodwill (free)",
+    "goodwillHint": "Repair for free even if the warranty has ended.",
+    "newSerial": "New serial number",
+    "newSerialHint": "Serial number of the replacement unit.",
+    "note": "Note",
+    "paidNext": "Next step: build an estimate and send it to the customer.",
+    "refundAmount": "Refund amount",
+    "rejectReason": "Rejection reason",
+    "rejectReasonHint": "The customer will see this.",
+    "returnReason": "Return reason"
+  },
+  "payments": {
+    "title": "Payments",
+    "due": "Due",
+    "paid": "Paid",
+    "refunded": "Refunded",
+    "balance": "Balance",
+    "none": "No payments yet.",
+    "payment": "Payment",
+    "refund": "Refund",
+    "record": "Record payment",
+    "recordRefund": "Record refund",
+    "amount": "Amount",
+    "method": "Method",
+    "note": "Note",
+    "fiscal": "Fiscal receipt number",
+    "fiscalHint": "The receipt number from the cash register.",
+    "fillBalance": "Fill balance",
+    "saved": "Payment saved",
+    "methods": {
+      "cash": "Cash",
+      "card": "Card",
+      "transfer": "Transfer",
+      "payme": "Payme",
+      "click": "Click",
+      "other": "Other"
+    }
+  },
+  "notes": {
+    "title": "Notes and messages",
+    "hint": "Internal notes are staff-only. A message to the customer appears in their portal.",
+    "techHint": "Leave a short note for the customer or the office.",
+    "placeholder": "Write a note…",
+    "sendToCustomer": "Visible to customer",
+    "send": "Send to customer",
+    "save": "Save note",
+    "saved": "Saved",
+    "none": "No notes yet.",
+    "staff": "Staff",
+    "customer": "Customer",
+    "fromCustomer": "From customer",
+    "visible": "Visible to customer",
+    "internal": "Internal",
+    "templateNames": {
+      "ready": "Ready",
+      "needParts": "Needs part",
+      "needCall": "Call needed",
+      "bringReceipt": "Receipt"
+    },
+    "templates": {
+      "ready": "Your item is ready for pickup.",
+      "needParts": "A part is needed for the repair, we have ordered it.",
+      "needCall": "Please contact us — we need your decision.",
+      "bringReceipt": "Please bring your purchase receipt when collecting."
+    }
+  },
+  "parts": {
+    "ordersTitle": "Part orders",
+    "ordersIntro": "Parts missing from stock. When an order arrives the job resumes automatically.",
+    "newOrder": "New order",
+    "order": "Order",
+    "orders": "Part orders",
+    "ordersHint": "If a part is out of stock, request it here.",
+    "orderCreated": "Order created",
+    "orderSent": "Order sent",
+    "selectPart": "Select a part",
+    "supplier": "Supplier",
+    "expected": "Expected date",
+    "forRequest": "Request",
+    "markOrdered": "Mark ordered",
+    "markReceived": "Mark received",
+    "noOrdersTitle": "No orders",
+    "noOrdersBody": "Orders appear here when a part is short.",
+    "suggestions": "Suggested: low-stock parts",
+    "status": {
+      "requested": "Requested",
+      "ordered": "Ordered",
+      "received": "Received",
+      "cancelled": "Cancelled"
+    },
+    "filter": {
+      "open": "Open",
+      "received": "Received",
+      "all": "All"
+    }
+  },
+  "intake": {
+    "title": "Intake check",
+    "hint": "Record the item’s condition at intake — it helps with disputes later.",
+    "notes": "Condition notes",
+    "notesPlaceholder": "Scratches, included accessories…",
+    "signature": "Customer signature",
+    "items": {
+      "powers_on": "Powers on",
+      "screen_ok": "Screen/panel OK",
+      "body_scratches": "Scratches on body",
+      "accessories_included": "Accessories included",
+      "original_packaging": "Original packaging",
+      "water_damage_signs": "Signs of water damage"
+    }
+  },
+  "serial": {
+    "label": "Serial number",
+    "hint": "The number on the product body. Helps detect repeat failures.",
+    "portalHint": "Printed on the product label (optional).",
+    "card": "Serial card",
+    "history": "Service history",
+    "noSale": "No sale found for this serial number.",
+    "noVisits": "This product has not been serviced yet.",
+    "notFoundTitle": "Serial number not found",
+    "notFoundBody": "There are no sales or requests for this number.",
+    "summary": "Repairs: {{repairs}} · repeats: {{repeats}}"
+  },
+  "staffAdmin": {
+    "title": "Staff",
+    "intro": "Admins, receptionists and technicians. Pay rates live here.",
+    "new": "New staff member",
+    "edit": "Edit staff member",
+    "saved": "Staff member saved",
+    "role": "Role",
+    "roles": {
+      "admin": "Admin",
+      "technician": "Technician",
+      "receptionist": "Receptionist"
+    },
+    "technicianType": "Technician type",
+    "password": "Password",
+    "passwordHint": "At least 8 characters.",
+    "passwordSaved": "Password updated",
+    "resetPassword": "Reset password",
+    "resetFor": "Set a new password for {{name}}.",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "pay": "Pay",
+    "payPercent": "Percent of labour (%)",
+    "payPercentHint": "Technician’s share of the labour value.",
+    "payFixed": "Fixed amount per job",
+    "payFixedHint": "On top of the percentage, for each finished job."
+  },
+  "register": {
+    "title": "Register a product",
+    "intro": "Add a product bought elsewhere — warranty and service history in one place.",
+    "selectProduct": "Select a product",
+    "invoice": "Receipt / invoice number",
+    "invoiceHint": "Optional. May be needed for verification.",
+    "purchaseDate": "Purchase date",
+    "serialHint": "The number on the product label.",
+    "submit": "Register",
+    "saved": "Product added",
+    "verifyNote": "The warranty is confirmed once our staff verifies the purchase."
+  },
+  "track": {
+    "title": "Track a request",
+    "hint": "Enter your request number and phone number.",
+    "find": "Find",
+    "another": "Track another",
+    "footer": "RIZO Service — after-sales support",
+    "notFoundTitle": "Request not found",
+    "notFoundBody": "Check the number and phone and try again.",
+    "readyForPickup": "Your item is ready — you can come and collect it."
+  },
+  "payroll": {
+    "total": "Total pay",
+    "jobs": "Jobs",
+    "jobsTotal": "Labour total",
+    "grandTotal": "Grand total",
+    "explain": "Calculation: percentage of labour + fixed amount per job + bonuses − penalties.",
+    "adjustments": "Bonuses and penalties",
+    "addAdjustment": "Add bonus or penalty",
+    "adjustmentSaved": "Saved",
+    "amount": "Amount",
+    "amountHint": "Bonus — positive number, penalty — negative.",
+    "reason": "Reason",
+    "myTitle": "My earnings",
+    "myIntro": "Your pay: {{percent}}% of labour plus {{fixed}} per job.",
+    "noJobs": "No finished jobs in this period.",
+    "labor": "Labour"
+  },
+  "defectCodes": {
+    "tab": "Codes",
+    "intro": "Defect and return-reason codes. Reports are built from them.",
+    "new": "New code",
+    "edit": "Edit code",
+    "code": "Code",
+    "kind": "Kind",
+    "kinds": {
+      "defect": "Defect",
+      "return_reason": "Return reason"
+    },
+    "allCategories": "All categories",
+    "categoryHint": "Leave empty to apply to all categories.",
+    "saved": "Code saved",
+    "emptyTitle": "No codes yet",
+    "emptyBody": "Add your first defect code."
   }
 }

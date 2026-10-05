@@ -12,7 +12,7 @@ import { useCustomerAuth } from "../auth/CustomerAuthContext";
 import { api, apiErrorMessage, apiForm } from "../../lib/api";
 import { formatDate, formatMoney } from "../../lib/format";
 import { categoryLabel, localizedName } from "../../lib/localized";
-import type { LocationType, Named, PortalRequest, PortalSale, ServiceType } from "../../lib/types";
+import type { LocationType, Named, PortalRequest, PortalSale, ServiceCenter, ServiceType } from "../../lib/types";
 import { portalInputClass, portalTextareaClass } from "./fields";
 
 const TYPES: ServiceType[] = ["repair", "installation"];
@@ -37,6 +37,9 @@ export function PortalNewRequestPage() {
   const [address, setAddress] = useState(user?.address ?? "");
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
+  const [serialNumber, setSerialNumber] = useState("");
+  const [scheduledAt, setScheduledAt] = useState("");
+  const [serviceCenterId, setServiceCenterId] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const salesQuery = useQuery({
@@ -50,6 +53,10 @@ export function PortalNewRequestPage() {
     queryFn: () => api<{ products: Array<Named & { id: string; sku: string; category: string }> }>("/api/customer/products", { token }),
   });
 
+  const centersQuery = useQuery({
+    queryKey: ["public", "centers"],
+    queryFn: () => api<{ centers: ServiceCenter[] }>("/api/public/centers"),
+  });
   const sales = salesQuery.data?.sales ?? [];
   const products = productsQuery.data?.products ?? [];
   const selectedSale = sales.find((item) => item.id === saleId);
@@ -120,6 +127,9 @@ export function PortalNewRequestPage() {
       saleId: useCatalog ? null : saleId || null,
       productId: useCatalog ? productId : undefined,
       issueDescription,
+      serialNumber: serialNumber.trim() || null,
+      scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+      serviceCenterId: type === "repair" && locationType === "in_shop" && serviceCenterId ? serviceCenterId : null,
       defectType: type === "repair" && defectType ? defectType : null,
       locationType: type === "installation" ? "on_site" : locationType,
       customerLocation:
@@ -353,6 +363,12 @@ export function PortalNewRequestPage() {
           </>
         ) : null}
 
+        {step === 2 ? (
+          <Field label={t("serial.label")} hint={t("serial.portalHint")}>
+            <input className={portalInputClass} value={serialNumber} onChange={(event) => setSerialNumber(event.target.value)} maxLength={80} placeholder={selectedSale?.serialNumber ?? ""} />
+          </Field>
+        ) : null}
+
         {step === 3 ? (
           <>
             <div>
@@ -415,6 +431,22 @@ export function PortalNewRequestPage() {
             ) : (
               <p className="text-sm text-neutral-500">{t("portal.inShopReview")}</p>
             )}
+
+            <Field label={locationType === "on_site" || type === "installation" ? t("portal.preferredTime") : t("portal.preferredVisit")} hint={t("portal.preferredTimeHint")}>
+              <input className={portalInputClass} type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} />
+            </Field>
+            {type === "repair" && locationType === "in_shop" && (centersQuery.data?.centers ?? []).length > 0 ? (
+              <Field label={t("centers.center")} hint={t("centers.pickHint")}>
+                <select className={portalInputClass} value={serviceCenterId} onChange={(event) => setServiceCenterId(event.target.value)}>
+                  <option value="">{t("centers.auto")}</option>
+                  {(centersQuery.data?.centers ?? []).map((center) => (
+                    <option key={center.id} value={center.id}>
+                      {center.name} · {center.address}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            ) : null}
 
             <div className="rounded-2xl bg-neutral-50 px-4 py-3 text-sm">
               <p className="font-extrabold">{t("portal.review")}</p>

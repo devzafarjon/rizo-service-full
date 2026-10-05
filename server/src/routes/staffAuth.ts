@@ -93,7 +93,7 @@ function serializeStaff(user: {
   id: string;
   name: string;
   phone: string;
-  role: "admin" | "technician";
+  role: "admin" | "technician" | "receptionist";
   technicianType: "service_center" | "mobile" | null;
   isAvailable: boolean;
   locale: string;

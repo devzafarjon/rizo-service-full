@@ -26,10 +26,17 @@ export function TypeBadge({ type }: { type: ServiceType }) {
 
 const STATUS_STYLES: Record<string, string> = {
   new: "bg-[#F5EBFD] text-[#7B00E0]",
+  diagnosing: "bg-sky-50 text-sky-800",
+  awaiting_decision: "bg-amber-50 text-amber-800",
+  awaiting_parts: "bg-amber-50 text-amber-800",
   in_progress: "bg-[#FFF4E5] text-[#C56A00]",
   paused: "bg-neutral-100 text-neutral-600",
+  ready: "bg-emerald-50 text-emerald-700",
   completed: "bg-emerald-50 text-emerald-700",
   picked_up: "bg-emerald-100 text-emerald-800",
+  replaced: "bg-emerald-100 text-emerald-800",
+  refunded: "bg-neutral-100 text-neutral-700",
+  rejected: "bg-red-50 text-red-700",
   cancelled: "bg-red-50 text-red-700",
 };
 

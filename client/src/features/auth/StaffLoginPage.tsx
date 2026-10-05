@@ -6,6 +6,7 @@ import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { BrandChrome } from "../../components/BrandChrome";
 import { Spinner } from "../../components/Spinner";
 import { SHOW_DEMO } from "../../lib/demo";
+import { homePathFor } from "../../lib/home";
 import { useToast } from "../../components/toast";
 import { apiErrorMessage } from "../../lib/api";
 import { useStaffAuth } from "./StaffAuthContext";
@@ -22,7 +23,7 @@ export function StaffLoginPage() {
   const [error, setError] = useState<string | null>(null);
 
   if (user) {
-    return <Navigate to={user.role === "technician" ? "/app/my-jobs" : "/app"} replace />;
+    return <Navigate to={homePathFor(user.role)} replace />;
   }
 
   async function onSubmit(event: FormEvent) {
@@ -33,7 +34,7 @@ export function StaffLoginPage() {
       const next = await login(phone, password);
       notify(t("auth.signedIn"));
       const from = (location.state as { from?: string } | null)?.from;
-      navigate(from || (next.role === "technician" ? "/app/my-jobs" : "/app"), { replace: true });
+      navigate(from || homePathFor(next.role), { replace: true });
     } catch (err) {
       setError(apiErrorMessage(err, t));
     } finally {

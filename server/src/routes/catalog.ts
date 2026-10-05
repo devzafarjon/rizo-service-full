@@ -7,7 +7,7 @@ import { prisma } from "../lib/prisma.js";
 import { handlePrismaError } from "../lib/prismaErrors.js";
 import { namedFromInput, namedSearch, serializeNamed } from "../lib/named.js";
 import { money } from "../lib/warranty.js";
-import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
+import { officeReadAdminWrite, requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
 import { maybeAlertLowStock } from "../lib/stockAlerts.js";
 import { ensureCategories } from "../lib/categories.js";
 
@@ -55,7 +55,7 @@ const partPatchSchema = servicePatchSchema.extend({
 });
 
 export const catalogRouter = Router();
-catalogRouter.use(staffAuth, requireStaffRole("admin"));
+catalogRouter.use(staffAuth, officeReadAdminWrite);
 
 catalogRouter.get(
   "/categories",
