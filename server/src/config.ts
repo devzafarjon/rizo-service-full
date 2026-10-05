@@ -13,12 +13,19 @@ function required(name: string): string {
   return value;
 }
 
+const clientOrigins = (process.env.CLIENT_ORIGIN ?? "http://localhost:5173")
+  .split(",")
+  .map((value) => value.trim())
+  .filter(Boolean);
+
 export const env = {
   databaseUrl: required("DATABASE_URL"),
   jwtSecret: required("JWT_SECRET"),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "7d",
   port: Number(process.env.PORT ?? 4000),
-  clientOrigin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173",
+  // The website address first (it is used in SMS links); more origins may follow, comma separated (for example a test build of the apps).
+  clientOrigin: clientOrigins[0],
+  corsOrigins: clientOrigins,
   smsProvider: process.env.SMS_PROVIDER ?? "console",
   smsHttpUrl: process.env.SMS_HTTP_URL ?? "",
   smsHttpToken: process.env.SMS_HTTP_TOKEN ?? "",

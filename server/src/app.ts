@@ -40,7 +40,7 @@ export function createApp() {
     next();
   });
   ensureUploadsRoot();
-  app.use(cors({ origin: env.clientOrigin, credentials: true }));
+  app.use(cors({ origin: env.corsOrigins, credentials: true }));
   app.use(express.json({ limit: "4mb" }));
   app.use("/uploads", express.static(uploadsRoot));
   app.use("/api/uploads", express.static(uploadsRoot));

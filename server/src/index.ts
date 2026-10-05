@@ -13,7 +13,7 @@ const app = createApp();
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: { origin: env.clientOrigin, credentials: true },
+  cors: { origin: env.corsOrigins, credentials: true },
 });
 bindIo(io);
 
