@@ -337,7 +337,7 @@ export function ProfitReportPage() {
       <ChartPanel title={t("reports.profitTrend")}>
         <ResponsiveContainer>
           <LineChart data={data.trend}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
             <XAxis dataKey="key" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} />
             <Tooltip content={<MoneyTooltip />} />
@@ -452,7 +452,7 @@ export function WarrantyReportPage() {
       <ChartPanel title={t("reports.warrantyTrend")}>
         <ResponsiveContainer>
           <LineChart data={data.trend}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
             <XAxis dataKey="key" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} />
             <Tooltip content={<MoneyTooltip />} />

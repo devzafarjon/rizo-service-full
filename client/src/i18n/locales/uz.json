@@ -1693,5 +1693,11 @@
     "saved": "Kod saqlandi",
     "emptyTitle": "Kodlar hali yo‘q",
     "emptyBody": "Birinchi nosozlik kodini qo‘shing."
+  },
+  "theme": {
+    "label": "Mavzu",
+    "light": "Yorug‘",
+    "dark": "Tungi",
+    "system": "Qurilma bo‘yicha"
   }
 }

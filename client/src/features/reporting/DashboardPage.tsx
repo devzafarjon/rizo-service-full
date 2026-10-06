@@ -83,7 +83,7 @@ export function DashboardPage() {
         <ChartPanel title={t("dashboard.trend")}>
           <ResponsiveContainer>
             <LineChart data={data.trend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
               <XAxis dataKey="key" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip content={<MoneyTooltip />} />
@@ -137,7 +137,7 @@ export function DashboardPage() {
             <ChartPanel title={t("dashboard.topProducts")}>
               <ResponsiveContainer>
                 <BarChart data={products} layout="vertical" margin={{ left: 16 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                   <XAxis type="number" tick={{ fontSize: 11 }} />
                   <YAxis type="category" dataKey="label" width={110} tick={{ fontSize: 11 }} />
                   <Tooltip content={<CountTooltip />} />
@@ -149,7 +149,7 @@ export function DashboardPage() {
             <ChartPanel title={t("dashboard.topParts")}>
               <ResponsiveContainer>
                 <BarChart data={parts} layout="vertical" margin={{ left: 16 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                   <XAxis type="number" tick={{ fontSize: 11 }} />
                   <YAxis type="category" dataKey="label" width={110} tick={{ fontSize: 11 }} />
                   <Tooltip content={<CountTooltip />} />
@@ -161,7 +161,7 @@ export function DashboardPage() {
             <ChartPanel title={t("dashboard.defects")}>
               <ResponsiveContainer>
                 <BarChart data={defects}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                   <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip content={<CountTooltip />} />

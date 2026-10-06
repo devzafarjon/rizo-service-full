@@ -64,7 +64,7 @@ export function DefectsReportPage() {
         <ChartPanel title={t("reports.topDefects")}>
           <ResponsiveContainer>
             <BarChart data={chart}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
               <XAxis dataKey="name" tick={{ fontSize: 11 }} />
               <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
               <Tooltip formatter={(value) => [value, t("reports.repairs")]} labelFormatter={(_label, payload) => payload?.[0]?.payload?.label ?? ""} />

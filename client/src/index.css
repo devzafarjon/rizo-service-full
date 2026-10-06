@@ -178,3 +178,233 @@
     content: none !important;
   }
 }
+
+/* ---------------------------------------------------------------------------------------------
+   Dark mode. The <html> element gets the "dark" class (see src/lib/theme.ts). The grey scales are
+   flipped through their variables, so every text-neutral-*, bg-neutral-*, border-gray-* … follows
+   automatically; the few hard-coded colours are mapped below. Screens only: printing stays light.
+   --------------------------------------------------------------------------------------------- */
+:root {
+  --chart-grid: #f3f4f6;
+}
+
+@media screen {
+  html.dark {
+    color-scheme: dark;
+    --chart-grid: #2a3146;
+    --color-page: #0f131c;
+    --color-surface: #181d2a;
+    --color-gray-50: #1c2231;
+    --color-gray-100: #232a3b;
+    --color-gray-200: #2c3449;
+    --color-gray-300: #3c4660;
+    --color-gray-400: #6f7a96;
+    --color-gray-500: #98a2bc;
+    --color-gray-600: #aeb6cb;
+    --color-gray-700: #c6ccdb;
+    --color-gray-800: #dde1eb;
+    --color-gray-900: #edeff5;
+    --color-gray-950: #f5f7fa;
+    --color-neutral-50: #1c2231;
+    --color-neutral-100: #232a3b;
+    --color-neutral-200: #2c3449;
+    --color-neutral-300: #3c4660;
+    --color-neutral-400: #6f7a96;
+    --color-neutral-500: #98a2bc;
+    --color-neutral-600: #aeb6cb;
+    --color-neutral-700: #c6ccdb;
+    --color-neutral-800: #dde1eb;
+    --color-neutral-900: #edeff5;
+    --color-neutral-950: #f5f7fa;
+    --color-rizo-soft: #2b1747;
+    --color-rizo-soft-strong: #3a2060;
+    --color-rizo-orange-soft: #33230f;
+  }
+
+  html.dark body {
+    background: #0f131c;
+    color: #dde1eb;
+  }
+
+  /* surfaces */
+  html.dark .bg-white {
+    background-color: #181d2a;
+  }
+  html.dark [class*="bg-white/"] {
+    background-color: rgb(24 29 42 / 0.92);
+  }
+  html.dark .bg-\[\#F5F7FA\],
+  html.dark .bg-\[\#FAFAFA\],
+  html.dark .bg-\[\#FAFBFC\],
+  html.dark .bg-\[\#F1F5F9\] {
+    background-color: #1c2231;
+  }
+  html.dark .bg-\[\#F5EBFD\],
+  html.dark .bg-\[\#F3E8FB\] {
+    background-color: #2b1747;
+  }
+  html.dark .bg-\[\#FFF4E5\] {
+    background-color: #33230f;
+  }
+  html.dark .border-\[\#F2F3F7\] {
+    border-color: #2c3449;
+  }
+  html.dark .border-\[\#E0CDF2\] {
+    border-color: #4a2b73;
+  }
+
+  /* text */
+  html.dark .text-\[\#1E293B\],
+  html.dark .text-\[\#222834\],
+  html.dark .text-\[\#141824\] {
+    color: #edeff5;
+  }
+  html.dark .text-\[\#475569\],
+  html.dark .text-\[\#4B5563\] {
+    color: #c6ccdb;
+  }
+  html.dark .text-\[\#7B00E0\],
+  html.dark .text-\[\#6500BD\] {
+    color: #bb82ff;
+  }
+  html.dark .text-\[\#5A0085\] {
+    color: #d6aefa;
+  }
+  html.dark .text-\[\#C56A00\] {
+    color: #f7a94a;
+  }
+  html.dark .text-\[\#8A4B00\] {
+    color: #f5b661;
+  }
+  html.dark .hover\:text-\[\#7B00E0\]:hover {
+    color: #d1a3ff;
+  }
+
+  html.dark table tbody tr:nth-child(even) {
+    background-color: #1c2231;
+  }
+  html.dark table tbody td {
+    border-color: #2c3449;
+  }
+  html.dark .recharts-legend-item-text {
+    color: #c6ccdb !important;
+  }
+  html.dark .recharts-default-tooltip {
+    background-color: #232a3b !important;
+    border-color: #3c4660 !important;
+  }
+  html.dark .recharts-tooltip-label,
+  html.dark .recharts-tooltip-item {
+    color: #dde1eb !important;
+  }
+  html.dark .recharts-cartesian-axis-tick-value {
+    fill: #98a2bc;
+  }
+  html.dark .bg-sky-50 {
+    background-color: #0f2a3a;
+  }
+  html.dark .text-sky-800 {
+    color: #7dd3fc;
+  }
+  html.dark .leaflet-control-attribution {
+    background-color: rgb(24 29 42 / 0.8) !important;
+    color: #98a2bc;
+  }
+  html.dark .leaflet-control-attribution a {
+    color: #bb82ff;
+  }
+  html.dark .text-black {
+    color: #edeff5;
+  }
+  html.dark .hover\:bg-\[\#F5EBFD\]:hover,
+  html.dark .data-focus\:bg-\[\#F5EBFD\][data-focus],
+  html.dark .hover\:bg-\[\#FFF4E5\]:hover {
+    background-color: #2b1747;
+  }
+  html.dark .hover\:bg-white:hover {
+    background-color: #232a3b;
+  }
+
+  /* brand buttons that are not solid purple */
+  html.dark .btn-rizo-ghost {
+    background: #181d2a;
+    color: #bb82ff;
+  }
+  html.dark .btn-rizo-ghost:hover {
+    background: #2b1747;
+  }
+
+  /* status colours: dark tint backgrounds, light text */
+  html.dark .bg-red-50,
+  html.dark .bg-rose-50 {
+    background-color: #3a1519;
+  }
+  html.dark .bg-red-100,
+  html.dark .bg-rose-100 {
+    background-color: #4a1a20;
+  }
+  html.dark .bg-amber-50 {
+    background-color: #392a0c;
+  }
+  html.dark .bg-amber-100 {
+    background-color: #4a360e;
+  }
+  html.dark .bg-emerald-50 {
+    background-color: #0f2f24;
+  }
+  html.dark .bg-emerald-100 {
+    background-color: #134032;
+  }
+  html.dark .text-red-600,
+  html.dark .text-red-700,
+  html.dark .text-red-800,
+  html.dark .text-rose-700 {
+    color: #fca5a5;
+  }
+  html.dark .text-amber-700,
+  html.dark .text-amber-800,
+  html.dark .text-amber-900 {
+    color: #fcd34d;
+  }
+  html.dark .text-emerald-700,
+  html.dark .text-emerald-800 {
+    color: #6ee7b7;
+  }
+  html.dark .border-amber-200,
+  html.dark .border-amber-300,
+  html.dark .ring-amber-200,
+  html.dark .ring-amber-300 {
+    border-color: #5c4513;
+    --tw-ring-color: #5c4513;
+  }
+  html.dark .ring-red-200,
+  html.dark .ring-rose-100,
+  html.dark .ring-rose-200,
+  html.dark .border-rose-200 {
+    border-color: #5a2128;
+    --tw-ring-color: #5a2128;
+  }
+  html.dark .ring-emerald-100,
+  html.dark .ring-emerald-200 {
+    --tw-ring-color: #1c5441;
+  }
+
+  /* the wordmark and the map */
+  html.dark img[src$="rizo-logo.svg"] {
+    filter: brightness(1.55) saturate(1.15);
+  }
+  html.dark .leaflet-tile-pane {
+    filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
+  }
+  html.dark .leaflet-container {
+    background: #0f131c;
+  }
+  html.dark input,
+  html.dark textarea,
+  html.dark select {
+    color-scheme: dark;
+  }
+  html.dark ::placeholder {
+    color: #6f7a96;
+  }
+}

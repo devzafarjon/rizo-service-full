@@ -1693,5 +1693,11 @@
     "saved": "Code saved",
     "emptyTitle": "No codes yet",
     "emptyBody": "Add your first defect code."
+  },
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "Match device"
   }
 }

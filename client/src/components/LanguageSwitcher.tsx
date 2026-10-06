@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { applyLocale, APP_LOCALES, type AppLocale, parseLocale } from "../i18n";
 import { useCustomerAuth } from "../features/auth/CustomerAuthContext";
 import { useStaffAuth } from "../features/auth/StaffAuthContext";
+import { ThemeToggle } from "./ThemeToggle";
 
 export function LanguageSwitcher({
   variant = "staff",
@@ -35,6 +36,8 @@ export function LanguageSwitcher({
       : "flex items-center gap-2 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100";
 
   return (
+    <>
+    <ThemeToggle variant={variant} />
     <Menu>
       <MenuButton className={buttonClass} aria-label={t("common.language")}>
         <Globe size={16} className={variant === "dark" ? "text-[#6500BD]" : "text-[#7B00E0]"} />
@@ -60,5 +63,6 @@ export function LanguageSwitcher({
         ))}
       </MenuItems>
     </Menu>
+    </>
   );
 }

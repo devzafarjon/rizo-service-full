@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/rizo-logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#F5F7FA" />
+    <script>
+      // Apply the saved theme before the page paints so there is no flash of the wrong colours.
+      (function () {
+        try {
+          var mode = localStorage.getItem("rizo_theme") || "system";
+          var dark = mode === "dark" || (mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (dark) document.documentElement.classList.add("dark");
+        } catch (e) {}
+      })();
+    </script>
     <title>RIZO Service</title>
   </head>
   <body>
