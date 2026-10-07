@@ -1073,7 +1073,7 @@
     },
     "notifications": {
       "title": "Stay on alerts",
-      "body": "Notifications collect overdue jobs, low stock, and assignment notes. The bell in the header is the same inbox."
+      "body": "Notifications collect overdue jobs, low stock, and assignment notes. Open them from the bell in the header."
     },
     "reports": {
       "title": "Reports live here",

@@ -3,7 +3,6 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   BarChart3,
-  Bell,
   Building2,
   CalendarClock,
   CalendarDays,
@@ -48,7 +47,6 @@ export const ADMIN_DAILY: NavItem[] = [
   { to: "/app/kanban", labelKey: "nav.board", icon: Kanban, roles: OFFICE, tour: "kanban" },
   { to: "/app/requests/new", labelKey: "nav.newRequest", icon: Plus, roles: OFFICE, end: true, tour: "new-request" },
   { to: "/app/customers", labelKey: "nav.customers", icon: Users, roles: OFFICE, end: true },
-  { to: "/app/alerts", labelKey: "nav.notifications", icon: Bell, roles: ["admin"], tour: "notifications" },
 ];
 
 export const ADMIN_MANAGEMENT: NavItem[] = [
