@@ -6,6 +6,8 @@ import { formatRequestId } from "./displayId.js";
 import { prisma } from "./prisma.js";
 import { expireOldEstimates } from "./estimates.js";
 import { createCustomerNotification } from "./notifyCustomer.js";
+import { getAppSettings } from "./settings.js";
+import { tashkentCalendarDate } from "./displayId.js";
 import type { RequestStatus } from "@prisma/client";
 
 type TimerInput = {
@@ -41,10 +43,10 @@ export async function syncOverdueRequests() {
   for (const job of open) {
     const timer = slaTimerFor(job, now);
     if (!timer?.isOverdue) {
-      if (job.overdueAt) {
+      if (job.overdueAt || job.escalationLevel > 0) {
         await prisma.serviceRequest.update({
           where: { id: job.id },
-          data: { overdueAt: null },
+          data: { overdueAt: null, escalationLevel: 0, escalatedAt: null },
         });
       }
       continue;
@@ -80,7 +82,42 @@ export async function syncOverdueRequests() {
       });
     }
   }
-  return { scanned: open.length, flagged };
+  return { scanned: open.length, flagged, escalated: await escalateOverdueRequests(open, now) };
+}
+
+/**
+ * Overdue first tells the admins (above). If nobody has moved the job after `escalation_hours` it is escalated
+ * (a second alert that also goes to the admin chat); after `escalation_hours_urgent` it becomes urgent.
+ */
+async function escalateOverdueRequests(open: Array<{ id: string; displayId: string; priority: string; escalationLevel: number; product: { name: string }; assignedTechnicianId: string | null }>, now: number) {
+  const { escalationHours, escalationHoursUrgent } = await getAppSettings();
+  let escalated = 0;
+  for (const job of open) {
+    const fresh = await prisma.serviceRequest.findUnique({ where: { id: job.id }, select: { overdueAt: true, escalationLevel: true } });
+    if (!fresh?.overdueAt) continue;
+    const overdueHours = (now - fresh.overdueAt.getTime()) / 3_600_000;
+    const level = overdueHours >= escalationHoursUrgent ? 2 : overdueHours >= escalationHours ? 1 : 0;
+    if (level <= fresh.escalationLevel) continue;
+    await prisma.serviceRequest.update({
+      where: { id: job.id },
+      data: { escalationLevel: level, escalatedAt: new Date(), ...(level === 2 && job.priority !== "urgent" ? { priority: "urgent" } : {}) },
+    });
+    await notifyAdmins({
+      message: `${formatRequestId(job.displayId)} is still overdue (level ${level})`,
+      code: "escalation",
+      serviceRequestId: job.id,
+      params: { displayId: job.displayId, product: job.product.name, level, hours: Math.floor(overdueHours) },
+    });
+    await writeAudit({
+      actor: { id: "system", type: "system", name: "sla" },
+      action: "request.escalated",
+      entityType: "ServiceRequest",
+      entityId: job.id,
+      newValue: { level, hours: Math.floor(overdueHours) },
+    });
+    escalated += 1;
+  }
+  return escalated;
 }
 
 export { isTerminalStatus };
@@ -105,8 +142,30 @@ export async function sendVisitReminders() {
   return sent;
 }
 
+/** Tells a customer once, a few weeks ahead, that the warranty of a product is about to end (and that a plan is available). */
+export async function sendWarrantyExpiryNotices() {
+  const { warrantyExpiryNoticeDays } = await getAppSettings();
+  if (warrantyExpiryNoticeDays <= 0) return 0;
+  const today = new Date(`${tashkentCalendarDate(new Date())}T00:00:00.000Z`);
+  const until = new Date(today.getTime() + warrantyExpiryNoticeDays * 86_400_000);
+  const sales = await prisma.sale.findMany({
+    where: { voidedAt: null, warrantyMonths: { gt: 0 }, warrantyExpiry: { gte: today, lte: until } },
+    include: { product: true },
+  });
+  let sent = 0;
+  for (const sale of sales) {
+    const already = await prisma.notification.count({ where: { customerId: sale.customerId, code: "warrantyExpiring", params: { path: ["saleId"], equals: sale.id } } });
+    if (already > 0) continue;
+    const expiry = sale.warrantyExpiry.toISOString().slice(0, 10);
+    await createCustomerNotification(sale.customerId, null, `The warranty for ${sale.product.name} ends on ${expiry}.`, "warrantyExpiring", { saleId: sale.id, product: sale.product.name, until: expiry });
+    sent += 1;
+  }
+  return sent;
+}
+
 export async function runHousekeeping() {
   const expired = await expireOldEstimates();
   const reminders = await sendVisitReminders();
-  return { expired, reminders };
+  const warrantyNotices = await sendWarrantyExpiryNotices();
+  return { expired, reminders, warrantyNotices };
 }

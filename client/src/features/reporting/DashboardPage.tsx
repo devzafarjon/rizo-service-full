@@ -79,6 +79,15 @@ export function DashboardPage() {
         <Kpi label={t("reports.avgHours")} value={formatDurationHours(data.totals.avgResolutionHours)} accent="orange" />
       </div>
 
+      <h2 className="mt-6 mb-2 text-xs font-bold tracking-wide text-neutral-500 uppercase">{t("dashboard.serviceQuality")}</h2>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Kpi label={t("dashboard.ftf")} value={data.service.firstTimeFixRate == null ? t("common.dash") : `${data.service.firstTimeFixRate}%`} accent={data.service.firstTimeFixRate != null && data.service.firstTimeFixRate < 70 ? "red" : "green"} />
+        <Kpi label={t("dashboard.callbacks")} value={data.service.callbackRate == null ? t("common.dash") : `${data.service.callbackRate}%`} accent="orange" />
+        <Kpi label={t("dashboard.callbackCost")} value={formatMoney(data.service.callbackCost)} accent="red" />
+        <Kpi label={t("dashboard.partsWait")} value={formatDurationHours(data.service.avgPartsWaitHours)} accent="orange" />
+      </div>
+      <p className="mt-2 text-xs text-neutral-500">{t("dashboard.ftfHint")}</p>
+
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <ChartPanel title={t("dashboard.trend")}>
           <ResponsiveContainer>
@@ -132,6 +141,22 @@ export function DashboardPage() {
             <Kpi label={t("dashboard.debt")} value={formatMoney(data.totals.debt)} accent="red" to="/app/reports/debts" />
             <Kpi label={t("dashboard.avgWork")} value={data.totals.avgWorkMinutes == null ? t("common.dash") : formatDurationHours(data.totals.avgWorkMinutes / 60)} accent="orange" />
           </div>
+
+          {data.service.statusHours.length > 0 ? (
+            <div className="mt-4">
+              <ChartPanel title={t("dashboard.timeInStatus")}>
+                <ResponsiveContainer>
+                  <BarChart data={data.service.statusHours.map((row) => ({ name: t(`status.${row.status}`, { defaultValue: row.status }), hours: row.hours }))}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip formatter={(value) => [`${value} ${t("common.hoursShort")}`, t("dashboard.timeInStatus")]} />
+                    <Bar dataKey="hours" fill={CHART.purple} radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartPanel>
+            </div>
+          ) : null}
 
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
             <ChartPanel title={t("dashboard.topProducts")}>

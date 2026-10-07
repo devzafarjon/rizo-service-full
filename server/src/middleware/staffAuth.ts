@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { HttpError } from "../lib/httpError.js";
 import { verifyToken, type StaffTokenPayload } from "../lib/jwt.js";
 import { prisma } from "../lib/prisma.js";
+import type { StaffRoleName } from "../lib/roles.js";
 
 // Deactivated staff lose access within seconds even though their JWT is still valid.
 const activeCache = new Map<string, { active: boolean; at: number }>();
@@ -49,7 +50,7 @@ export async function staffAuth(req: Request, _res: Response, next: NextFunction
   }
 }
 
-export function requireStaffRole(...roles: Array<"admin" | "technician" | "receptionist">) {
+export function requireStaffRole(...roles: StaffRoleName[]) {
   return (req: Request, _res: Response, next: NextFunction) => {
     if (!req.staff) {
       next(new HttpError(401, "Sign in required"));
@@ -69,4 +70,11 @@ export const requireOffice = requireStaffRole("admin", "receptionist");
 /** Reads are open to the office; writes stay with admins. */
 export function officeReadAdminWrite(req: Request, res: Response, next: NextFunction) {
   return (req.method === "GET" ? requireOffice : requireStaffRole("admin"))(req, res, next);
+}
+
+/** Reads are open to `readRoles`, everything that changes data to `writeRoles`. */
+export function readWriteRoles(readRoles: StaffRoleName[], writeRoles: StaffRoleName[]) {
+  const read = requireStaffRole(...readRoles);
+  const write = requireStaffRole(...writeRoles);
+  return (req: Request, res: Response, next: NextFunction) => (req.method === "GET" ? read(req, res, next) : write(req, res, next));
 }

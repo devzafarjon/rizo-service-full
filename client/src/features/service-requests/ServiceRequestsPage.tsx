@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -9,11 +9,12 @@ import { inputClass } from "../../components/Field";
 import { PageSkeleton } from "../../components/PageSkeleton";
 import { SurfaceTable, Td, Th } from "../../components/SurfaceTable";
 import { useStaffAuth } from "../auth/StaffAuthContext";
-import { api } from "../../lib/api";
+import { useToast } from "../../components/toast";
+import { api, apiErrorMessage } from "../../lib/api";
 import { formatDateTime, formatRequestId } from "../../lib/format";
 import { localizedName } from "../../lib/localized";
 import { ALL_STATUSES } from "../../lib/status";
-import type { RequestStatus, ServiceRequest, ServiceType } from "../../lib/types";
+import type { Priority, RequestStatus, ServiceRequest, ServiceType, TechnicianSummary } from "../../lib/types";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
 
 const TYPE_FILTERS: Array<"" | ServiceType> = ["", "installation", "repair"];
@@ -22,7 +23,13 @@ const STATUS_FILTERS: Array<"" | RequestStatus> = ["", ...ALL_STATUSES];
 
 export function ServiceRequestsPage() {
   const { t } = useTranslation();
-  const { token } = useStaffAuth();
+  const { token, user } = useStaffAuth();
+  const { notify } = useToast();
+  const queryClient = useQueryClient();
+  const [selected, setSelected] = useState<string[]>([]);
+  const [technicianId, setTechnicianId] = useState("");
+  const [priority, setPriority] = useState<"" | Priority>("");
+  const canBulk = user?.role === "admin" || user?.role === "receptionist";
   const [q, setQ] = useState("");
   const [type, setType] = useState<"" | ServiceType>("");
   const [status, setStatus] = useState<"" | RequestStatus>("");
@@ -41,11 +48,31 @@ export function ServiceRequestsPage() {
     },
   });
 
+  const technicians = useQuery({
+    queryKey: ["staff", "technicians"],
+    enabled: Boolean(token && canBulk && selected.length > 0),
+    queryFn: () => api<{ technicians: TechnicianSummary[] }>("/api/staff/technicians", { token }),
+  });
+  const bulk = useMutation({
+    mutationFn: (body: Record<string, unknown>) => api<{ ok: string[]; failed: Array<{ id: string; code: string }> }>("/api/staff/requests/bulk", { method: "POST", token, body: JSON.stringify({ ids: selected, ...body }) }),
+    onSuccess: async (result) => {
+      notify(result.failed.length > 0 ? t("requests.bulkPartial", { ok: result.ok.length, failed: result.failed.length }) : t("requests.bulkDone", { count: result.ok.length }), result.failed.length > 0 ? "error" : "success");
+      setSelected(result.failed.map((row) => row.id));
+      setTechnicianId("");
+      setPriority("");
+      await queryClient.invalidateQueries({ queryKey: ["staff", "requests"] });
+      await queryClient.invalidateQueries({ queryKey: ["staff", "technicians"] });
+    },
+    onError: (error) => notify(apiErrorMessage(error, t), "error"),
+  });
+
   if (list.isLoading) {
     return <PageSkeleton />;
   }
 
   const requests = list.data?.requests ?? [];
+  const allSelected = requests.length > 0 && requests.every((row) => selected.includes(row.id));
+  const toggle = (id: string) => setSelected((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
 
   return (
     <div>
@@ -93,6 +120,41 @@ export function ServiceRequestsPage() {
         </select>
       </div>
 
+      {canBulk && selected.length > 0 ? (
+        <div className="sticky top-[4.5rem] z-20 mb-3 flex flex-wrap items-center gap-2 rounded-2xl border border-[#E0CDF2] bg-[#F5EBFD] px-4 py-3 shadow-sm">
+          <span className="text-sm font-bold text-[#4B0089]">{t("requests.selected", { count: selected.length })}</span>
+          <select className={`${inputClass} h-10 w-auto min-w-40`} value={technicianId} onChange={(event) => setTechnicianId(event.target.value)} aria-label={t("common.technician")}>
+            <option value="">{t("requests.pickTechnician")}</option>
+            <option value="none">{t("common.unassigned")}</option>
+            {(technicians.data?.technicians ?? []).map((tech) => (
+              <option key={tech.id} value={tech.id}>
+                {tech.name}
+              </option>
+            ))}
+          </select>
+          <button type="button" className="btn-rizo-ghost h-10" disabled={!technicianId || bulk.isPending} onClick={() => bulk.mutate({ action: "assign", technicianId: technicianId === "none" ? null : technicianId })}>
+            {t("requests.assign")}
+          </button>
+          <select className={`${inputClass} h-10 w-auto min-w-36`} value={priority} onChange={(event) => setPriority(event.target.value as "" | Priority)} aria-label={t("common.priority")}>
+            <option value="">{t("requests.pickPriority")}</option>
+            {(["low", "medium", "high", "urgent"] as const).map((item) => (
+              <option key={item} value={item}>
+                {t(`priority.${item}`)}
+              </option>
+            ))}
+          </select>
+          <button type="button" className="btn-rizo-ghost h-10" disabled={!priority || bulk.isPending} onClick={() => bulk.mutate({ action: "priority", priority })}>
+            {t("requests.setPriority")}
+          </button>
+          <button type="button" className="h-10 rounded-lg px-3 text-sm font-bold text-red-700 hover:bg-red-50" disabled={bulk.isPending} onClick={() => window.confirm(t("requests.bulkCancelConfirm", { count: selected.length })) && bulk.mutate({ action: "cancel" })}>
+            {t("common.cancel")}
+          </button>
+          <button type="button" className="ml-auto text-sm font-semibold text-neutral-600 hover:underline" onClick={() => setSelected([])}>
+            {t("requests.clearSelection")}
+          </button>
+        </div>
+      ) : null}
+
       {requests.length === 0 ? (
         <EmptyState
           title={t("requests.emptyTitle")}
@@ -107,6 +169,11 @@ export function ServiceRequestsPage() {
         <SurfaceTable>
           <thead>
             <tr className="border-b border-neutral-100">
+              {canBulk ? (
+                <Th>
+                  <input type="checkbox" checked={allSelected} onChange={() => setSelected(allSelected ? [] : requests.map((row) => row.id))} aria-label={t("requests.selectAll")} />
+                </Th>
+              ) : null}
               <Th>{t("common.requestId")}</Th>
               <Th>{t("common.customer")}</Th>
               <Th>{t("common.type")}</Th>
@@ -120,6 +187,11 @@ export function ServiceRequestsPage() {
           <tbody>
             {requests.map((request) => (
               <tr key={request.id} className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50">
+                {canBulk ? (
+                  <Td>
+                    <input type="checkbox" checked={selected.includes(request.id)} onChange={() => toggle(request.id)} aria-label={formatRequestId(request.displayId)} />
+                  </Td>
+                ) : null}
                 <Td>
                   <Link to={`/app/requests/${request.id}`} className="font-semibold text-[#7B00E0] hover:underline">
                     {formatRequestId(request.displayId)}

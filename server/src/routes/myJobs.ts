@@ -21,6 +21,8 @@ import { acceptJobPhotos, publicPhotoUrl, removeUploadedFile } from "../lib/uplo
 import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
 import { getAppSettings, isBlockZeroStock } from "../lib/settings.js";
 import { maybeAlertLowStock } from "../lib/stockAlerts.js";
+import { checkedIds, checklistView } from "../lib/checklists.js";
+import { consumeForJob, releaseFromJob, technicianStockList } from "../lib/techStock.js";
 import { normalizeDisplayIdQuery, tashkentCalendarDate } from "../lib/displayId.js";
 import { parseDateOnly, toDateOnly } from "../lib/warranty.js";
 import { earningsFor } from "./payroll.js";
@@ -183,6 +185,28 @@ myJobsRouter.get(
   }),
 );
 
+// The parts this technician carries.
+myJobsRouter.get(
+  "/stock",
+  asyncHandler(async (req, res) => {
+    res.json({ stock: await technicianStockList(req.staff!.sub) });
+  }),
+);
+
+myJobsRouter.put(
+  "/:id/checklist",
+  asyncHandler(async (req, res) => {
+    const body = parseBody(z.object({ kind: z.enum(["diagnosis", "completion"]), checked: z.array(z.string().max(40)).max(60) }), req.body);
+    const job = await loadOpenJob(req.staff!.sub, req.params.id);
+    const stored = (job.completionChecklist && typeof job.completionChecklist === "object" && !Array.isArray(job.completionChecklist) ? job.completionChecklist : {}) as Record<string, unknown>;
+    const view = await checklistView(job);
+    const valid = new Set((body.kind === "diagnosis" ? view.diagnosis.items : view.completion.items).map((item) => item.id));
+    const next = { diagnosis: checkedIds(stored, "diagnosis"), completion: checkedIds(stored, "completion"), [body.kind]: [...new Set(body.checked)].filter((id) => valid.has(id)) };
+    await prisma.serviceRequest.update({ where: { id: job.id }, data: { completionChecklist: next } });
+    res.json(await jobWorkPayload(await loadOwnedJob(req.staff!.sub, job.id)));
+  }),
+);
+
 myJobsRouter.get(
   "/lookup/:displayId",
   asyncHandler(async (req, res) => {
@@ -248,12 +272,25 @@ myJobsRouter.post(
   asyncHandler(async (req, res) => {
     const job = await loadOpenJob(req.staff!.sub, req.params.id);
     if (job.locationType !== "on_site") throw new HttpError(400, "Only on-site jobs have a trip", "arrivalOnSiteOnly");
-    if (!job.enRouteAt) {
-      await prisma.serviceRequest.update({ where: { id: job.id }, data: { enRouteAt: new Date() } });
-      await createCustomerNotification(job.customerId, job.id, "Your technician is on the way", "enRoute", {
-        displayId: job.displayId,
-        technician: job.assignedTechnician?.name.trim().split(/\s+/)[0] ?? "",
+    // The technician may add how many minutes the trip takes; the customer then sees an arrival estimate.
+    const body = parseBody(z.object({ etaMinutes: z.coerce.number().int().min(1).max(480).optional() }), req.body ?? {});
+    if (!job.enRouteAt || (body.etaMinutes != null && body.etaMinutes !== job.etaMinutes)) {
+      const firstTime = !job.enRouteAt;
+      await prisma.serviceRequest.update({
+        where: { id: job.id },
+        data: { enRouteAt: job.enRouteAt ?? new Date(), ...(body.etaMinutes != null ? { etaMinutes: body.etaMinutes, etaSetAt: new Date() } : {}) },
       });
+      await createCustomerNotification(
+        job.customerId,
+        job.id,
+        body.etaMinutes != null ? `Your technician is on the way, about ${body.etaMinutes} min` : "Your technician is on the way",
+        firstTime || body.etaMinutes == null ? "enRoute" : "etaUpdate",
+        {
+          displayId: job.displayId,
+          technician: job.assignedTechnician?.name.trim().split(/\s+/)[0] ?? "",
+          ...(body.etaMinutes != null ? { minutes: body.etaMinutes } : {}),
+        },
+      );
       publishRequest("request:updated", serializeRequest((await loadOwnedJob(req.staff!.sub, job.id)) as RequestRecord));
     }
     res.json(await jobWorkPayload(await loadOwnedJob(req.staff!.sub, job.id)));
@@ -443,7 +480,7 @@ myJobsRouter.post(
     const nextQty = (existingLine?.quantity ?? 0) + quantity;
 
     await prisma.$transaction(async (tx) => {
-      await decrementStock(tx, part, quantity);
+      await consumeForJob(tx, { technicianId: req.staff!.sub, part, quantity, requestId: job.id });
       if (existingLine) {
         await tx.requestPartLine.update({
           where: { id: existingLine.id },
@@ -478,10 +515,7 @@ myJobsRouter.patch(
     }
     if (body.quantity === 0) {
       await prisma.$transaction(async (tx) => {
-        await tx.sparePart.update({
-          where: { id: line.sparePartId },
-          data: { stockQuantity: { increment: line.quantity } },
-        });
+        await releaseFromJob(tx, { technicianId: req.staff!.sub, sparePartId: line.sparePartId, quantity: line.quantity, requestId: job.id });
         await tx.requestPartLine.delete({ where: { id: line.id } });
       });
       res.json(await jobWorkPayload(await loadOwnedJob(req.staff!.sub, job.id)));
@@ -498,12 +532,9 @@ myJobsRouter.patch(
     }
     await prisma.$transaction(async (tx) => {
       if (diff > 0) {
-        await decrementStock(tx, part, diff);
+        await consumeForJob(tx, { technicianId: req.staff!.sub, part, quantity: diff, requestId: job.id });
       } else {
-        await tx.sparePart.update({
-          where: { id: line.sparePartId },
-          data: { stockQuantity: { increment: -diff } },
-        });
+        await releaseFromJob(tx, { technicianId: req.staff!.sub, sparePartId: line.sparePartId, quantity: -diff, requestId: job.id });
       }
       await tx.requestPartLine.update({
         where: { id: line.id },
@@ -524,10 +555,7 @@ myJobsRouter.delete(
       throw new HttpError(404, "Part line not found");
     }
     await prisma.$transaction(async (tx) => {
-      await tx.sparePart.update({
-        where: { id: line.sparePartId },
-        data: { stockQuantity: { increment: line.quantity } },
-      });
+      await releaseFromJob(tx, { technicianId: req.staff!.sub, sparePartId: line.sparePartId, quantity: line.quantity, requestId: job.id });
       await tx.requestPartLine.delete({ where: { id: line.id } });
     });
     res.json(await jobWorkPayload(await loadOwnedJob(req.staff!.sub, job.id)));
@@ -653,18 +681,27 @@ async function jobWorkPayload(job: OwnedJob) {
     prisma.partOrder.findMany({ where: { serviceRequestId: job.id }, orderBy: { createdAt: "desc" }, include: { sparePart: true } }),
     prisma.requestNote.findMany({ where: { serviceRequestId: job.id }, orderBy: { createdAt: "asc" }, include: { staffUser: { select: { name: true } }, customer: { select: { name: true } } } }),
   ]);
+  const [checklist, carried] = await Promise.all([checklistView(job), technicianStockList(job.assignedTechnicianId ?? "")]);
+  const carriedById = new Map(carried.map((row) => [row.sparePartId, row.quantity]));
+  const work = serializeJobWork(job, {
+    requireService: services.length > 0,
+    type: job.type,
+    sale: job.sale,
+    coverage: coverageOf(job.product),
+    decision: job.decision,
+  });
+  // Same rule as when the job is completed: repairs that are not replaced need their required items ticked.
+  const checklistGap = checklist.missingRequired.length > 0 && job.type === "repair" && job.resolutionType !== "replace";
   return {
     job: serializeTechJob(job),
     pauses: serializePauses(job.pauses),
     timeline: await loadTimeline(job),
     decision: job.decision,
-    ...serializeJobWork(job, {
-      requireService: services.length > 0,
-      type: job.type,
-      sale: job.sale,
-      coverage: coverageOf(job.product),
-      decision: job.decision,
-    }),
+    ...work,
+    // Required checklist items count towards completion like a missing photo does.
+    canComplete: work.canComplete && !checklistGap,
+    missing: checklistGap ? [...work.missing, "checklist"] : work.missing,
+    checklist,
     estimates: await Promise.all(estimates.map(serializeEstimate)),
     defectCodes: defectCodes.map((row) => ({ id: row.id, code: row.code, ...serializeNamed(row) })),
     partOrders: partOrders.map((row) => ({
@@ -701,6 +738,7 @@ async function jobWorkPayload(job: OwnedJob) {
         price: Number(item.price),
         productCategories: item.productCategories,
         stockQuantity: item.stockQuantity,
+        carried: carriedById.get(item.id) ?? 0,
         lowStockThreshold: item.lowStockThreshold,
         lowStock: item.stockQuantity <= item.lowStockThreshold,
       })),
@@ -716,29 +754,3 @@ function serializeTechJob(job: Prisma.ServiceRequestGetPayload<{ include: typeof
   };
 }
 
-async function decrementStock(
-  tx: Prisma.TransactionClient,
-  part: { id: string; name: string; nameUz: string; nameRu: string; nameEn: string; stockQuantity: number },
-  quantity: number,
-) {
-  const updated = await tx.sparePart.updateMany({
-    where: { id: part.id, stockQuantity: { gte: quantity } },
-    data: { stockQuantity: { decrement: quantity } },
-  });
-  if (updated.count === 0) {
-    const latest = await tx.sparePart.findUnique({ where: { id: part.id } });
-    const count = latest?.stockQuantity ?? 0;
-    if (await isBlockZeroStock()) {
-      throw new HttpError(400, `Only ${count} ${part.name} in stock`, "stockInsufficient", {
-        count,
-        ...serializeNamed(part),
-      });
-    }
-    if (count > 0) {
-      await tx.sparePart.update({
-        where: { id: part.id },
-        data: { stockQuantity: 0 },
-      });
-    }
-  }
-}

@@ -124,7 +124,8 @@ const INSTALL_TECH: Table = {
   cancelled: none,
 };
 
-export type StaffRoleName = "admin" | "receptionist" | "technician";
+export type { StaffRoleName } from "./roles.js";
+import type { StaffRoleName } from "./roles.js";
 
 export function allowedNext(role: StaffRoleName, type: ServiceType, from: RequestStatus): RequestStatus[] {
   const office = role !== "technician";

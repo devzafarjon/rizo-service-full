@@ -13,6 +13,7 @@ import { isRegionCode, resolveRegionCode } from "../lib/regions.js";
 import { optionalText } from "../lib/zodFields.js";
 import { requireOffice, requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
 import { staffActor, writeAudit } from "../lib/audit.js";
+import { OPEN_STATUSES } from "../lib/status.js";
 
 const createSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
@@ -275,6 +276,33 @@ customersRouter.delete(
   }),
 );
 
+// Erase a customer's personal data on their request. Requests and sales stay for the accounts, without a name or number.
+customersRouter.post(
+  "/:id/anonymize",
+  requireStaffRole("admin"),
+  asyncHandler(async (req, res) => {
+    const customer = await prisma.customer.findUnique({ where: { id: req.params.id } });
+    if (!customer) throw new HttpError(404, "Customer not found");
+    const open = await prisma.serviceRequest.count({ where: { customerId: customer.id, status: { in: OPEN_STATUSES } } });
+    if (open > 0) throw new HttpError(409, "This customer still has open requests", "customerHasOpenRequests", { open });
+    await prisma.customer.update({
+      where: { id: customer.id },
+      data: {
+        name: "Deleted customer",
+        phone: `deleted-${customer.id}`,
+        address: null,
+        notes: null,
+        telegramChatId: null,
+        passwordHash: await hashPassword(crypto.randomBytes(24).toString("hex")),
+        anonymizedAt: new Date(),
+        deletionRequestedAt: null,
+      },
+    });
+    await writeAudit({ actor: staffActor(req.staff), action: "customer.anonymize", entityType: "Customer", entityId: customer.id });
+    res.json({ ok: true });
+  }),
+);
+
 function serializeCustomer(customer: {
   id: string;
   name: string;
@@ -283,6 +311,8 @@ function serializeCustomer(customer: {
   regionCode: string;
   notes: string | null;
   createdAt: Date;
+  deletionRequestedAt?: Date | null;
+  anonymizedAt?: Date | null;
   _count: { sales: number; requests: number };
 }) {
   return {
@@ -293,6 +323,8 @@ function serializeCustomer(customer: {
     regionCode: customer.regionCode,
     notes: customer.notes,
     createdAt: customer.createdAt.toISOString(),
+    deletionRequested: Boolean(customer.deletionRequestedAt),
+    anonymized: Boolean(customer.anonymizedAt),
     salesCount: customer._count.sales,
     requestsCount: customer._count.requests,
   };

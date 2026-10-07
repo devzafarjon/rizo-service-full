@@ -15,6 +15,7 @@ import { formatDate, formatDateTime, formatMoney, formatRequestId, formatStamp }
 import { localizedName } from "../../lib/localized";
 import type { PortalEstimate, PortalRequest } from "../../lib/types";
 import { FeedbackForm } from "./FeedbackForm";
+import { PayCard, VisitCard } from "./VisitCard";
 import { portalInputClass, portalTextareaClass } from "./fields";
 
 function EstimateCard({ requestId, estimate, onDone }: { requestId: string; estimate: PortalEstimate; onDone: () => void }) {
@@ -176,6 +177,8 @@ export function PortalRequestDetailPage() {
           {t("portal.technicianOnTheWay", { name: request.assignedTechnician?.name ?? "" })}
         </p>
       ) : null}
+      <VisitCard request={request} onChanged={refresh} />
+      <PayCard request={request} urlBase={`/api/customer/requests/${request.id}`} />
       {request.status === "rejected" && request.rejectionReason ? (
         <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">{t("portal.rejectedBecause", { reason: request.rejectionReason })}</p>
       ) : null}

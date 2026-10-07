@@ -7,7 +7,8 @@ import { prisma } from "../lib/prisma.js";
 import { handlePrismaError } from "../lib/prismaErrors.js";
 import { namedFromInput, namedSearch, serializeNamed } from "../lib/named.js";
 import { money } from "../lib/warranty.js";
-import { officeReadAdminWrite, requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
+import { readWriteRoles, requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
+import { READ_MONEY, READ_OFFICE } from "../lib/roles.js";
 import { maybeAlertLowStock } from "../lib/stockAlerts.js";
 import { ensureCategories } from "../lib/categories.js";
 
@@ -55,7 +56,7 @@ const partPatchSchema = servicePatchSchema.extend({
 });
 
 export const catalogRouter = Router();
-catalogRouter.use(staffAuth, officeReadAdminWrite);
+catalogRouter.use(staffAuth, readWriteRoles(["admin", "receptionist", "accountant", "warehouse"], ["admin", "warehouse"]));
 
 catalogRouter.get(
   "/categories",
@@ -67,6 +68,7 @@ catalogRouter.get(
 
 catalogRouter.post(
   "/categories",
+  requireStaffRole("admin"),
   asyncHandler(async (req, res) => {
     const body = parseBody(z.object({ name: z.string().trim().min(1, "Category name is required").max(60) }), req.body);
     const [name] = await ensureCategories([body.name]);
@@ -95,6 +97,7 @@ catalogRouter.get(
 
 catalogRouter.post(
   "/services",
+  requireStaffRole("admin"),
   asyncHandler(async (req, res) => {
     const body = parseBody(serviceSchema, req.body);
     await ensureCategories(body.productCategories);
@@ -108,6 +111,7 @@ catalogRouter.post(
 
 catalogRouter.patch(
   "/services/:id",
+  requireStaffRole("admin"),
   asyncHandler(async (req, res) => {
     const body = parseBody(servicePatchSchema, req.body);
     if (body.productCategories) await ensureCategories(body.productCategories);
@@ -132,6 +136,7 @@ catalogRouter.patch(
 
 catalogRouter.delete(
   "/services/:id",
+  requireStaffRole("admin"),
   asyncHandler(async (req, res) => {
     const item = await prisma.serviceCatalogItem.findUnique({
       where: { id: req.params.id },

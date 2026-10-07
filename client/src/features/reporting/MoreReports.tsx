@@ -16,7 +16,7 @@ import { api, apiErrorMessage } from "../../lib/api";
 import { formatDate, formatMoney, formatPhone, formatRequestId } from "../../lib/format";
 import { categoryLabel, localizedName } from "../../lib/localized";
 import { defaultReportQuery, downloadCsv, reportQueryString, type ReportQuery } from "../../lib/reportQuery";
-import type { Named, RequestStatus } from "../../lib/types";
+import type { FiscalReport, Named, PartnersReport, RequestStatus } from "../../lib/types";
 import { CHART, ChartPanel } from "./charts";
 import { ReportChrome, ReportPanel } from "./ReportChrome";
 
@@ -416,6 +416,145 @@ export function PayrollReportPage() {
           </form>
         ) : null}
       </Modal>
+    </ReportChrome>
+  );
+}
+
+/** What partner service centres are owed: a share of the labour plus a fixed amount for each finished job. */
+export function PartnersReportPage() {
+  const { t } = useTranslation();
+  const { token } = useStaffAuth();
+  const [query, setQuery] = useState<ReportQuery>(() => defaultReportQuery());
+  const report = useQuery({
+    queryKey: ["staff", "reports", "partners", query],
+    enabled: Boolean(token),
+    queryFn: () => api<PartnersReport>(`/api/staff/reports/partners?${reportQueryString(query)}`, { token }),
+  });
+  if (report.isLoading) return <PageSkeleton />;
+  const data = report.data;
+  if (!data) return <EmptyState title={t("reports.loadFailed")} body={t("reports.loadFailedBody")} />;
+  return (
+    <ReportChrome
+      title={t("reports.nav.partners")}
+      intro={t("reports.nav.partnersBody")}
+      query={query}
+      onChange={setQuery}
+      onExport={() =>
+        downloadCsv("rizo-report-partners.csv", [
+          [t("reports.partnerCenter"), t("reports.jobsDone"), t("reports.labour"), t("reports.payout")],
+          ...data.rows.map((row) => [row.center.name, row.jobs, row.labour, row.payout]),
+        ])
+      }
+    >
+      <div className="mb-4 grid gap-4 sm:grid-cols-3">
+        <Summary label={t("reports.totalPayout")} value={formatMoney(data.totalPayout)} accent="orange" />
+        <Summary label={t("reports.partnerCenters")} value={String(data.rows.length)} />
+        <Summary label={t("reports.jobsDone")} value={String(data.rows.reduce((sum, row) => sum + row.jobs, 0))} />
+      </div>
+      {data.rows.length === 0 ? (
+        <EmptyState title={t("reports.noPartners")} body={t("reports.noPartnersBody")} />
+      ) : (
+        <div className="space-y-4">
+          {data.rows.map((row) => (
+            <ReportPanel key={row.center.id} title={`${row.center.name} · ${row.center.payoutPercent}% + ${formatMoney(row.center.payoutFixedPerJob)}`}>
+              <p className="mb-3 text-sm text-neutral-600">
+                {t("reports.partnerLine", { jobs: row.jobs, labour: formatMoney(row.labour), payout: formatMoney(row.payout) })}
+              </p>
+              {row.detail.length === 0 ? null : (
+                <SurfaceTable>
+                  <thead>
+                    <tr>
+                      <Th>{t("common.requestId")}</Th>
+                      <Th>{t("common.product")}</Th>
+                      <Th>{t("common.completed")}</Th>
+                      <Th>{t("reports.labour")}</Th>
+                      <Th>{t("reports.payout")}</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {row.detail.map((job) => (
+                      <tr key={job.id}>
+                        <Td className="font-mono text-xs font-semibold">{formatRequestId(job.displayId)}</Td>
+                        <Td>{job.product}</Td>
+                        <Td>{job.completedAt ? formatDate(job.completedAt.slice(0, 10)) : t("common.dash")}</Td>
+                        <Td>{formatMoney(job.labour)}</Td>
+                        <Td className="font-bold">{formatMoney(job.payout)}</Td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </SurfaceTable>
+              )}
+            </ReportPanel>
+          ))}
+        </div>
+      )}
+    </ReportChrome>
+  );
+}
+
+/** Payments taken without a fiscal receipt number, so the accountant can chase them. */
+export function FiscalReportPage() {
+  const { t } = useTranslation();
+  const { token } = useStaffAuth();
+  const [query, setQuery] = useState<ReportQuery>(() => defaultReportQuery());
+  const report = useQuery({
+    queryKey: ["staff", "reports", "fiscal", query],
+    enabled: Boolean(token),
+    queryFn: () => api<FiscalReport>(`/api/staff/reports/fiscal?${reportQueryString(query)}`, { token }),
+  });
+  if (report.isLoading) return <PageSkeleton />;
+  const data = report.data;
+  if (!data) return <EmptyState title={t("reports.loadFailed")} body={t("reports.loadFailedBody")} />;
+  return (
+    <ReportChrome
+      title={t("reports.nav.fiscal")}
+      intro={t("reports.nav.fiscalBody")}
+      query={query}
+      onChange={setQuery}
+      onExport={() =>
+        downloadCsv("rizo-report-fiscal.csv", [
+          [t("common.requestId"), t("payments.method"), t("payments.amount"), t("common.date"), t("reports.takenBy")],
+          ...data.rows.map((row) => [formatRequestId(row.displayId), t(`payments.methods.${row.method}`), row.amount, row.createdAt.slice(0, 10), row.createdByName ?? ""]),
+        ])
+      }
+    >
+      <div className="mb-4 grid gap-4 sm:grid-cols-2">
+        <Summary label={t("reports.withoutReceipt")} value={String(data.count)} accent={data.count > 0 ? "red" : undefined} />
+        <Summary label={t("reports.amountWithoutReceipt")} value={formatMoney(data.total)} accent="orange" />
+      </div>
+      <p className="mb-4 text-sm text-neutral-500">{t("reports.fiscalNote")}</p>
+      {data.rows.length === 0 ? (
+        <EmptyState title={t("reports.noFiscalGaps")} body={t("reports.noFiscalGapsBody")} />
+      ) : (
+        <ReportPanel>
+          <SurfaceTable>
+            <thead>
+              <tr>
+                <Th>{t("common.requestId")}</Th>
+                <Th>{t("common.date")}</Th>
+                <Th>{t("payments.method")}</Th>
+                <Th>{t("payments.amount")}</Th>
+                <Th>{t("reports.takenBy")}</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.rows.map((row) => (
+                <tr key={row.id}>
+                  <Td className="font-mono text-xs font-semibold">
+                    <Link to={`/app/requests/${row.requestId}`} className="text-[#7B00E0] hover:underline">
+                      {formatRequestId(row.displayId)}
+                    </Link>
+                  </Td>
+                  <Td>{formatDate(row.createdAt.slice(0, 10))}</Td>
+                  <Td>{t(`payments.methods.${row.method}`)}</Td>
+                  <Td className="font-bold">{formatMoney(row.amount)}</Td>
+                  <Td>{row.createdByName ?? t("common.dash")}</Td>
+                </tr>
+              ))}
+            </tbody>
+          </SurfaceTable>
+        </ReportPanel>
+      )}
     </ReportChrome>
   );
 }

@@ -16,13 +16,15 @@ import {
 } from "../lib/reportJobs.js";
 import { bucketKey, defaultGrain, parseReportRange, parseTrendGrain, serializeWindow } from "../lib/reportRange.js";
 import { isDoneStatus, ALL_STATUSES } from "../lib/status.js";
-import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
+import { readWriteRoles, requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
+import { READ_MONEY, READ_OFFICE } from "../lib/roles.js";
 import { OPEN_STATUSES } from "../lib/status.js";
 import { serializeNamed } from "../lib/named.js";
+import { computeServiceKpis } from "../lib/serviceKpis.js";
 import { money as toMoney } from "../lib/warranty.js";
 
 export const reportsRouter = Router();
-reportsRouter.use(staffAuth, requireStaffRole("admin"));
+reportsRouter.use(staffAuth, readWriteRoles(READ_MONEY, ["admin"]));
 
 function productIdQuery(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
@@ -111,6 +113,7 @@ reportsRouter.get(
         legalOverdue,
         debt: roundMoney(debt),
       },
+      service: await computeServiceKpis(jobs),
       trend: trendSeries(jobs, grain),
       topProducts: [...products.values()]
         .sort((a, b) => b.count - a.count || a.product.name.localeCompare(b.product.name))
@@ -592,6 +595,63 @@ reportsRouter.get(
       onTimeRate: finishedRows.length ? roundMoney((finishedRows.filter((row) => !row.late).length / finishedRows.length) * 100) : null,
       avgDays: average(finishedRows.map((row) => row.days)),
       rows: rows.filter((row) => row.late || !row.finished).sort((a, b) => b.lateDays - a.lateDays),
+    });
+  }),
+);
+
+// What partner service centres are owed: a share of the labour plus a fixed amount for every job they finished.
+reportsRouter.get(
+  "/partners",
+  asyncHandler(async (req, res) => {
+    const window = parseReportRange(req.query);
+    const centers = await prisma.serviceCenter.findMany({ where: { isPartner: true }, orderBy: { name: "asc" } });
+    const rows = [];
+    for (const center of centers) {
+      const jobs = await prisma.serviceRequest.findMany({
+        where: {
+          status: { in: ["ready", "completed", "picked_up", "replaced"] },
+          completedAt: { gte: window.from ?? new Date(0), lte: window.to },
+          OR: [{ serviceCenterId: center.id }, { assignedTechnician: { serviceCenterId: center.id } }],
+        },
+        select: { id: true, displayId: true, finalCost: true, warrantyStatus: true, isPaidRepair: true, completedAt: true, product: { select: { name: true } }, serviceLines: { select: { priceAtTime: true } } },
+        orderBy: { completedAt: "desc" },
+      });
+      const percent = Number(center.payoutPercent);
+      const fixed = Number(center.payoutFixedPerJob);
+      const detail = jobs.map((job) => {
+        const labour = job.serviceLines.reduce((sum, line) => sum + toMoney(line.priceAtTime), 0);
+        return { id: job.id, displayId: job.displayId, product: job.product.name, completedAt: job.completedAt?.toISOString() ?? null, labour: roundMoney(labour), payout: roundMoney((labour * percent) / 100 + fixed) };
+      });
+      rows.push({
+        center: { id: center.id, name: center.name, payoutPercent: percent, payoutFixedPerJob: fixed },
+        jobs: detail.length,
+        labour: roundMoney(detail.reduce((sum, row) => sum + row.labour, 0)),
+        payout: roundMoney(detail.reduce((sum, row) => sum + row.payout, 0)),
+        detail,
+      });
+    }
+    res.json({ range: serializeWindow(window), rows, totalPayout: roundMoney(rows.reduce((sum, row) => sum + row.payout, 0)) });
+  }),
+);
+
+// Payments taken without a fiscal receipt number, so the accountant can chase them.
+reportsRouter.get(
+  "/fiscal",
+  asyncHandler(async (req, res) => {
+    const window = parseReportRange(req.query);
+    const where = { kind: "payment" as const, fiscalReceiptNumber: null, createdAt: { gte: window.from ?? new Date(0), lte: window.to } };
+    const [rows, totals] = await Promise.all([
+      prisma.payment.findMany({ where, orderBy: { createdAt: "desc" }, take: 200, include: { serviceRequest: { select: { id: true, displayId: true, fiscalReceiptNumber: true } } } }),
+      prisma.payment.aggregate({ where, _sum: { amount: true }, _count: true }),
+    ]);
+    // Payments taken before receipts were kept per payment carried the number on the request itself; those are not chased.
+    const perPaymentSince = new Date("2026-10-07T00:00:00+05:00");
+    const missing = rows.filter((row) => !row.serviceRequest.fiscalReceiptNumber || row.createdAt >= perPaymentSince);
+    res.json({
+      range: serializeWindow(window),
+      count: totals._count,
+      total: roundMoney(toMoney(totals._sum.amount ?? 0)),
+      rows: missing.map((row) => ({ id: row.id, requestId: row.serviceRequest.id, displayId: row.serviceRequest.displayId, method: row.method, amount: toMoney(row.amount), createdAt: row.createdAt.toISOString(), createdByName: row.createdByName })),
     });
   }),
 );

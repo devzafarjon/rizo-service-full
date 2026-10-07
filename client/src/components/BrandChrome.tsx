@@ -44,6 +44,19 @@ export function BrandChrome({
         </Link>
       ) : null}
       {children}
+      <footer className="mx-auto max-w-6xl px-4 pb-8 text-center text-xs text-gray-500 sm:px-6">
+        <Link to="/help" className="font-semibold hover:text-[#7B00E0]">
+          {t("nav.help")}
+        </Link>
+        {" · "}
+        <Link to="/privacy" className="font-semibold hover:text-[#7B00E0]">
+          {t("legal.privacy")}
+        </Link>
+        {" · "}
+        <Link to="/terms" className="font-semibold hover:text-[#7B00E0]">
+          {t("legal.terms")}
+        </Link>
+      </footer>
     </div>
   );
 }

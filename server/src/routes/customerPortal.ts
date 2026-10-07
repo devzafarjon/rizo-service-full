@@ -17,6 +17,13 @@ import { approveEstimate, declineEstimate, estimateInclude, serializeEstimate } 
 import { advanceAfterApproval } from "./requests.js";
 import { staffActor } from "../lib/audit.js";
 import { notifyAdmins } from "../lib/notifyStaff.js";
+import { getAppSettings } from "../lib/settings.js";
+import { serializeArticle } from "../lib/helpArticles.js";
+import { env } from "../config.js";
+import { paymentLinks } from "../lib/paymentLinks.js";
+import { postCustomerMessage, submitFeedback } from "../lib/customerActions.js";
+import { plansForSale, requestPlan, serializePlan } from "../lib/warrantyPlans.js";
+import { availableSlots, cancelRequestByCustomer, confirmVisit, scheduleVisit } from "../lib/visits.js";
 import { paymentSummary } from "../lib/payments.js";
 import { tashkentCalendarDate } from "../lib/displayId.js";
 import { parseDateOnly } from "../lib/warranty.js";
@@ -56,6 +63,9 @@ const createSchema = z
     customerLocation: locationSchema.optional().nullable(),
     serialNumber: z.string().trim().max(80).optional().nullable(),
     serviceCenterId: z.string().trim().min(1).optional().nullable(),
+    // A booking window picked from /visit-slots (preferred over the free-form time below).
+    visitDate: z.string().trim().optional().nullable(),
+    visitSlot: z.string().trim().optional().nullable(),
     scheduledAt: z
       .string()
       .trim()
@@ -133,6 +143,7 @@ customerPortalRouter.get(
         warrantyMonths: sale.warrantyMonths,
         warrantyExpiry: toDateOnly(sale.warrantyExpiry),
         warrantyStatus: computeWarrantyStatus(sale.warrantyMonths, sale.warrantyExpiry),
+        warrantyDaysLeft: sale.voidedAt || sale.warrantyMonths <= 0 ? null : Math.ceil((sale.warrantyExpiry.getTime() - parseDateOnly(tashkentCalendarDate(new Date())).getTime()) / 86_400_000),
         serialNumber: sale.serialNumber,
         isVerified: sale.isVerified,
         installationDate: sale.installationDate ? toDateOnly(sale.installationDate) : null,
@@ -140,6 +151,41 @@ customerPortalRouter.get(
         product: sale.product,
       })),
     });
+  }),
+);
+
+// Paid warranty extensions the customer can ask for, and the ones already asked for or bought.
+customerPortalRouter.get(
+  "/warranty-plans",
+  asyncHandler(async (req, res) => {
+    const saleId = String(req.query.saleId ?? "");
+    const { plans } = await plansForSale(saleId, req.customer!.sub);
+    const open = await prisma.warrantyPlanPurchase.findFirst({ where: { saleId, status: "requested" } });
+    res.json({ plans: plans.map(serializePlan), requestedPlanId: open?.planId ?? null });
+  }),
+);
+
+customerPortalRouter.post(
+  "/sales/:id/warranty-plan",
+  asyncHandler(async (req, res) => {
+    const body = parseBody(z.object({ planId: z.string().min(1) }), req.body);
+    const row = await requestPlan({ saleId: req.params.id, planId: body.planId, customerId: req.customer!.sub });
+    res.status(201).json({ purchase: { id: row.id, status: row.status, months: row.months, price: money(row.price) } });
+  }),
+);
+
+// Guides for the kinds of products this customer owns, plus the general ones.
+customerPortalRouter.get(
+  "/help",
+  asyncHandler(async (req, res) => {
+    const owned = await prisma.sale.findMany({ where: { customerId: req.customer!.sub, voidedAt: null }, select: { product: { select: { category: true, id: true } } } });
+    const categories = [...new Set(owned.map((row) => row.product.category))];
+    const productIds = [...new Set(owned.map((row) => row.product.id))];
+    const rows = await prisma.helpArticle.findMany({
+      where: { isPublished: true, OR: [{ productCategory: null, productId: null }, { productCategory: { in: categories } }, { productId: { in: productIds } }] },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+    });
+    res.json({ articles: rows.map(serializeArticle) });
   }),
 );
 
@@ -166,7 +212,8 @@ customerPortalRouter.get(
       orderBy: { createdAt: "desc" },
       include: portalInclude,
     });
-    res.json({ requests: await Promise.all(requests.map((row) => serializePortalRequest(row, false))) });
+    const settings = await getAppSettings();
+    res.json({ requests: await Promise.all(requests.map((row) => serializePortalRequest(row, false, settings))) });
   }),
 );
 
@@ -178,12 +225,79 @@ customerPortalRouter.get(
   }),
 );
 
+// Booking windows with how many visits are still free on a date (for a new request, give the location and centre).
+customerPortalRouter.get(
+  "/visit-slots",
+  asyncHandler(async (req, res) => {
+    const date = String(req.query.date ?? "");
+    const requestId = typeof req.query.requestId === "string" ? req.query.requestId : "";
+    if (requestId) {
+      const request = await loadOwnRequest(req.customer!.sub, requestId);
+      const slots = await availableSlots({
+        date,
+        technicianType: request.technicianTypeRequired,
+        serviceCenterId: request.serviceCenterId,
+        ignoreRequestId: request.id,
+        technicianId: request.assignedTechnicianId,
+      });
+      res.json({ date, slots: slots.map(({ slot, left, free }) => ({ slot, left, free })) });
+      return;
+    }
+    const locationType = req.query.locationType === "in_shop" ? "in_shop" : "on_site";
+    const slots = await availableSlots({
+      date,
+      technicianType: locationType === "on_site" ? "mobile" : "service_center",
+      serviceCenterId: typeof req.query.serviceCenterId === "string" && req.query.serviceCenterId ? req.query.serviceCenterId : null,
+    });
+    res.json({ date, slots: slots.map(({ slot, left, free }) => ({ slot, left, free })) });
+  }),
+);
+
+customerPortalRouter.get(
+  "/requests/:id/pay-links",
+  asyncHandler(async (req, res) => {
+    const request = await loadOwnRequest(req.customer!.sub, req.params.id);
+    const summary = await paymentSummary(request.id);
+    res.json(paymentLinks({ displayId: request.displayId, balance: summary.balance, returnUrl: `${env.clientOrigin}/portal/requests/${request.id}` }));
+  }),
+);
+
+customerPortalRouter.post(
+  "/requests/:id/visit",
+  asyncHandler(async (req, res) => {
+    const body = parseBody(z.object({ date: z.string().trim(), slot: z.string().trim() }), req.body);
+    const request = await loadOwnRequest(req.customer!.sub, req.params.id);
+    await scheduleVisit({ requestId: request.id, date: body.date, slot: body.slot, actor: customerActor(req.customer), byCustomer: true });
+    res.json({ request: await serializePortalRequest(await loadOwnRequest(req.customer!.sub, request.id)) });
+  }),
+);
+
+customerPortalRouter.post(
+  "/requests/:id/visit/confirm",
+  asyncHandler(async (req, res) => {
+    const request = await loadOwnRequest(req.customer!.sub, req.params.id);
+    await confirmVisit(request.id, customerActor(req.customer));
+    res.json({ request: await serializePortalRequest(await loadOwnRequest(req.customer!.sub, request.id)) });
+  }),
+);
+
+customerPortalRouter.post(
+  "/requests/:id/cancel",
+  asyncHandler(async (req, res) => {
+    const body = parseBody(z.object({ reason: z.string().trim().max(300).default("") }), req.body ?? {});
+    const request = await loadOwnRequest(req.customer!.sub, req.params.id);
+    await cancelRequestByCustomer(request.id, req.customer!, body.reason);
+    res.json({ request: await serializePortalRequest(await loadOwnRequest(req.customer!.sub, request.id)) });
+  }),
+);
+
 customerPortalRouter.post(
   "/requests",
   asyncHandler(async (req, res) => {
     const body = parseBody(createSchema, req.body);
+    const { visitDate, visitSlot, ...requestInput } = body;
     const result = await createServiceRequest({
-      ...body,
+      ...requestInput,
       customerId: req.customer!.sub,
       saleId: body.saleId,
       productId: body.productId ?? null,
@@ -192,7 +306,16 @@ customerPortalRouter.post(
       submittedByCustomer: true,
       source: "rizo_service",
     });
-    res.status(201).json({ request: await serializePortalRequest(await loadOwnRequest(req.customer!.sub, result.request.id)) });
+    let visitError: string | null = null;
+    if (visitDate && visitSlot) {
+      try {
+        await scheduleVisit({ requestId: result.request.id, date: visitDate, slot: visitSlot, actor: customerActor(req.customer), byCustomer: true });
+      } catch (error) {
+        // The request exists either way; the customer can pick another window on the request page.
+        visitError = error instanceof HttpError ? (error.code ?? "slotTaken") : "slotTaken";
+      }
+    }
+    res.status(201).json({ request: await serializePortalRequest(await loadOwnRequest(req.customer!.sub, result.request.id)), visitError });
   }),
 );
 
@@ -230,24 +353,7 @@ customerPortalRouter.post(
   asyncHandler(async (req, res) => {
     const body = parseBody(z.object({ text: z.string().trim().min(1, "Write a message").max(1000) }), req.body);
     const request = await loadOwnRequest(req.customer!.sub, req.params.id);
-    if (request.status === "cancelled") throw new HttpError(400, "This request is cancelled", "requestClosed");
-    await prisma.requestNote.create({
-      data: {
-        serviceRequestId: request.id,
-        userId: req.customer!.sub,
-        authorScope: "customer",
-        customerId: req.customer!.sub,
-        noteText: body.text,
-        isVisibleToCustomer: true,
-      },
-    });
-    await notifyAdmins({
-      message: `New message on ${request.displayId}`,
-      code: "customerMessage",
-      serviceRequestId: request.id,
-      params: { displayId: request.displayId, text: body.text.slice(0, 120) },
-    });
-    publishRequest("request:updated", { id: request.id, customerId: request.customerId });
+    await postCustomerMessage({ customerId: req.customer!.sub, requestId: request.id, text: body.text });
     res.status(201).json({ request: await serializePortalRequest(await loadOwnRequest(req.customer!.sub, request.id)) });
   }),
 );
@@ -326,24 +432,11 @@ customerPortalRouter.post(
   asyncHandler(async (req, res) => {
     const body = parseBody(feedbackSchema, req.body);
     const request = await loadOwnRequest(req.customer!.sub, req.params.id);
-    if (!isDoneStatus(request.status)) {
-      throw new HttpError(400, "Feedback is available after the job is completed");
-    }
-    if (request.feedback) {
-      throw new HttpError(409, "You already left feedback for this request");
-    }
     try {
-      await prisma.feedback.create({
-        data: {
-          serviceRequestId: request.id,
-          customerId: req.customer!.sub,
-          rating: body.rating,
-          comment: body.comment ?? null,
-          tags: [...new Set(body.tags ?? [])],
-        },
-      });
+      await submitFeedback({ customerId: req.customer!.sub, requestId: request.id, rating: body.rating, comment: body.comment, tags: body.tags });
     } catch (error) {
       handlePrismaError(error);
+      throw error;
     }
     res.status(201).json({ request: await serializePortalRequest(await loadOwnRequest(req.customer!.sub, request.id)) });
   }),
@@ -433,8 +526,12 @@ async function loadOwnRequest(customerId: string, id: string) {
 
 type PortalRecord = Prisma.ServiceRequestGetPayload<{ include: typeof portalInclude }>;
 
-async function serializePortalRequest(request: PortalRecord, detail = true) {
+async function serializePortalRequest(request: PortalRecord, detail = true, settings?: Awaited<ReturnType<typeof getAppSettings>>) {
+  const rules = settings ?? (await getAppSettings());
   const done = isDoneStatus(request.status);
+  const open = !isTerminalStatus(request.status) && !done;
+  const hoursToVisit = request.scheduledAt ? (request.scheduledAt.getTime() - Date.now()) / 3_600_000 : null;
+  const farEnough = hoursToVisit == null || hoursToVisit >= rules.cancelBeforeHours;
   const latest = request.estimates[0] ?? null;
   const estimateVisible = latest && latest.status !== "draft";
   const estimateStatus = latest ? (latest.status === "sent" && latest.validUntil.getTime() < Date.now() ? "expired" : latest.status) : null;
@@ -456,6 +553,14 @@ async function serializePortalRequest(request: PortalRecord, detail = true) {
     createdAt: request.createdAt.toISOString(),
     completedAt: request.completedAt?.toISOString() ?? null,
     scheduledAt: request.scheduledAt?.toISOString() ?? null,
+    visit: {
+      slot: request.visitSlot,
+      confirmed: Boolean(request.visitConfirmedAt),
+      canBook: open,
+      canReschedule: open && farEnough && (!request.visitSlot || request.visitRescheduleCount < rules.rescheduleLimit),
+      canCancel: request.status === "new" && farEnough,
+    },
+    eta: request.etaMinutes != null && request.etaSetAt && request.enRouteAt && !isTerminalStatus(request.status) && !request.arrivedAt ? { minutes: request.etaMinutes, setAt: request.etaSetAt.toISOString() } : null,
     enRouteAt: request.enRouteAt && !isTerminalStatus(request.status) && !request.arrivedAt ? request.enRouteAt.toISOString() : null,
     dueBy: request.legalDueAt && !isTerminalStatus(request.status) ? request.legalDueAt.toISOString() : null,
     repairWarrantyUntil: request.repairWarrantyUntil ? toDateOnly(request.repairWarrantyUntil) : null,

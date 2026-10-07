@@ -7,6 +7,16 @@ const DEFAULTS: Record<string, string> = {
   estimate_valid_days: "7",
   pickup_storage_days: "14",
   require_estimate_for_paid_repair: "true",
+  visit_slots: "09:00-11:00,11:00-13:00,14:00-16:00,16:00-18:00", // time windows a customer can book
+  visits_per_technician_per_day: "6",
+  reschedule_limit: "2", // how many times a customer may move a visit
+  cancel_before_hours: "2", // a customer cannot cancel closer than this to the visit
+  escalation_hours: "6", // an overdue job is escalated to the admins after this many hours
+  escalation_hours_urgent: "24", // ... and becomes urgent after this many
+  low_rating_threshold: "2", // a rating at or below this alerts the admins
+  require_fiscal_receipt: "false", // payments must carry a fiscal receipt number
+  weekly_digest: "true",
+  warranty_expiry_notice_days: "30",
 };
 
 export async function getSetting(key: string) {
@@ -31,6 +41,7 @@ async function numberSetting(key: string) {
   return Number.isFinite(value) && value >= 0 ? value : Number(DEFAULTS[key]);
 }
 
+export const numberSettingValue = numberSetting;
 export const repairWarrantyDays = () => numberSetting("repair_warranty_days");
 export const repairLegalDays = () => numberSetting("repair_legal_days");
 export const estimateValidDays = () => numberSetting("estimate_valid_days");
@@ -46,5 +57,24 @@ export async function getAppSettings() {
     estimateValidDays: Number(map.estimate_valid_days),
     pickupStorageDays: Number(map.pickup_storage_days),
     requireEstimate: map.require_estimate_for_paid_repair !== "false",
+    visitSlots: map.visit_slots,
+    visitsPerTechnicianPerDay: Number(map.visits_per_technician_per_day),
+    rescheduleLimit: Number(map.reschedule_limit),
+    cancelBeforeHours: Number(map.cancel_before_hours),
+    escalationHours: Number(map.escalation_hours),
+    escalationHoursUrgent: Number(map.escalation_hours_urgent),
+    lowRatingThreshold: Number(map.low_rating_threshold),
+    requireFiscalReceipt: map.require_fiscal_receipt === "true",
+    weeklyDigest: map.weekly_digest !== "false",
+    warrantyExpiryNoticeDays: Number(map.warranty_expiry_notice_days),
   };
+}
+
+/** The booking windows, e.g. ["09:00-11:00", ...]; invalid entries are dropped. */
+export async function getVisitSlots() {
+  const raw = (await getSetting("visit_slots")) ?? "";
+  return raw
+    .split(",")
+    .map((slot) => slot.trim())
+    .filter((slot) => /^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/.test(slot) && slot.slice(0, 5) < slot.slice(6));
 }

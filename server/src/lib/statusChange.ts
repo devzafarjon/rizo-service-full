@@ -10,6 +10,7 @@ import { requestInclude, serializeRequest } from "./serializeRequest.js";
 import { canTransition, isDoneStatus, type StaffRoleName } from "./status.js";
 import { tashkentCalendarDate } from "./displayId.js";
 import { getSetting, repairWarrantyDays } from "./settings.js";
+import { checklistView } from "./checklists.js";
 import { refreshPaymentStatus } from "./payments.js";
 import { addMonths, computeWarrantyStatus, parseDateOnly, warrantyExpiryFor } from "./warranty.js";
 
@@ -91,6 +92,10 @@ export async function changeRequestStatus(input: {
     const gaps = completionGaps({ ...before, resolutionType: asReplacement ? "replace" : before.resolutionType }, { requireService: catalogServices > 0 });
     // Office decisions (a replacement handed over at the counter) are recorded by the system and skip the field checklist.
     if (!system && gaps.length > 0) throw new HttpError(400, `Add ${joinGaps(gaps)} before completing`, "jobIncomplete", { gaps });
+    if (!system && before.type === "repair" && !asReplacement) {
+      const view = await checklistView(before);
+      if (view.missingRequired.length > 0) throw new HttpError(400, "Tick the required checklist items before completing", "checklistIncomplete", { missing: view.missingRequired });
+    }
     const financials = resolveJobFinancials(before, before.type, before.sale, {
       coverage: coverageOf(before.product),
       forcePaid: before.decision === "paid_repair",

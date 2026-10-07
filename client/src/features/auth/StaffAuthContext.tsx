@@ -8,7 +8,7 @@ type StaffAuthContextValue = {
   user: StaffUser | null;
   token: string | null;
   loading: boolean;
-  login: (phone: string, password: string) => Promise<StaffUser>;
+  login: (phone: string, password: string, code?: string) => Promise<StaffUser>;
   logout: () => void;
   setAvailability: (isAvailable: boolean) => Promise<void>;
   saveLocale: (locale: AppLocale) => Promise<void>;
@@ -58,10 +58,10 @@ export function StaffAuthProvider({ children }: { children: ReactNode }) {
     }
   }, [meQuery.data?.locale]);
 
-  const login = useCallback(async (phone: string, password: string) => {
+  const login = useCallback(async (phone: string, password: string, code?: string) => {
     const data = await api<{ token: string; user: StaffUser }>("/api/staff/auth/login", {
       method: "POST",
-      body: JSON.stringify({ phone, password }),
+      body: JSON.stringify({ phone, password, ...(code ? { code } : {}) }),
     });
     localStorage.removeItem(CUSTOMER_TOKEN_KEY);
     queryClient.removeQueries({ queryKey: ["customer"] });

@@ -10,7 +10,8 @@ import { computeWarrantyStatus, money, parseDateOnly, toDateOnly, voidedExpiry, 
 import { OPEN_STATUSES } from "../lib/status.js";
 import { staffActor, writeAudit } from "../lib/audit.js";
 import { optionalText } from "../lib/zodFields.js";
-import { officeReadAdminWrite, requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
+import { readWriteRoles, requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
+import { READ_MONEY, READ_OFFICE } from "../lib/roles.js";
 
 const saleSchema = z.object({
   customerId: z.string().min(1, "Customer is required"),
@@ -24,7 +25,7 @@ const saleSchema = z.object({
 });
 
 export const salesRouter = Router();
-salesRouter.use(staffAuth, officeReadAdminWrite);
+salesRouter.use(staffAuth, readWriteRoles(READ_OFFICE, ["admin"]));
 
 salesRouter.get(
   "/",

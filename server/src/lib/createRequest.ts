@@ -1,3 +1,4 @@
+import { pushJobAssigned } from "./push.js";
 import { Prisma } from "@prisma/client";
 import type { LocationType, Priority, RequestSource, ServiceType, TechnicianType } from "@prisma/client";
 import { initialStatusFor, paymentFor, pickAvailableTechnician } from "./assignment.js";
@@ -94,7 +95,11 @@ export async function createServiceRequest(input: CreateRequestInput) {
     assignedTechnicianId = technician.id;
     assignmentMode = "manual";
   } else if (input.autoAssign !== false) {
-    const picked = await pickAvailableTechnician(technicianTypeRequired, { serviceCenterId });
+    const picked = await pickAvailableTechnician(technicianTypeRequired, {
+      serviceCenterId,
+      productCategory: product.category,
+      location: input.customerLocation ?? null,
+    });
     assignedTechnicianId = picked?.id ?? null;
     assignmentMode = picked ? "auto" : "unassigned";
   }
@@ -163,6 +168,7 @@ export async function createServiceRequest(input: CreateRequestInput) {
   }
 
   publishRequest("request:created", serializeRequest(withSignature));
+  pushJobAssigned(withSignature.assignedTechnicianId, withSignature);
   await notifyRequestCreated(withSignature);
 
   const technicianName = withSignature.assignedTechnician?.name;

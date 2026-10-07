@@ -33,7 +33,7 @@ import type {
 } from "../../lib/types";
 import { CHART, ChartPanel, MoneyTooltip, useChartLabels } from "./charts";
 import { ReportChrome, ReportPanel } from "./ReportChrome";
-import { REPORT_LINKS } from "./reportNav";
+import { REPORT_GROUPS } from "./reportNav";
 
 function useRange(grain?: boolean) {
   return useState<ReportQuery>(() => defaultReportQuery(grain ? "day" : undefined));
@@ -45,18 +45,23 @@ export function ReportsIndexPage() {
     <div>
       <h1 className="text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{t("reports.title")}</h1>
       <p className="mt-1 max-w-2xl text-sm text-neutral-500">{t("reports.hubIntro")}</p>
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {REPORT_LINKS.map((item) => (
-          <Link
-            key={item.to}
-            to={item.to}
-            className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:shadow-[0_8px_30px_rgba(180,57,253,0.12)]"
-          >
-            <h2 className="text-lg font-bold text-black">{t(item.labelKey)}</h2>
-            <p className="mt-2 text-sm text-neutral-500">{t(`${item.labelKey}Body`)}</p>
-          </Link>
-        ))}
-      </div>
+      {REPORT_GROUPS.map((group) => (
+        <section key={group.key} className="mt-6">
+          <h2 className="mb-3 text-xs font-bold tracking-wide text-neutral-500 uppercase">{t(group.labelKey)}</h2>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {group.links.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:shadow-[0_8px_30px_rgba(180,57,253,0.12)]"
+              >
+                <h3 className="text-lg font-bold text-black">{t(item.labelKey)}</h3>
+                <p className="mt-2 text-sm text-neutral-500">{t(`${item.labelKey}Body`)}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }

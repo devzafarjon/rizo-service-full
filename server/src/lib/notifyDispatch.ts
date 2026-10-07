@@ -1,6 +1,9 @@
 import { env } from "../config.js";
 import { prisma } from "./prisma.js";
 
+/** Admin alerts that also go to the admin Telegram chat. */
+const ADMIN_TELEGRAM_CODES = new Set(["overdue", "lowStock", "lowRating", "escalation", "weeklyDigest", "deletionRequest"]);
+
 export type DispatchTarget = {
   phone?: string | null;
   telegramChatId?: string | null;
@@ -34,10 +37,12 @@ export async function sendSms(to: string, body: string) {
   }
 }
 
-async function sendTelegram(chatId: string, body: string) {
+export type TelegramButtons = Array<Array<{ text: string; callback_data: string }>>;
+
+async function sendTelegram(chatId: string, body: string, buttons?: TelegramButtons) {
   if (!env.telegramBotToken) {
     if (env.telegramProvider === "console") {
-      console.log(`[telegram:console] chat=${chatId} ${body}`);
+      console.log(`[telegram:console] chat=${chatId} ${body}${buttons?.length ? ` [${buttons.flat().map((button) => button.text).join(" | ")}]` : ""}`);
       return;
     }
     throw new Error("Telegram bot is not configured");
@@ -45,7 +50,7 @@ async function sendTelegram(chatId: string, body: string) {
   const res = await fetch(`https://api.telegram.org/bot${env.telegramBotToken}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text: body }),
+    body: JSON.stringify({ chat_id: chatId, text: body, ...(buttons?.length ? { reply_markup: { inline_keyboard: buttons } } : {}) }),
   });
   if (!res.ok) {
     throw new Error(`Telegram returned ${res.status}`);
@@ -57,14 +62,16 @@ export async function dispatchOutbound(input: {
   body: string;
   code?: string;
   entityId?: string;
+  /** Inline buttons under the Telegram message (approve, rate, confirm). */
+  telegramButtons?: TelegramButtons;
 }) {
   const jobs: Array<{ channel: string; to: string; send: () => Promise<void> }> = [];
   if (input.target.phone) {
     jobs.push({ channel: "sms", to: input.target.phone, send: () => sendSms(input.target.phone!, input.body) });
   }
   const telegramTo = input.target.telegramChatId || env.telegramAdminChatId;
-  if (telegramTo && (input.target.telegramChatId || input.code === "overdue" || input.code === "lowStock")) {
-    jobs.push({ channel: "telegram", to: telegramTo, send: () => sendTelegram(telegramTo, input.body) });
+  if (telegramTo && (input.target.telegramChatId || (input.code && ADMIN_TELEGRAM_CODES.has(input.code)))) {
+    jobs.push({ channel: "telegram", to: telegramTo, send: () => sendTelegram(telegramTo, input.body, input.telegramButtons) });
   }
 
   for (const job of jobs) {

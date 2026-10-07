@@ -52,11 +52,22 @@ import { SerialCardPage } from "./features/management/SerialCardPage";
 import { ServiceCentersPage } from "./features/management/ServiceCentersPage";
 import { StaffPage } from "./features/management/StaffPage";
 import { WarrantyCardPage } from "./features/management/WarrantyCardPage";
-import { DebtsReportPage, DefectsReportPage, LegalReportPage, OutcomesReportPage, PayrollReportPage } from "./features/reporting/MoreReports";
+import { DebtsReportPage, DefectsReportPage, FiscalReportPage, LegalReportPage, OutcomesReportPage, PartnersReportPage, PayrollReportPage } from "./features/reporting/MoreReports";
+import { ChecklistsPage } from "./features/catalog/ChecklistsPage";
+import { HelpAdminPage } from "./features/catalog/HelpAdminPage";
+import { SecurityPage } from "./features/auth/SecurityPage";
+import { MyStockPage } from "./features/management/MyStockPage";
+import { TechStockPage } from "./features/management/TechStockPage";
+import { WarrantyPlansPage } from "./features/management/WarrantyPlansPage";
 import { CentersPublicPage } from "./features/public/CentersPublicPage";
 import { TrackLookupPage } from "./features/public/TrackLookupPage";
 import { TrackPage } from "./features/public/TrackPage";
 import { PortalRegisterPage } from "./features/portal/PortalRegisterPage";
+import { PortalProductsPage } from "./features/portal/PortalProductsPage";
+import { PortalHelpPage } from "./features/portal/PortalHelpPage";
+import { PortalAccountPage } from "./features/portal/PortalAccountPage";
+import { LegalPage } from "./features/public/LegalPage";
+import { PublicHelpPage } from "./features/public/PublicHelpPage";
 
 export default function App() {
   return (
@@ -70,18 +81,24 @@ export default function App() {
       <Route path="/track" element={<TrackLookupPage />} />
       <Route path="/t/:token" element={<TrackPage />} />
       <Route path="/centers" element={<CentersPublicPage />} />
+      <Route path="/help" element={<PublicHelpPage />} />
+      <Route path="/privacy" element={<LegalPage kind="privacy" />} />
+      <Route path="/terms" element={<LegalPage kind="terms" />} />
 
       <Route element={<StaffProtectedRoute />}>
         <Route path="/app" element={<StaffShell />}>
           <Route element={<RoleRoute roles={["admin"]} />}>
             <Route index element={<DashboardPage />} />
-            <Route path="catalog" element={<CatalogPage />} />
             <Route path="schedule" element={<ScheduleCalendarPage />} />
             <Route path="audit" element={<ActivityLogPage />} />
             <Route path="alerts" element={<AlertsPage />} />
             <Route path="settings" element={<BackupSettingsPage />} />
             <Route path="staff" element={<StaffPage />} />
             <Route path="customers/duplicates" element={<CustomerDuplicatesPage />} />
+            <Route path="checklists" element={<ChecklistsPage />} />
+            <Route path="help" element={<HelpAdminPage />} />
+          </Route>
+          <Route element={<RoleRoute roles={["admin", "accountant"]} />}>
             <Route path="reports" element={<ReportsIndexPage />} />
             <Route path="reports/products" element={<ProductReportPage />} />
             <Route path="reports/parts" element={<PartsReportPage />} />
@@ -95,6 +112,18 @@ export default function App() {
             <Route path="reports/legal" element={<LegalReportPage />} />
             <Route path="reports/debts" element={<DebtsReportPage />} />
             <Route path="reports/payroll" element={<PayrollReportPage />} />
+            <Route path="reports/partners" element={<PartnersReportPage />} />
+            <Route path="reports/fiscal" element={<FiscalReportPage />} />
+          </Route>
+          <Route element={<RoleRoute roles={["admin", "warehouse"]} />}>
+            <Route path="catalog" element={<CatalogPage />} />
+            <Route path="tech-stock" element={<TechStockPage />} />
+          </Route>
+          <Route element={<RoleRoute roles={["admin", "receptionist", "warehouse"]} />}>
+            <Route path="part-orders" element={<PartOrdersPage />} />
+          </Route>
+          <Route element={<RoleRoute roles={["admin", "receptionist", "accountant"]} />}>
+            <Route path="warranty-plans" element={<WarrantyPlansPage />} />
           </Route>
           <Route element={<RoleRoute roles={["admin", "receptionist"]} />}>
             <Route path="kanban" element={<AdminKanbanPage />} />
@@ -109,12 +138,12 @@ export default function App() {
             <Route path="requests/:id/tag" element={<PrintTagPage />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="map" element={<MapPage />} />
-            <Route path="part-orders" element={<PartOrdersPage />} />
             <Route path="centers" element={<ServiceCentersPage />} />
             <Route path="kiosk" element={<KioskPickupPage />} />
             <Route path="receipts" element={<ReceiptPage />} />
             <Route path="receipts/:id" element={<ReceiptPrintPage />} />
           </Route>
+          <Route path="security" element={<SecurityPage />} />
           <Route path="scan" element={<QrScanPage />} />
           <Route path="tag/:displayId" element={<TagLandingPage />} />
           <Route element={<RoleRoute roles={["technician"]} />}>
@@ -123,6 +152,7 @@ export default function App() {
             <Route path="my-jobs/:id/receipt" element={<ReceiptPrintPage />} />
             <Route path="my-schedule" element={<MySchedulePage />} />
             <Route path="my-earnings" element={<MyEarningsPage />} />
+            <Route path="my-stock" element={<MyStockPage />} />
           </Route>
         </Route>
       </Route>
@@ -132,6 +162,9 @@ export default function App() {
           <Route index element={<PortalHomePage />} />
           <Route path="new" element={<PortalNewRequestPage />} />
           <Route path="register" element={<PortalRegisterPage />} />
+          <Route path="products" element={<PortalProductsPage />} />
+          <Route path="help" element={<PortalHelpPage />} />
+          <Route path="account" element={<PortalAccountPage />} />
           <Route path="requests/:id" element={<PortalRequestDetailPage />} />
         </Route>
       </Route>

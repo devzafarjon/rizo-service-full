@@ -27,6 +27,12 @@ import { serviceCentersRouter } from "./routes/serviceCenters.js";
 import { serialsRouter } from "./routes/serials.js";
 import { payrollRouter } from "./routes/payroll.js";
 import { staffAdminRouter } from "./routes/staffAdmin.js";
+import { checklistsRouter } from "./routes/checklists.js";
+import { techStockRouter } from "./routes/techStock.js";
+import { helpArticlesRouter } from "./routes/helpArticles.js";
+import { warrantyPlansRouter } from "./routes/warrantyPlans.js";
+import { integrationsRouter } from "./routes/integrations.js";
+import { customerDevicesRouter, staffDevicesRouter } from "./routes/devices.js";
 import { ensureUploadsRoot, uploadsRoot } from "./lib/uploads.js";
 
 export function createApp() {
@@ -48,6 +54,7 @@ export function createApp() {
   app.use("/api/health", healthRouter);
   app.use("/api/staff/auth", staffAuthRouter);
   app.use("/api/customer/auth", customerAuthRouter);
+  app.use("/api/customer/devices", customerDevicesRouter);
   app.use("/api/customer", customerPortalRouter);
   app.use("/api/staff/customers", customersRouter);
   app.use("/api/staff/products", productsRouter);
@@ -59,6 +66,7 @@ export function createApp() {
   app.use("/api/staff/reports", reportsRouter);
   app.use("/api/staff/my-jobs", myJobsRouter);
   app.use("/api/staff/settings", settingsRouter);
+  app.use("/api/staff/devices", staffDevicesRouter);
   app.use("/api/staff/alerts", alertsRouter);
   app.use("/api/staff/audit", auditRouter);
   app.use("/api/staff/outbound", outboundRouter);
@@ -69,7 +77,12 @@ export function createApp() {
   app.use("/api/staff/serials", serialsRouter);
   app.use("/api/staff/payroll", payrollRouter);
   app.use("/api/staff/staff", staffAdminRouter);
+  app.use("/api/staff/checklists", checklistsRouter);
+  app.use("/api/staff/tech-stock", techStockRouter);
+  app.use("/api/staff/help-articles", helpArticlesRouter);
+  app.use("/api/staff/warranty-plans", warrantyPlansRouter);
   app.use("/api/public", publicRouter);
+  app.use("/api/integrations", integrationsRouter);
 
   app.use(errorHandler);
   return app;

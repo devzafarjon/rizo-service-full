@@ -10,7 +10,7 @@ import { useToast } from "../../components/toast";
 import { api, apiErrorMessage } from "../../lib/api";
 import { formatDate, formatMoney, formatRequestId, formatStamp } from "../../lib/format";
 import { localizedName } from "../../lib/localized";
-import type { EstimateLine, EstimateStatus, Named, RequestStatus, TimelineEvent, WarrantyStatus } from "../../lib/types";
+import type { EstimateLine, EstimateStatus, Named, PayLinks, RequestStatus, TimelineEvent, WarrantyStatus } from "../../lib/types";
 import { portalInputClass } from "../portal/fields";
 
 type Track = {
@@ -22,6 +22,8 @@ type Track = {
   completedAt: string | null;
   dueBy: string | null;
   scheduledAt: string | null;
+  visit: { slot: string | null; confirmed: boolean; canConfirm: boolean };
+  eta: { minutes: number; setAt: string } | null;
   product: Named & { sku: string };
   technicianFirstName: string | null;
   rejectionReason: string | null;
@@ -66,6 +68,20 @@ export function TrackPage() {
     onError: (error) => notify(apiErrorMessage(error, t), "error"),
   });
 
+  const confirmVisit = useMutation({
+    mutationFn: () => api<{ request: Track }>(`/api/public/track/${token}/visit/confirm`, { method: "POST" }),
+    onSuccess: (result) => {
+      queryClient.setQueryData(["public", "track", token], result);
+      notify(t("visit.confirmedNote"));
+    },
+    onError: (error) => notify(apiErrorMessage(error, t), "error"),
+  });
+  const payLinks = useQuery({
+    queryKey: ["public", "pay-links", token, data.data?.request.payment.balance],
+    enabled: Boolean(token && (data.data?.request.payment.balance ?? 0) > 0),
+    queryFn: () => api<PayLinks>(`/api/public/track/${token}/pay-links`),
+  });
+
   const request = data.data?.request;
   const estimate = request?.estimate ?? null;
   const optionalIds = estimate?.lines.filter((line) => line.isOptional).map((line) => line.id) ?? [];
@@ -94,6 +110,25 @@ export function TrackPage() {
                 <span className="text-xs text-neutral-500">{t(`type.${request.type}`)} · {t(`location.${request.locationType}`)}</span>
               </div>
               {request.status === "rejected" && request.rejectionReason ? <p className="mt-3 rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">{t("portal.rejectedBecause", { reason: request.rejectionReason })}</p> : null}
+              {request.eta ? <p className="mt-3 rounded-xl bg-[#FFF4E5] px-4 py-3 text-sm font-bold text-[#8A4B00]">{t("visit.eta", { minutes: request.eta.minutes })}</p> : null}
+              {request.visit.canConfirm ? (
+                <div className="mt-3 rounded-xl bg-amber-50 px-4 py-3">
+                  <p className="text-sm font-semibold text-amber-900">{t("visit.confirmAsk", { when: request.scheduledAt ? formatStamp(request.scheduledAt) : "" })}</p>
+                  <button type="button" className="btn-rizo mt-2 h-11" disabled={confirmVisit.isPending} onClick={() => confirmVisit.mutate()}>
+                    {confirmVisit.isPending ? <Spinner className="h-4 w-4" /> : null}
+                    {t("visit.confirmButton")}
+                  </button>
+                </div>
+              ) : null}
+              {payLinks.data?.enabled ? (
+                <div className="mt-3 rounded-xl bg-neutral-50 px-4 py-3">
+                  <p className="text-sm font-semibold text-neutral-800">{t("pay.body", { amount: formatMoney(payLinks.data.amount) })}</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {payLinks.data.payme ? <a href={payLinks.data.payme} target="_blank" rel="noreferrer" className="btn-rizo h-10">Payme</a> : null}
+                    {payLinks.data.click ? <a href={payLinks.data.click} target="_blank" rel="noreferrer" className="btn-rizo-ghost h-10">Click</a> : null}
+                  </div>
+                </div>
+              ) : null}
               {request.canConfirmPickup ? <p className="mt-3 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">{t("track.readyForPickup")}</p> : null}
               <dl className="mt-4 grid grid-cols-[8rem_minmax(0,1fr)] gap-y-2 text-sm">
                 <dt className="text-neutral-500">{t("common.opened")}</dt>

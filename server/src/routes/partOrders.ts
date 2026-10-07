@@ -14,7 +14,7 @@ import { staffActor, writeAudit } from "../lib/audit.js";
 import { parseDateOnly, toDateOnly } from "../lib/warranty.js";
 
 export const partOrdersRouter = Router();
-partOrdersRouter.use(staffAuth, requireOffice);
+partOrdersRouter.use(staffAuth, requireStaffRole("admin", "receptionist", "warehouse"));
 
 const include = {
   sparePart: true,

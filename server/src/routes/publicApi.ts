@@ -13,6 +13,11 @@ import { normalizeDisplayIdQuery } from "../lib/displayId.js";
 import { advanceAfterApproval } from "./requests.js";
 import { rateLimit } from "../middleware/rateLimit.js";
 import { canConfirmPickup } from "../lib/pickup.js";
+import { confirmVisit } from "../lib/visits.js";
+import { serializeArticle } from "../lib/helpArticles.js";
+import { env } from "../config.js";
+import { paymentLinks } from "../lib/paymentLinks.js";
+import { paymentSummary } from "../lib/payments.js";
 
 // Anyone holding the unguessable tracking link (printed on the receipt / QR tag, or sent by SMS) can follow
 // a request and answer its estimate without signing in. The link carries no personal data beyond the request.
@@ -55,6 +60,8 @@ async function serializeTrack(request: TrackRecord) {
     completedAt: request.completedAt?.toISOString() ?? null,
     dueBy: request.legalDueAt && !isTerminalStatus(request.status) ? request.legalDueAt.toISOString() : null,
     scheduledAt: request.scheduledAt?.toISOString() ?? null,
+    visit: { slot: request.visitSlot, confirmed: Boolean(request.visitConfirmedAt), canConfirm: Boolean(request.scheduledAt) && !request.visitConfirmedAt && !isTerminalStatus(request.status) && !isDoneStatus(request.status) },
+    eta: request.etaMinutes != null && request.etaSetAt && request.enRouteAt && !request.arrivedAt && !isTerminalStatus(request.status) ? { minutes: request.etaMinutes, setAt: request.etaSetAt.toISOString() } : null,
     product: { ...serializeNamed(request.product), sku: request.product.sku },
     technicianFirstName: request.assignedTechnician?.name.trim().split(/\s+/)[0] ?? null,
     rejectionReason: request.status === "rejected" ? request.rejectionReason : null,
@@ -148,6 +155,39 @@ publicRouter.post(
     const estimate = request.estimates[0];
     if (!estimate || estimate.id !== req.params.estimateId) throw new HttpError(404, "Estimate not found");
     await declineEstimate({ estimateId: estimate.id, reason: body.reason, by: { kind: "customer", id: "link", name: "Tracking link" } });
+    res.json({ request: await serializeTrack(await loadByToken(req.params.token)) });
+  }),
+);
+
+// Self-help guides, optionally for one product category.
+publicRouter.get(
+  "/help",
+  asyncHandler(async (req, res) => {
+    const category = typeof req.query.category === "string" && req.query.category ? req.query.category : null;
+    const rows = await prisma.helpArticle.findMany({
+      where: { isPublished: true, ...(category ? { OR: [{ productCategory: category }, { productCategory: null }] } : {}) },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+    });
+    res.json({ articles: rows.map(serializeArticle) });
+  }),
+);
+
+publicRouter.get(
+  "/track/:token/pay-links",
+  tokenLimiter,
+  asyncHandler(async (req, res) => {
+    const request = await loadByToken(req.params.token);
+    const summary = await paymentSummary(request.id);
+    res.json(paymentLinks({ displayId: request.displayId, balance: summary.balance, returnUrl: `${env.clientOrigin}/t/${request.trackingToken}` }));
+  }),
+);
+
+publicRouter.post(
+  "/track/:token/visit/confirm",
+  tokenLimiter,
+  asyncHandler(async (req, res) => {
+    const request = await loadByToken(req.params.token);
+    await confirmVisit(request.id, { id: "link", type: "customer", name: "Tracking link" });
     res.json({ request: await serializeTrack(await loadByToken(req.params.token)) });
   }),
 );

@@ -15,6 +15,8 @@ Keep this file in sync with the product. After any user-visible change, re-check
 | Staff dashboard | Admin / dispatcher | `/app` |
 | Front desk | Receptionist (`receptionist` role: board, requests, customers, sales, calendar, map, part orders, kiosk — no reports, catalog costs, settings or staff) | `/app/kanban` |
 | Technician panel | Mobile or service-center technician | `/app/my-jobs` |
+| Accountant | `accountant` role: reports, payroll, debts, fiscal and partner reports, warranty plans (read-only for everything else) | `/app/reports` |
+| Warehouse manager | `warehouse` role: spare parts, part orders and the parts each technician carries | `/app/tech-stock` |
 | Customer portal | Product owner | `/portal` |
 
 Jobs can come from **RIZO market** (linked sale + warranty) or **RIZO Service** (walk-in / portal). Warranty dates are stored as UTC date-only and run from the **installation date** once the product has been installed (set when an installation request completes), otherwise from the sale date. Matching available technicians who are working today are auto-assigned (fewest open jobs first). There is no periodic or seasonal maintenance service.
@@ -75,6 +77,7 @@ Optional notification and backup keys (see `server/.env.example`):
 | `SMS_PROVIDER` | `console` | `console` logs SMS (also password-reset texts); set `SMS_HTTP_URL` (+ optional `SMS_HTTP_TOKEN`) for a gateway |
 | `TELEGRAM_PROVIDER` | `console` | `console` logs Telegram; set `TELEGRAM_BOT_TOKEN` to use Bot API |
 | `TELEGRAM_ADMIN_CHAT_ID` | empty | Admin overdue / low-stock Telegram destination |
+| `FIREBASE_SERVICE_ACCOUNT` | empty | Push notifications: the Firebase service-account JSON (on the host). `FIREBASE_SERVICE_ACCOUNT_FILE` is a file path for local work. Without either, pushes are only logged. Never commit it |
 | `BACKUP_ENABLED` | `false` | When `true`, API process runs `pg_dump` at 02:00 Asia/Tashkent |
 | `BACKUP_DIR` | `server/backups` | Where `.sql` dumps are written |
 | `BACKUP_RETAIN_DAYS` | `30` | Older daily dumps are deleted |
@@ -198,6 +201,40 @@ Phone-friendly. Desktop still uses the staff shell. The header account menu is o
 | `/portal/requests/:id` | Live status in friendly wording, technician first name only, in-shop pickup confirmation (tap or signature), rating with quick tags, estimate approval (choose optional lines), messages to the service, "technician is on the way", payments and balance |
 
 Notification bell translates from `code` + `params`. Socket room `customer:{id}`. The header account menu signs out from every portal page.
+
+---
+
+## Service growth suite
+
+Added after comparing RIZO Service with other field-service and repair systems. Everything below works on the website, the technician / admin app and the customer app unless noted.
+
+**Customers**
+- **Visit booking.** The customer picks a day and one of the free time windows (`visit_slots` setting) when asking for service or later on the request page. Capacity is per technician per day (`visits_per_technician_per_day`) and respects the technicians' days off. A visit can be confirmed, moved a limited number of times (`reschedule_limit`) and, until work starts, cancelled (`cancel_before_hours` cut-off). A reminder goes out the day before; the tracking link and the Telegram bot can confirm it too.
+- **Arrival estimate.** The technician says how many minutes the trip takes when tapping "on my way"; the customer sees it.
+- **My products** (`/portal/products`): warranty countdown, book service for a product, ask for a paid **warranty extension plan**. The office takes the payment and the warranty is extended automatically; a notice goes out a few weeks before a warranty ends (`warranty_expiry_notice_days`).
+- **Help centre** (`/portal/help`, `/help`): short guides and videos per product category, written by the admin (`/app/help`).
+- **Pay online**: Payme / Click buttons on the request and tracking pages when `PAYME_MERCHANT_ID` / `CLICK_*` are set. The buttons only open the provider's page; the office still records the payment (an automatic callback needs a merchant contract).
+- **My account** (`/portal/account`): choose SMS / Telegram / both, download all data as JSON, ask for the personal data to be erased (an admin anonymizes the account; requests and payments stay for the accounts). Privacy policy and terms at `/privacy` and `/terms`.
+- **Telegram bot**: besides linking and `/status`, messages carry buttons to approve or decline an estimate, confirm a visit and rate a finished job; plain text or `/message <number> text` writes to the service.
+
+**Technicians**
+- **Skills and distance.** Auto-assignment only picks technicians who can repair the product category (`Technician skills`), then the lowest load plus distance from their base (10 km counts like one open job).
+- **Checklists** per product category (diagnosis and "before completing"). Required items block completing a repair. Works offline in the app.
+- **Technician stock ("van stock")**: the warehouse hands parts to a technician and takes them back; on a job the technician's own parts are used first. `/app/tech-stock`, `/app/my-stock`.
+- **Two-step sign-in** (`/app/security`, TOTP: Google Authenticator etc.). An admin can reset it.
+
+**Office**
+- **Escalation**: an overdue job is raised again after `escalation_hours` and becomes urgent after `escalation_hours_urgent`; **low-rating alert** (`low_rating_threshold`); **weekly summary** every Monday (and `Send now` in settings).
+- **Service quality KPIs** on the dashboard: first-time fix, callbacks and their cost, parts wait, average time in each status.
+- **Bulk actions** on the requests list (assign, priority, cancel); reports grouped (main / money / more).
+- **Partner service centres**: payout share + fixed amount per job, report `/app/reports/partners`.
+- **Fiscal receipts**: the number belongs to each payment; setting `require_fiscal_receipt`; report of payments without one. OFD itself is not integrated.
+- **Roles** `accountant` and `warehouse` (see the table above); the mobile apps tell them to use the website.
+- **RIZO market integration**: `POST /api/integrations/market/sales` with header `X-Api-Key: $MARKET_API_KEY`. Body: `externalId`, `invoiceNumber`, `saleDate`, `customer {name, phone, address?}`, `items [{sku, quantity, price, serialNumber?}]`, optional `installation {address, lat?, lng?}` (opens an installation request per item). Sending the same `externalId` again does not duplicate anything; an unknown SKU answers 422 `unknownSku`. New customers sign in with "forgot password" (SMS).
+
+Not modelled on purpose: periodic / seasonal maintenance and "service due" reminders.
+
+Checks: `npm run smoke` (core flows) and `npm run smoke:growth` (everything above; run the API with `MARKET_API_KEY=smoke-key`).
 
 ---
 

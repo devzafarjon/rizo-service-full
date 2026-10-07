@@ -15,6 +15,7 @@ import { optionalText } from "../lib/zodFields.js";
 import { customerAuth } from "../middleware/customerAuth.js";
 import { loginLimiter, registerLimiter, resetLimiter } from "../middleware/rateLimit.js";
 import { sendSms } from "../lib/notifyDispatch.js";
+import { notifyAdmins } from "../lib/notifyStaff.js";
 
 const loginSchema = z.object({
   phone: z.string().min(1, "Phone is required"),
@@ -150,12 +151,88 @@ customerAuthRouter.patch(
   }),
 );
 
+// Where status messages go: sms, telegram (when the chat is linked) or both.
+customerAuthRouter.patch(
+  "/preferences",
+  customerAuth,
+  asyncHandler(async (req, res) => {
+    const body = parseBody(z.object({ preferredChannel: z.enum(["sms", "telegram", "both"]) }), req.body);
+    const user = await prisma.customer.update({ where: { id: req.customer!.sub }, data: { preferredChannel: body.preferredChannel } });
+    res.json({ user: serializeCustomer(user) });
+  }),
+);
+
+// Everything we hold about the customer, as a file they can keep.
+customerAuthRouter.get(
+  "/me/export",
+  customerAuth,
+  asyncHandler(async (req, res) => {
+    const id = req.customer!.sub;
+    const [customer, sales, requests, feedback, notifications] = await Promise.all([
+      prisma.customer.findUnique({ where: { id }, select: { id: true, name: true, phone: true, address: true, regionCode: true, locale: true, preferredChannel: true, createdAt: true } }),
+      prisma.sale.findMany({ where: { customerId: id }, include: { product: { select: { name: true, sku: true } } } }),
+      prisma.serviceRequest.findMany({
+        where: { customerId: id },
+        include: { product: { select: { name: true, sku: true } }, payments: { select: { kind: true, method: true, amount: true, createdAt: true } }, notes: { where: { isVisibleToCustomer: true }, select: { noteText: true, authorScope: true, createdAt: true } } },
+      }),
+      prisma.feedback.findMany({ where: { customerId: id } }),
+      prisma.notification.findMany({ where: { customerId: id }, select: { message: true, createdAt: true } }),
+    ]);
+    res.setHeader("Content-Disposition", 'attachment; filename="rizo-my-data.json"');
+    res.json({
+      exportedAt: new Date().toISOString(),
+      customer,
+      purchases: sales.map((sale) => ({ invoiceNumber: sale.invoiceNumber, product: sale.product, saleDate: sale.saleDate, serialNumber: sale.serialNumber, warrantyExpiry: sale.warrantyExpiry, pricePaid: Number(sale.pricePaid) })),
+      requests: requests.map((request) => ({
+        number: request.displayId,
+        type: request.type,
+        status: request.status,
+        product: request.product,
+        issue: request.issueDescription,
+        createdAt: request.createdAt,
+        finalCost: request.finalCost == null ? null : Number(request.finalCost),
+        payments: request.payments.map((row) => ({ ...row, amount: Number(row.amount) })),
+        messages: request.notes,
+      })),
+      feedback,
+      notifications,
+    });
+  }),
+);
+
+// The customer asks us to erase their personal data; the office anonymizes the account (requests stay for the accounts).
+customerAuthRouter.post(
+  "/me/delete-request",
+  customerAuth,
+  asyncHandler(async (req, res) => {
+    const user = await prisma.customer.findUnique({ where: { id: req.customer!.sub } });
+    if (!user) throw new HttpError(401, "Account no longer exists");
+    if (!user.deletionRequestedAt) {
+      await prisma.customer.update({ where: { id: user.id }, data: { deletionRequestedAt: new Date() } });
+      await notifyAdmins({ message: `${user.name} asked to delete their account`, code: "deletionRequest", params: { customer: user.name, phone: user.phone, customerId: user.id } });
+    }
+    res.json({ ok: true });
+  }),
+);
+
+customerAuthRouter.delete(
+  "/me/delete-request",
+  customerAuth,
+  asyncHandler(async (req, res) => {
+    await prisma.customer.update({ where: { id: req.customer!.sub }, data: { deletionRequestedAt: null } });
+    res.json({ ok: true });
+  }),
+);
+
 function serializeCustomer(user: {
   id: string;
   name: string;
   phone: string;
   address: string | null;
   locale: string;
+  preferredChannel?: string;
+  deletionRequestedAt?: Date | null;
+  telegramChatId?: string | null;
 }) {
   return {
     id: user.id,
@@ -163,5 +240,8 @@ function serializeCustomer(user: {
     phone: user.phone,
     address: user.address,
     locale: parseLocale(user.locale),
+    preferredChannel: user.preferredChannel ?? "both",
+    telegramLinked: Boolean(user.telegramChatId),
+    deletionRequested: Boolean(user.deletionRequestedAt),
   };
 }

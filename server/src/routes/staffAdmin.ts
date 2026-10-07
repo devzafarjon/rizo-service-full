@@ -8,6 +8,7 @@ import { hashPassword } from "../lib/password.js";
 import { prisma } from "../lib/prisma.js";
 import { handlePrismaError } from "../lib/prismaErrors.js";
 import { staffActor, writeAudit } from "../lib/audit.js";
+import { STAFF_ROLES } from "../lib/roles.js";
 import { forgetStaffActiveCache, requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
 
 // Admins manage the people who use the system, so no one needs database access to add a technician or reset a password.
@@ -19,11 +20,15 @@ const passwordRule = z.string().min(8, "Password must be at least 8 characters")
 const baseFields = {
   name: z.string().trim().min(1, "Name is required").max(100),
   phone: z.string().min(1, "Phone is required"),
-  role: z.enum(["admin", "technician", "receptionist"]),
+  role: z.enum(STAFF_ROLES),
   technicianType: z.enum(["service_center", "mobile"]).nullable().optional(),
   serviceCenterId: z.string().min(1).nullable().optional(),
   payPercent: z.coerce.number().min(0).max(100).optional(),
   payFixedPerJob: z.coerce.number().min(0).optional(),
+  // Technicians: the product categories they repair (empty = any) and the home base used to pick the nearest one.
+  skillCategories: z.array(z.string().trim().min(1).max(60)).max(40).optional(),
+  baseLat: z.coerce.number().min(-90).max(90).nullable().optional(),
+  baseLng: z.coerce.number().min(-180).max(180).nullable().optional(),
 };
 
 function serialize(user: {
@@ -37,6 +42,10 @@ function serialize(user: {
   serviceCenterId: string | null;
   payPercent: { toString(): string };
   payFixedPerJob: { toString(): string };
+  skillCategories: string[];
+  baseLat: number | null;
+  baseLng: number | null;
+  totpEnabled: boolean;
   createdAt: Date;
 }) {
   return {
@@ -50,6 +59,10 @@ function serialize(user: {
     serviceCenterId: user.serviceCenterId,
     payPercent: Number(user.payPercent),
     payFixedPerJob: Number(user.payFixedPerJob),
+    skillCategories: user.skillCategories,
+    baseLat: user.baseLat,
+    baseLng: user.baseLng,
+    totpEnabled: user.totpEnabled,
     createdAt: user.createdAt.toISOString(),
   };
 }
@@ -82,6 +95,9 @@ staffAdminRouter.post(
           serviceCenterId: body.serviceCenterId ?? null,
           payPercent: body.payPercent ?? 0,
           payFixedPerJob: body.payFixedPerJob ?? 0,
+          skillCategories: body.role === "technician" ? (body.skillCategories ?? []) : [],
+          baseLat: body.baseLat ?? null,
+          baseLng: body.baseLng ?? null,
         },
       });
       await writeAudit({ actor: staffActor(req.staff), action: "staff.create", entityType: "StaffUser", entityId: user.id, newValue: { role: user.role, phone: user.phone } });
@@ -115,6 +131,9 @@ staffAdminRouter.patch(
           ...(body.serviceCenterId !== undefined ? { serviceCenterId: body.serviceCenterId } : {}),
           ...(body.payPercent !== undefined ? { payPercent: body.payPercent } : {}),
           ...(body.payFixedPerJob !== undefined ? { payFixedPerJob: body.payFixedPerJob } : {}),
+          ...(body.skillCategories !== undefined ? { skillCategories: body.skillCategories } : {}),
+          ...(body.baseLat !== undefined ? { baseLat: body.baseLat } : {}),
+          ...(body.baseLng !== undefined ? { baseLng: body.baseLng } : {}),
           ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
         },
       });
@@ -142,6 +161,18 @@ staffAdminRouter.post(
     if (!existing) throw new HttpError(404, "Technician not found");
     await prisma.staffUser.update({ where: { id: existing.id }, data: { passwordHash: await hashPassword(body.password) } });
     await writeAudit({ actor: staffActor(req.staff), action: "staff.password", entityType: "StaffUser", entityId: existing.id });
+    res.json({ ok: true });
+  }),
+);
+
+// An admin can switch off two-step sign-in for someone who lost their phone.
+staffAdminRouter.post(
+  "/:id/2fa/reset",
+  asyncHandler(async (req, res) => {
+    const existing = await prisma.staffUser.findUnique({ where: { id: req.params.id } });
+    if (!existing) throw new HttpError(404, "Technician not found");
+    await prisma.staffUser.update({ where: { id: existing.id }, data: { totpEnabled: false, totpSecret: null } });
+    await writeAudit({ actor: staffActor(req.staff), action: "staff.2fa", entityType: "StaffUser", entityId: existing.id, newValue: { totpEnabled: false } });
     res.json({ ok: true });
   }),
 );

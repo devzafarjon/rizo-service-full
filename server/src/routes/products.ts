@@ -6,7 +6,7 @@ import { parseBody } from "../lib/parse.js";
 import { prisma } from "../lib/prisma.js";
 import { handlePrismaError } from "../lib/prismaErrors.js";
 import { namedFromInput, namedSearch, serializeNamed } from "../lib/named.js";
-import { officeReadAdminWrite, requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
+import { readWriteRoles, requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
 import { ensureCategories } from "../lib/categories.js";
 
 const productSchema = z.object({
@@ -40,7 +40,7 @@ const productPatchSchema = z.object({
 });
 
 export const productsRouter = Router();
-productsRouter.use(staffAuth, officeReadAdminWrite);
+productsRouter.use(staffAuth, readWriteRoles(["admin", "receptionist", "accountant", "warehouse"], ["admin"]));
 
 productsRouter.get(
   "/",

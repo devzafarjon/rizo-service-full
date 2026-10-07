@@ -3,6 +3,7 @@ import { prisma } from "./prisma.js";
 import { emitToStaff } from "./realtime.js";
 import { dispatchOutbound } from "./notifyDispatch.js";
 import { env } from "../config.js";
+import { pushToStaff } from "./push.js";
 
 export function serializeStaffAlert(row: {
   id: string;
@@ -51,6 +52,7 @@ export async function notifyAdmins(input: {
       },
     });
     created.push(serializeStaffAlert(row));
+    void pushToStaff(admin.id, { message: input.message, code: input.code, params: input.params, serviceRequestId: input.serviceRequestId, notificationId: row.id });
   }
   emitToStaff("alert:created", { code: input.code, message: input.message });
   await dispatchOutbound({

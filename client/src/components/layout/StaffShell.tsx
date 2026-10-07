@@ -1,5 +1,5 @@
 import { Dialog, DialogPanel } from "@headlessui/react";
-import { CalendarDays, LogOut, Menu, QrCode, X, type LucideIcon } from "lucide-react";
+import { CalendarDays, LogOut, Menu, QrCode, ShieldCheck, X, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -40,7 +40,8 @@ export function StaffShell() {
 
   const isAdmin = user.role === "admin";
   const isOffice = isAdmin || user.role === "receptionist";
-  const onToggleAvailability = isOffice ? undefined : () => setAvailability(!user.isAvailable);
+  const isTechnician = user.role === "technician";
+  const onToggleAvailability = isTechnician ? () => setAvailability(!user.isAvailable) : undefined;
   const fullBleed = FULL_BLEED_PATHS.includes(location.pathname);
   const userCard = <StaffUserCard user={user} onToggleAvailability={onToggleAvailability} onLogout={onLogout} />;
 
@@ -61,6 +62,7 @@ export function StaffShell() {
           {isAdmin ? <StaffAlertBell /> : null}
           <LanguageSwitcher />
           <AccountMenu name={user.name} detail={staffUserDetail(user, t)} onLogout={onLogout}>
+            <MenuLink to="/app/security" icon={ShieldCheck} label={t("security.title")} />
             {onToggleAvailability ? (
               <>
                 <MenuLink to="/app/scan" icon={QrCode} label={t("nav.scan")} />
@@ -126,7 +128,7 @@ export function StaffShell() {
 
 function staffUserDetail(user: StaffUser, t: (key: string) => string) {
   const role =
-    user.role === "admin" ? t("shell.adminRole") : user.role === "receptionist" ? t("shell.receptionistRole") : technicianTypeLabel(user.technicianType) ?? t("role.technician");
+    user.role === "admin" ? t("shell.adminRole") : user.role === "receptionist" ? t("shell.receptionistRole") : user.role === "accountant" ? t("shell.accountantRole") : user.role === "warehouse" ? t("shell.warehouseRole") : technicianTypeLabel(user.technicianType) ?? t("role.technician");
   return `${role} · ${formatPhone(user.phone)}`;
 }
 

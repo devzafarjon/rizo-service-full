@@ -10,6 +10,7 @@ import { useToast } from "../../components/toast";
 import { useStaffAuth } from "../auth/StaffAuthContext";
 import { api, apiErrorMessage } from "../../lib/api";
 import { formatMoney, formatPhone, technicianTypeLabel } from "../../lib/format";
+import { categoryLabel } from "../../lib/localized";
 import type { ServiceCenter, StaffRole, TechnicianType } from "../../lib/types";
 
 type Row = {
@@ -22,9 +23,13 @@ type Row = {
   serviceCenterId: string | null;
   payPercent: number;
   payFixedPerJob: number;
+  skillCategories: string[];
+  baseLat: number | null;
+  baseLng: number | null;
+  totpEnabled: boolean;
 };
 
-const ROLES: StaffRole[] = ["technician", "receptionist", "admin"];
+const ROLES: StaffRole[] = ["technician", "receptionist", "warehouse", "accountant", "admin"];
 
 /** Add technicians and front-desk staff, set their pay and service center, deactivate leavers, and reset passwords. */
 export function StaffPage() {
@@ -33,7 +38,7 @@ export function StaffPage() {
   const { notify } = useToast();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<Row | "new" | null>(null);
-  const [form, setForm] = useState({ name: "", phone: "", password: "", role: "technician" as StaffRole, technicianType: "service_center" as TechnicianType, serviceCenterId: "", payPercent: "0", payFixedPerJob: "0" });
+  const [form, setForm] = useState({ name: "", phone: "", password: "", role: "technician" as StaffRole, technicianType: "service_center" as TechnicianType, serviceCenterId: "", payPercent: "0", payFixedPerJob: "0", skillCategories: [] as string[], baseLat: "", baseLng: "" });
   const [passwordFor, setPasswordFor] = useState<Row | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +53,20 @@ export function StaffPage() {
     enabled: Boolean(token),
     queryFn: () => api<{ centers: ServiceCenter[] }>("/api/staff/service-centers", { token }),
   });
+  const categories = useQuery({
+    queryKey: ["staff", "categories"],
+    enabled: Boolean(token),
+    queryFn: () => api<{ categories: string[] }>("/api/staff/catalog/categories", { token }),
+  });
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["staff"] });
+  const resetTwoStep = useMutation({
+    mutationFn: (row: Row) => api(`/api/staff/staff/${row.id}/2fa/reset`, { method: "POST", token }),
+    onSuccess: async () => {
+      notify(t("security.resetDone"));
+      await refresh();
+    },
+    onError: (err) => notify(apiErrorMessage(err, t), "error"),
+  });
 
   const save = useMutation({
     mutationFn: () => {
@@ -60,6 +78,9 @@ export function StaffPage() {
         serviceCenterId: form.serviceCenterId || null,
         payPercent: Number(form.payPercent) || 0,
         payFixedPerJob: Number(form.payFixedPerJob) || 0,
+        skillCategories: form.role === "technician" ? form.skillCategories : [],
+        baseLat: form.baseLat === "" ? null : Number(form.baseLat),
+        baseLng: form.baseLng === "" ? null : Number(form.baseLng),
       };
       return editing && editing !== "new"
         ? api(`/api/staff/staff/${editing.id}`, { method: "PATCH", token, body: JSON.stringify(body) })
@@ -92,8 +113,8 @@ export function StaffPage() {
     setError(null);
     setForm(
       row === "new"
-        ? { name: "", phone: "", password: "", role: "technician", technicianType: "service_center", serviceCenterId: "", payPercent: "0", payFixedPerJob: "0" }
-        : { name: row.name, phone: row.phone, password: "", role: row.role, technicianType: row.technicianType ?? "service_center", serviceCenterId: row.serviceCenterId ?? "", payPercent: String(row.payPercent), payFixedPerJob: String(row.payFixedPerJob) },
+        ? { name: "", phone: "", password: "", role: "technician", technicianType: "service_center", serviceCenterId: "", payPercent: "0", payFixedPerJob: "0", skillCategories: [], baseLat: "", baseLng: "" }
+        : { name: row.name, phone: row.phone, password: "", role: row.role, technicianType: row.technicianType ?? "service_center", serviceCenterId: row.serviceCenterId ?? "", payPercent: String(row.payPercent), payFixedPerJob: String(row.payFixedPerJob), skillCategories: row.skillCategories ?? [], baseLat: row.baseLat == null ? "" : String(row.baseLat), baseLng: row.baseLng == null ? "" : String(row.baseLng) },
     );
   }
   function submit(event: FormEvent) {
@@ -135,6 +156,8 @@ export function StaffPage() {
               <Td>
                 {t(`staffAdmin.roles.${row.role}`)}
                 {row.technicianType ? <span className="text-neutral-500"> · {technicianTypeLabel(row.technicianType)}</span> : null}
+                {row.totpEnabled ? <span className="ml-2 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 uppercase">2FA</span> : null}
+                {row.role === "technician" && row.skillCategories.length > 0 ? <span className="block text-xs text-neutral-500">{row.skillCategories.map((name) => categoryLabel(name)).join(", ")}</span> : null}
               </Td>
               <Td>{row.role === "technician" ? `${row.payPercent}% + ${formatMoney(row.payFixedPerJob)}` : t("common.dash")}</Td>
               <Td>
@@ -147,6 +170,11 @@ export function StaffPage() {
                 <button type="button" className="mr-2 text-sm font-semibold text-neutral-600 hover:text-[#7B00E0]" onClick={() => { setPasswordFor(row); setNewPassword(""); }}>
                   {t("staffAdmin.resetPassword")}
                 </button>
+                {row.totpEnabled && row.id !== user?.id ? (
+                  <button type="button" className="mr-2 text-sm font-semibold text-neutral-600 hover:text-[#7B00E0]" onClick={() => window.confirm(t("security.resetConfirm", { name: row.name })) && resetTwoStep.mutate(row)}>
+                    {t("security.reset")}
+                  </button>
+                ) : null}
                 {row.id !== user?.id ? (
                   <button type="button" className={`text-sm font-semibold ${row.isActive ? "text-red-600" : "text-emerald-700"}`} onClick={() => toggle.mutate(row)}>
                     {row.isActive ? t("staffAdmin.deactivate") : t("staffAdmin.activate")}
@@ -201,6 +229,30 @@ export function StaffPage() {
                 ))}
               </select>
             </Field>
+          ) : null}
+          {form.role === "technician" ? (
+            <>
+              <Field label={t("staffAdmin.skills")} hint={t("staffAdmin.skillsHint")}>
+                <div className="flex flex-wrap gap-2">
+                  {(categories.data?.categories ?? []).map((name) => {
+                    const on = form.skillCategories.includes(name);
+                    return (
+                      <button key={name} type="button" onClick={() => setForm({ ...form, skillCategories: on ? form.skillCategories.filter((item) => item !== name) : [...form.skillCategories, name] })} className={`rounded-full border px-3 py-1.5 text-xs font-bold ${on ? "border-[#7B00E0] bg-[#F5EBFD] text-[#7B00E0]" : "border-neutral-300 text-neutral-600"}`}>
+                        {categoryLabel(name)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label={t("staffAdmin.baseLat")} hint={t("staffAdmin.baseHint")}>
+                  <input className={inputClass} type="number" step="any" min={-90} max={90} value={form.baseLat} onChange={(event) => setForm({ ...form, baseLat: event.target.value })} />
+                </Field>
+                <Field label={t("staffAdmin.baseLng")}>
+                  <input className={inputClass} type="number" step="any" min={-180} max={180} value={form.baseLng} onChange={(event) => setForm({ ...form, baseLng: event.target.value })} />
+                </Field>
+              </div>
+            </>
           ) : null}
           {form.role === "technician" ? (
             <div className="grid grid-cols-2 gap-3">

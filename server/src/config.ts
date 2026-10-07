@@ -32,6 +32,16 @@ export const env = {
   telegramProvider: process.env.TELEGRAM_PROVIDER ?? "console",
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN ?? "",
   telegramAdminChatId: process.env.TELEGRAM_ADMIN_CHAT_ID ?? "",
+  // Online payment pages (links only; the office records the payment). Leave empty to hide the buttons.
+  paymeMerchantId: process.env.PAYME_MERCHANT_ID ?? "",
+  clickServiceId: process.env.CLICK_SERVICE_ID ?? "",
+  clickMerchantId: process.env.CLICK_MERCHANT_ID ?? "",
+  // Key the RIZO market sends in X-Api-Key when it posts a sale.
+  marketApiKey: process.env.MARKET_API_KEY ?? "",
+  // Push notifications (Firebase Cloud Messaging). Paste the service-account JSON into FIREBASE_SERVICE_ACCOUNT on the host,
+  // or point FIREBASE_SERVICE_ACCOUNT_FILE at the file when developing. Without either, pushes are only logged.
+  firebaseServiceAccount: process.env.FIREBASE_SERVICE_ACCOUNT ?? "",
+  firebaseServiceAccountFile: process.env.FIREBASE_SERVICE_ACCOUNT_FILE ?? "",
   backupDir: process.env.BACKUP_DIR ?? "",
   backupRetainDays: Number(process.env.BACKUP_RETAIN_DAYS ?? 30),
   backupEnabled: process.env.BACKUP_ENABLED === "true",

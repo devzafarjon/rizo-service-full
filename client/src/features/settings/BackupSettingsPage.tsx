@@ -96,6 +96,127 @@ function RulesForm() {
   );
 }
 
+/** Visit booking, escalation, rating alerts, fiscal receipts and the weekly summary. */
+function ServiceRulesForm() {
+  const { t } = useTranslation();
+  const { token } = useStaffAuth();
+  const { notify } = useToast();
+  const queryClient = useQueryClient();
+  const settings = useQuery({
+    queryKey: ["staff", "settings"],
+    enabled: Boolean(token),
+    queryFn: () => api<{ settings: AppSettings }>("/api/staff/settings", { token }),
+  });
+  const [form, setForm] = useState({
+    visitSlots: "",
+    visitsPerTechnicianPerDay: "6",
+    rescheduleLimit: "2",
+    cancelBeforeHours: "2",
+    escalationHours: "6",
+    escalationHoursUrgent: "24",
+    lowRatingThreshold: "2",
+    warrantyExpiryNoticeDays: "30",
+    requireFiscalReceipt: false,
+    weeklyDigest: true,
+  });
+  useEffect(() => {
+    const value = settings.data?.settings;
+    if (!value) return;
+    setForm({
+      visitSlots: value.visitSlots,
+      visitsPerTechnicianPerDay: String(value.visitsPerTechnicianPerDay),
+      rescheduleLimit: String(value.rescheduleLimit),
+      cancelBeforeHours: String(value.cancelBeforeHours),
+      escalationHours: String(value.escalationHours),
+      escalationHoursUrgent: String(value.escalationHoursUrgent),
+      lowRatingThreshold: String(value.lowRatingThreshold),
+      warrantyExpiryNoticeDays: String(value.warrantyExpiryNoticeDays),
+      requireFiscalReceipt: value.requireFiscalReceipt,
+      weeklyDigest: value.weeklyDigest,
+    });
+  }, [settings.data]);
+  const save = useMutation({
+    mutationFn: () =>
+      api("/api/staff/settings", {
+        method: "PATCH",
+        token,
+        body: JSON.stringify({
+          visitSlots: form.visitSlots,
+          visitsPerTechnicianPerDay: Number(form.visitsPerTechnicianPerDay),
+          rescheduleLimit: Number(form.rescheduleLimit),
+          cancelBeforeHours: Number(form.cancelBeforeHours),
+          escalationHours: Number(form.escalationHours),
+          escalationHoursUrgent: Number(form.escalationHoursUrgent),
+          lowRatingThreshold: Number(form.lowRatingThreshold),
+          warrantyExpiryNoticeDays: Number(form.warrantyExpiryNoticeDays),
+          requireFiscalReceipt: form.requireFiscalReceipt,
+          weeklyDigest: form.weeklyDigest,
+        }),
+      }),
+    onSuccess: async () => {
+      notify(t("catalog.settingsSaved"));
+      await queryClient.invalidateQueries({ queryKey: ["staff", "settings"] });
+    },
+    onError: (error) => notify(apiErrorMessage(error, t), "error"),
+  });
+  const digest = useMutation({
+    mutationFn: () => api("/api/staff/settings/digest-now", { method: "POST", token }),
+    onSuccess: () => notify(t("settings.digestSent")),
+    onError: (error) => notify(apiErrorMessage(error, t), "error"),
+  });
+  const num = (key: "visitsPerTechnicianPerDay" | "rescheduleLimit" | "cancelBeforeHours" | "escalationHours" | "escalationHoursUrgent" | "lowRatingThreshold" | "warrantyExpiryNoticeDays", label: string, hint: string, max = 365) => (
+    <Field label={label} hint={hint}>
+      <input className={inputClass} type="number" min={0} max={max} value={form[key]} onChange={(event) => setForm({ ...form, [key]: event.target.value })} />
+    </Field>
+  );
+  const toggle = (key: "requireFiscalReceipt" | "weeklyDigest", label: string, tip: string) => (
+    <label className="mt-2 flex items-center justify-between gap-3 rounded-2xl bg-neutral-50 px-4 py-3 text-sm">
+      <span className="flex items-center gap-1.5 font-semibold">
+        {label}
+        <InfoTip text={tip} />
+      </span>
+      <input type="checkbox" checked={form[key]} onChange={(event) => setForm({ ...form, [key]: event.target.checked })} />
+    </label>
+  );
+  return (
+    <form
+      onSubmit={(event: FormEvent) => {
+        event.preventDefault();
+        save.mutate();
+      }}
+      className="mt-4 rounded-2xl border border-neutral-200 bg-white p-5"
+    >
+      <h2 className="text-sm font-extrabold">{t("settings.serviceTitle")}</h2>
+      <p className="mt-2 text-sm text-neutral-600">{t("settings.serviceBody")}</p>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <Field label={t("settings.visitSlots")} hint={t("settings.visitSlotsHint")}>
+            <input className={inputClass} value={form.visitSlots} onChange={(event) => setForm({ ...form, visitSlots: event.target.value })} placeholder="09:00-11:00,11:00-13:00,14:00-16:00" />
+          </Field>
+        </div>
+        {num("visitsPerTechnicianPerDay", t("settings.visitCapacity"), t("settings.visitCapacityHint"), 30)}
+        {num("rescheduleLimit", t("settings.rescheduleLimit"), t("settings.rescheduleLimitHint"), 10)}
+        {num("cancelBeforeHours", t("settings.cancelBefore"), t("settings.cancelBeforeHint"), 72)}
+        {num("lowRatingThreshold", t("settings.lowRating"), t("settings.lowRatingHint"), 5)}
+        {num("escalationHours", t("settings.escalationHours"), t("settings.escalationHoursHint"), 240)}
+        {num("escalationHoursUrgent", t("settings.escalationUrgent"), t("settings.escalationUrgentHint"), 720)}
+        {num("warrantyExpiryNoticeDays", t("settings.expiryNotice"), t("settings.expiryNoticeHint"))}
+      </div>
+      {toggle("requireFiscalReceipt", t("settings.requireFiscal"), t("settings.requireFiscalTip"))}
+      {toggle("weeklyDigest", t("settings.weeklyDigest"), t("settings.weeklyDigestTip"))}
+      <div className="mt-4 flex flex-wrap gap-3">
+        <button type="submit" disabled={save.isPending} className="btn-rizo h-12">
+          {save.isPending ? <Spinner className="h-4 w-4" /> : null}
+          {t("common.save")}
+        </button>
+        <button type="button" disabled={digest.isPending} onClick={() => digest.mutate()} className="btn-rizo-ghost h-12">
+          {t("settings.sendDigest")}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export function BackupSettingsPage() {
   const { t } = useTranslation();
   return (
@@ -104,6 +225,7 @@ export function BackupSettingsPage() {
       <p className="mt-1 mb-6 max-w-2xl text-sm text-neutral-500">{t("settings.intro")}</p>
 
       <RulesForm />
+      <ServiceRulesForm />
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <Link to="/app/staff" className="rounded-2xl border border-neutral-200 bg-white p-5 hover:shadow-[0_8px_30px_rgba(180,57,253,0.12)]">

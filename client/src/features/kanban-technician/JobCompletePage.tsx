@@ -17,7 +17,31 @@ import { withApiBase } from "../../lib/apiBase";
 import { api, apiErrorMessage, apiForm } from "../../lib/api";
 import { formatMoney, formatPhone, formatRequestId, formatStamp } from "../../lib/format";
 import { categoryLabel, localizedName } from "../../lib/localized";
-import type { JobWorkPayload } from "../../lib/types";
+import type { ChecklistItem, JobWorkPayload } from "../../lib/types";
+
+function ChecklistGroup({ kind, items, checked, disabled, onChange }: { kind: "diagnosis" | "completion"; items: ChecklistItem[]; checked: string[]; disabled: boolean; onChange: (checked: string[]) => void }) {
+  const { t, i18n } = useTranslation();
+  const lang = (i18n.language.slice(0, 2) as "uz" | "ru" | "en") || "uz";
+  return (
+    <div>
+      <p className="mb-2 text-xs font-bold tracking-wide text-neutral-500 uppercase">{t(`checklist.${kind}`)}</p>
+      <ul className="space-y-2">
+        {items.map((item) => {
+          const on = checked.includes(item.id);
+          return (
+            <li key={item.id}>
+              <label className={`flex min-h-12 items-center gap-3 rounded-2xl px-4 ring-1 ${on ? "bg-emerald-50 ring-emerald-300" : "bg-neutral-50 ring-neutral-200"}`}>
+                <input type="checkbox" className="h-5 w-5" checked={on} disabled={disabled} onChange={() => onChange(on ? checked.filter((id) => id !== item.id) : [...checked, item.id])} />
+                <span className="flex-1 text-sm font-semibold">{item[lang] || item.uz || item.en}</span>
+                {item.required ? <span className="rounded-full bg-[#F5EBFD] px-2 py-0.5 text-[10px] font-bold text-[#7B00E0] uppercase">{t("checklists.required")}</span> : null}
+              </label>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
 
 export function JobCompletePage() {
   const { t } = useTranslation();
@@ -140,6 +164,12 @@ export function JobCompletePage() {
     onError: (error) => notify(apiErrorMessage(error, t), "error"),
   });
 
+  const checklistMut = useMutation({
+    mutationFn: (body: { kind: "diagnosis" | "completion"; checked: string[] }) => api<JobWorkPayload>(`/api/staff/my-jobs/${id}/checklist`, { method: "PUT", token, body: JSON.stringify(body) }),
+    onSuccess: replaceWork,
+    onError: (error) => notify(apiErrorMessage(error, t), "error"),
+  });
+
   const statusMut = useMutation({
     mutationFn: (status: string) => api<JobWorkPayload>(`/api/staff/my-jobs/${id}`, { method: "PATCH", token, body: JSON.stringify({ status }) }),
     onSuccess: async (data) => {
@@ -193,6 +223,7 @@ export function JobCompletePage() {
     resolutionMut.isPending ||
     estimateMut.isPending ||
     diagnosisMut.isPending ||
+    checklistMut.isPending ||
     orderMut.isPending ||
     statusMut.isPending ||
     completeMut.isPending;
@@ -327,6 +358,15 @@ export function JobCompletePage() {
         </Section>
       ) : null}
 
+      {data.checklist && (data.checklist.completion.items.length > 0 || (repair && data.checklist.diagnosis.items.length > 0)) ? (
+        <Section title={t("checklist.title")} hint={t("checklist.hint")}>
+          <div className="space-y-4">
+            {repair && data.checklist.diagnosis.items.length > 0 ? <ChecklistGroup kind="diagnosis" items={data.checklist.diagnosis.items} checked={data.checklist.diagnosis.checked} disabled={done || busy} onChange={(checked) => checklistMut.mutate({ kind: "diagnosis", checked })} /> : null}
+            {data.checklist.completion.items.length > 0 ? <ChecklistGroup kind="completion" items={data.checklist.completion.items} checked={data.checklist.completion.checked} disabled={done || busy} onChange={(checked) => checklistMut.mutate({ kind: "completion", checked })} /> : null}
+          </div>
+        </Section>
+      ) : null}
+
       <Section title={t("job.photos")} hint={t("job.photosHint")}>
         {photos.length > 0 ? (
           <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -421,7 +461,7 @@ export function JobCompletePage() {
           <div className="space-y-2">
             {catalog.parts.map((item) => {
               const line = partLines.find((entry) => entry.sparePartId === item.id);
-              const out = (item.stockQuantity ?? 0) <= 0;
+              const out = (item.stockQuantity ?? 0) + (item.carried ?? 0) <= 0;
               const blocked = out && blockZero && !line;
               return (
                 <div
@@ -442,6 +482,7 @@ export function JobCompletePage() {
                   >
                     <p className="truncate font-semibold">{localizedName(item)}</p>
                     <p className="text-xs text-neutral-500">{t("job.stockLine", { price: formatMoney(item.price), count: item.stockQuantity ?? 0 })}</p>
+                    {item.carried ? <p className="text-[11px] font-bold text-[#7B00E0]">{t("job.carried", { count: item.carried })}</p> : null}
                     {out ? (
                       <p className="text-[11px] font-bold text-amber-700">{blockZero ? t("job.zeroStockBlock") : t("job.zeroStockWarn")}</p>
                     ) : item.lowStock ? (

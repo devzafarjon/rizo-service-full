@@ -1,6 +1,6 @@
-import { ClipboardList, MapPin, PackagePlus, Plus } from "lucide-react";
+import { ClipboardList, LifeBuoy, MapPin, Package, Plus, UserCog } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useCustomerAuth } from "../../features/auth/CustomerAuthContext";
 import { NotificationBell } from "../../features/portal/NotificationBell";
 import { formatPhone } from "../../lib/format";
@@ -27,7 +27,7 @@ export function PortalShell() {
   const links = [
     { to: "/portal", label: t("nav.myRequests"), icon: ClipboardList, end: true },
     { to: "/portal/new", label: t("nav.newRequest"), icon: Plus, end: false },
-    { to: "/portal/register", label: t("nav.registerProduct"), icon: PackagePlus, end: false },
+    { to: "/portal/products", label: t("nav.myProducts"), icon: Package, end: false },
     { to: "/centers", label: t("nav.centers"), icon: MapPin, end: false },
   ];
 
@@ -60,13 +60,31 @@ export function PortalShell() {
           <div className="flex items-center gap-1">
             <NotificationBell />
             <LanguageSwitcher />
-            <AccountMenu name={user.name} detail={formatPhone(user.phone)} onLogout={onLogout} />
+            <AccountMenu name={user.name} detail={formatPhone(user.phone)} onLogout={onLogout}>
+              <Link to="/portal/help" className="flex min-h-10 w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                <LifeBuoy size={16} />
+                {t("nav.help")}
+              </Link>
+              <Link to="/portal/account" className="flex min-h-10 w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                <UserCog size={16} />
+                {t("nav.account")}
+              </Link>
+            </AccountMenu>
           </div>
         </div>
       </header>
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-5 pb-32 sm:pb-8">
         <Outlet />
+        <p className="mt-8 text-center text-xs text-neutral-500">
+          <Link to="/privacy" className="font-semibold hover:text-[#7B00E0]">
+            {t("legal.privacy")}
+          </Link>
+          {" · "}
+          <Link to="/terms" className="font-semibold hover:text-[#7B00E0]">
+            {t("legal.terms")}
+          </Link>
+        </p>
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white pb-[env(safe-area-inset-bottom)] sm:hidden">

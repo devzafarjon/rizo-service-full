@@ -1,9 +1,9 @@
 import { Download } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { DateRangeBar } from "./DateRangeBar";
-import { REPORT_LINKS } from "./reportNav";
+import { REPORT_GROUPS } from "./reportNav";
 import type { ReportQuery } from "../../lib/reportQuery";
 import { segmentedGroupClass, segmentedItemClass } from "../../components/segmented";
 
@@ -25,6 +25,9 @@ export function ReportChrome({
   children: ReactNode;
 }) {
   const { t } = useTranslation();
+  const { pathname } = useLocation();
+  // Tabs of the group this report belongs to, plus a way back to the hub with all reports.
+  const group = REPORT_GROUPS.find((entry) => entry.links.some((link) => link.to === pathname)) ?? REPORT_GROUPS[0];
 
   return (
     <div>
@@ -43,7 +46,10 @@ export function ReportChrome({
         </button>
       </div>
       <nav className={`${segmentedGroupClass} mb-4 flex-nowrap overflow-x-auto`}>
-        {REPORT_LINKS.map((item) => (
+        <NavLink to="/app/reports" end className={({ isActive }) => `shrink-0 ${segmentedItemClass(isActive, "sm")}`}>
+          {t("reports.all")}
+        </NavLink>
+        {group.links.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

@@ -1,16 +1,16 @@
 # RIZO Service — working notes
 
-After-sales service management for RIZO market (Uzbekistan). Web only; technician and customer views must work on phones (360–420px), admin on tablets (768–1024px). `README.md` is the product documentation; this file is the short brief for working in the repo. Keep both current.
+After-sales service management for RIZO market (Uzbekistan). Website plus two Flutter apps in the sibling repo `rizo-service-mobile` (RIZO Texnik for technicians / admin / front desk, RIZO Mijoz for customers); technician and customer views must work on phones (360–420px), admin on tablets (768–1024px). `README.md` is the product documentation; this file is the short brief for working in the repo. Keep both current.
 
 ## Business rules
 - Two service types: **repair** (dead on arrival or failed in use; resolved by repair or replacement; free in warranty, paid otherwise) and **installation** (first-time setup). **No periodic / seasonal maintenance** — never model it.
 - Location is **in_shop** or **on_site**, chosen when the request is created. **Installation is always on site at the customer's address** (in-shop installation is not allowed; the API rejects it). Repairs can be either. On-site needs an address (+ optional lat/lng).
-- `source` is `rizo_service` | `rizo_market`. Request creation lives in service-layer code so a future RIZO market API can call it. Integration is not built.
+- `source` is `rizo_service` | `rizo_market`. Request creation lives in service-layer code so a future RIZO market API can call it. The RIZO market posts sales to `POST /api/integrations/market/sales` (`X-Api-Key` = `MARKET_API_KEY`).
 - Warranty runs from the **installation date** when the product was installed (set when an installation request completes), otherwise from the sale date. Dates are UTC date-only; "today" is `Asia/Tashkent`.
 - Cost: 0 if in warranty (extras are still charged), otherwise services + parts + extra expenses. Profit = revenue − part **cost price** (snapshotted per line) − extra expenses.
 
 ## Roles
-`admin` (dispatcher), `receptionist` (front desk: board, requests, customers, sales, calendar, map, part orders, kiosk — no reports/settings/staff/catalog), `technician` (`mobile` | `service_center`), `customer`. Phone + password for all three; customers use a separate login and JWT scope. Reports, dashboard, inventory, schedule, audit, duplicates, staff admin and settings changes are admin-only **at the API** (`requireStaffRole("admin")`). Customer queries are always scoped to the token's customer id. Deactivated staff (`is_active=false`) cannot sign in and lose API access within ~15s.
+`admin` (dispatcher), `receptionist` (front desk: board, requests, customers, sales, calendar, map, part orders, kiosk — no reports/settings/staff/catalog), `technician` (`mobile` | `service_center`), `accountant` (reports, payroll, fiscal/partner reports, warranty plans; read-only elsewhere), `warehouse` (spare parts, part orders, technician stock), `customer`. Role sets live in `server/src/lib/roles.ts`; use `readWriteRoles(read, write)` for routes where reads are wider than writes. Phone + password for all three; customers use a separate login and JWT scope. Reports, dashboard, inventory, schedule, audit, duplicates, staff admin and settings changes are admin-only **at the API** (`requireStaffRole("admin")`). Customer queries are always scoped to the token's customer id. Deactivated staff (`is_active=false`) cannot sign in and lose API access within ~15s.
 
 ## Status model (one model for both types, per `Rizo.xlsx` #4)
 `new → diagnosing → awaiting_decision → awaiting_parts → in_progress ⇄ paused → ready | completed | replaced → picked_up`, plus `refunded`, `rejected`, `cancelled`. Installation is `new → in_progress → completed` (+ paused/cancelled). Tables live in `server/src/lib/status.ts` (mirrored in `client/src/lib/status.ts`); the technician board folds them into 4 columns (`lib/techBoard.ts`).
@@ -49,3 +49,7 @@ npx tsc --noEmit          # server typecheck (run in server/)
 node server/scripts/i18n-scan.mjs
 ```
 Scratch DB for QA: point `DATABASE_URL` at another database, `prisma migrate deploy`, seed, run the API on another `PORT`, and start Vite with `API_TARGET=http://localhost:4100 DEV_PORT=5174`.
+
+## Growth suite (added 2026-10)
+Visit slots + capacity (`lib/visits.ts`), ETA, skill/distance assignment (`lib/assignment.ts`), checklists (`lib/checklists.ts`), technician stock (`lib/techStock.ts`), help articles, paid warranty plans (`lib/warrantyPlans.ts`), partner centre payouts, per-payment fiscal receipts, TOTP two-step sign-in (`lib/totp.ts`), privacy export/erase, weekly digest (`lib/digest.ts`), escalation (in `lib/sla.ts`), service KPIs (`lib/serviceKpis.ts`), Telegram buttons (`lib/telegramBot.ts`, `lib/telegramText.ts`), market API (`routes/integrations.ts`). New settings are in `lib/settings.ts`. Two extra scripts: `npm run smoke:growth`. Production runs `prisma migrate deploy` on start, so a migration goes live with the deploy.
+**Never model periodic / seasonal maintenance** (still true): no "service due" reminders, no maintenance plans — paid *warranty extensions* are fine.

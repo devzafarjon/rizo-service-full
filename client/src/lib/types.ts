@@ -1,4 +1,4 @@
-export type StaffRole = "admin" | "technician" | "receptionist";
+export type StaffRole = "admin" | "technician" | "receptionist" | "accountant" | "warehouse";
 export type TechnicianType = "service_center" | "mobile";
 export type WarrantyStatus = "in_warranty" | "expired" | "not_applicable";
 export type ServiceType = "installation" | "repair";
@@ -42,6 +42,7 @@ export type StaffUser = {
   isAvailable: boolean;
   isActive?: boolean;
   locale: AppLocale;
+  totpEnabled?: boolean;
 };
 
 export type CustomerUser = {
@@ -50,6 +51,9 @@ export type CustomerUser = {
   phone: string;
   address: string | null;
   locale: AppLocale;
+  preferredChannel?: "sms" | "telegram" | "both";
+  telegramLinked?: boolean;
+  deletionRequested?: boolean;
 };
 
 export type StaffCustomer = {
@@ -58,6 +62,8 @@ export type StaffCustomer = {
   phone: string;
   address: string | null;
   regionCode: string;
+  deletionRequested?: boolean;
+  anonymized?: boolean;
   notes: string | null;
   createdAt: string;
   salesCount: number;
@@ -189,6 +195,12 @@ export type ServiceRequest = {
   rejectionReason: string | null;
   serialNumber: string | null;
   scheduledAt: string | null;
+  visitSlot: string | null;
+  visitConfirmedAt: string | null;
+  visitRescheduleCount: number;
+  etaMinutes: number | null;
+  etaSetAt: string | null;
+  escalationLevel: number;
   enRouteAt: string | null;
   legalDueAt: string | null;
   isLegallyOverdue: boolean;
@@ -310,6 +322,8 @@ export type CatalogChoice = Named & {
   price: number;
   productCategories: string[];
   stockQuantity?: number;
+  /** How many the technician carries (van stock). */
+  carried?: number;
   lowStockThreshold?: number;
   lowStock?: boolean;
 };
@@ -332,6 +346,7 @@ export type JobWorkPayload = {
   cost: JobCost;
   canComplete: boolean;
   missing: string[];
+  checklist?: JobChecklist;
   catalog: {
     services: CatalogChoice[];
     parts: CatalogChoice[];
@@ -405,6 +420,8 @@ export type PortalRequest = {
   canConfirmPickup: boolean;
   serialNumber: string | null;
   scheduledAt: string | null;
+  visit: VisitInfo;
+  eta: { minutes: number; setAt: string } | null;
   enRouteAt: string | null;
   dueBy: string | null;
   repairWarrantyUntil: string | null;
@@ -492,6 +509,8 @@ export type PortalSale = {
   warrantyMonths: number;
   warrantyExpiry: string;
   warrantyStatus: WarrantyStatus;
+  warrantyDaysLeft?: number | null;
+  voided?: boolean;
   product: Named & { id: string; sku: string; category: string };
 };
 
@@ -528,6 +547,7 @@ export type DashboardReport = {
     legalOverdue: number;
     debt: number;
   };
+  service: ServiceKpis;
   trend: TrendPoint[];
   topProducts: Array<Named & { id: string; sku: string; category: string; count: number }>;
   topParts: Array<Named & { id: string; quantity: number }>;
@@ -637,6 +657,7 @@ export type PaymentRow = {
   method: PaymentMethod;
   amount: number;
   note: string | null;
+  fiscalReceiptNumber?: string | null;
   createdByName: string | null;
   createdAt: string;
 };
@@ -663,6 +684,9 @@ export type ServiceCenter = {
   lng: number | null;
   isAuthorized: boolean;
   isActive: boolean;
+  isPartner?: boolean;
+  payoutPercent?: number;
+  payoutFixedPerJob?: number;
   staffCount?: number;
   requestsCount?: number;
 };
@@ -710,4 +734,99 @@ export type AppSettings = {
   repairLegalDays: number;
   estimateValidDays: number;
   pickupStorageDays: number;
+  visitSlots: string;
+  visitsPerTechnicianPerDay: number;
+  rescheduleLimit: number;
+  cancelBeforeHours: number;
+  escalationHours: number;
+  escalationHoursUrgent: number;
+  lowRatingThreshold: number;
+  requireFiscalReceipt: boolean;
+  weeklyDigest: boolean;
+  warrantyExpiryNoticeDays: number;
 };
+
+// ---- growth suite -------------------------------------------------------------------------------------------------
+
+export type TechnicianStockRow = Named & { sparePartId: string; quantity: number };
+export type TechnicianStockOverview = { id: string; name: string; technicianType: TechnicianType | null; items: TechnicianStockRow[]; total: number };
+export type StockMovement = {
+  id: string;
+  kind: "issue" | "return" | "used" | "unused" | "adjust";
+  quantity: number;
+  technicianName: string | null;
+  part: Named | null;
+  serviceRequestId: string | null;
+  note: string | null;
+  createdByName: string | null;
+  createdAt: string;
+};
+
+export type ChecklistItem = { id: string; uz: string; ru: string; en: string; required: boolean };
+export type ChecklistTemplate = { id: string; kind: "diagnosis" | "completion"; productCategory: string | null; items: ChecklistItem[]; isActive: boolean };
+export type JobChecklist = {
+  diagnosis: { items: ChecklistItem[]; checked: string[] };
+  completion: { items: ChecklistItem[]; checked: string[] };
+  missingRequired: string[];
+};
+
+export type HelpArticle = {
+  id: string;
+  productCategory: string | null;
+  productId: string | null;
+  title: { uz: string; ru: string; en: string };
+  body: { uz: string; ru: string; en: string };
+  videoUrl: string | null;
+  sortOrder: number;
+  isPublished: boolean;
+};
+
+export type WarrantyPlan = Named & { id: string; months: number; price: number; productCategories: string[]; isActive: boolean };
+export type WarrantyPurchase = {
+  id: string;
+  status: "requested" | "paid" | "cancelled";
+  months: number;
+  price: number;
+  paymentMethod: PaymentMethod | null;
+  fiscalReceiptNumber: string | null;
+  requestedAt: string;
+  paidAt: string | null;
+  plan: WarrantyPlan;
+  customer: { id: string; name: string; phone: string };
+  sale: { id: string; invoiceNumber: string; serialNumber: string | null; warrantyExpiry: string; warrantyStatus: WarrantyStatus; product: Named & { id: string; sku: string } };
+};
+
+export type VisitSlot = { slot: string; left: number; free: boolean };
+export type VisitInfo = { slot: string | null; confirmed: boolean; canBook: boolean; canReschedule: boolean; canCancel: boolean };
+
+export type ServiceKpis = {
+  repairsFinished: number;
+  firstTimeFixRate: number | null;
+  callbackRate: number | null;
+  callbackCost: number;
+  statusHours: Array<{ status: string; hours: number; jobs: number }>;
+  avgPartsWaitHours: number | null;
+  avgDecisionWaitHours: number | null;
+  jobsCost: number;
+};
+
+export type PartnersReport = {
+  range: ReportWindow;
+  totalPayout: number;
+  rows: Array<{
+    center: { id: string; name: string; payoutPercent: number; payoutFixedPerJob: number };
+    jobs: number;
+    labour: number;
+    payout: number;
+    detail: Array<{ id: string; displayId: string; product: string; completedAt: string | null; labour: number; payout: number }>;
+  }>;
+};
+
+export type FiscalReport = {
+  range: ReportWindow;
+  count: number;
+  total: number;
+  rows: Array<{ id: string; requestId: string; displayId: string; method: PaymentMethod; amount: number; createdAt: string; createdByName: string | null }>;
+};
+
+export type PayLinks = { enabled: boolean; amount: number; payme?: string; click?: string };

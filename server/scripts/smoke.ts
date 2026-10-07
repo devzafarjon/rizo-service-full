@@ -153,7 +153,12 @@ async function main() {
   const uploadPhoto = async (token: string, id: string) => {
     const f = new FormData();
     f.append("photos", new Blob([PNG], { type: "image/png" }), "smoke.png");
-    return fetch(`${API}/api/staff/my-jobs/${id}/photos`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: f });
+    const response = await fetch(`${API}/api/staff/my-jobs/${id}/photos`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: f });
+    // The demo data has completion checklists with required items; a technician ticks them before completing.
+    const view = await json<{ checklist?: { completion: { items: Array<{ id: string; required: boolean }> } } }>(`/api/staff/my-jobs/${id}`, { token });
+    const required = view.body.checklist?.completion.items.filter((item) => item.required).map((item) => item.id) ?? [];
+    if (required.length > 0) await json(`/api/staff/my-jobs/${id}/checklist`, { method: "PUT", token, body: JSON.stringify({ kind: "completion", checked: required }) });
+    return response;
   };
   const shopRepair = (extra: Record<string, unknown> = {}) =>
     createJob({ type: "repair", issueDescription: `Smoke ${tag}`, locationType: "in_shop", technicianTypeRequired: "service_center", assignedTechnicianId: shopTech.user?.id, defectType: "failed_during_use", ...extra });

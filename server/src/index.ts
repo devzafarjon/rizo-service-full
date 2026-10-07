@@ -7,6 +7,7 @@ import { tashkentCalendarDate } from "./lib/displayId.js";
 import { verifyToken } from "./lib/jwt.js";
 import { bindIo } from "./lib/realtime.js";
 import { runHousekeeping, syncOverdueRequests } from "./lib/sla.js";
+import { maybeSendWeeklyDigest } from "./lib/digest.js";
 import { startTelegramBot } from "./lib/telegramBot.js";
 
 const app = createApp();
@@ -51,6 +52,9 @@ function startOpsJobs() {
   };
   runSla();
   setInterval(runSla, 60_000);
+  const tickDigest = () => void maybeSendWeeklyDigest().catch((error) => console.error("[digest]", error));
+  tickDigest();
+  setInterval(tickDigest, 30 * 60_000);
 
   if (!env.backupEnabled) return;
   let lastBackupDay = "";

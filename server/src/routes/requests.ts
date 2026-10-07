@@ -1,3 +1,4 @@
+import { pushJobAssigned } from "../lib/push.js";
 import { Router } from "express";
 import type { LocationType, RequestStatus, ServiceType } from "@prisma/client";
 import { z } from "zod";
@@ -13,7 +14,8 @@ import { ALL_STATUSES, OPEN_STATUSES } from "../lib/status.js";
 import { changeRequestStatus } from "../lib/statusChange.js";
 import { normalizeDisplayIdQuery } from "../lib/displayId.js";
 import { serializeNamed } from "../lib/named.js";
-import { requireOffice, staffAuth } from "../middleware/staffAuth.js";
+import { readWriteRoles, requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
+import { READ_MONEY, READ_OFFICE } from "../lib/roles.js";
 import { staffActor, writeAudit } from "../lib/audit.js";
 import { confirmPickup } from "../lib/pickup.js";
 import { createServiceRequest } from "../lib/createRequest.js";
@@ -22,6 +24,7 @@ import { approveEstimate, createEstimate, declineEstimate, estimateInclude, fulf
 import { paymentSummary, refreshPaymentStatus } from "../lib/payments.js";
 import { createCustomerNotification } from "../lib/notifyCustomer.js";
 import { getAppSettings } from "../lib/settings.js";
+import { availableSlots, confirmVisit, scheduleVisit } from "../lib/visits.js";
 import { money } from "../lib/warranty.js";
 
 const SERVICE_TYPES: ServiceType[] = ["installation", "repair"];
@@ -157,7 +160,7 @@ const paymentSchema = z.object({
 });
 
 export const requestsRouter = Router();
-requestsRouter.use(staffAuth, requireOffice);
+requestsRouter.use(staffAuth, readWriteRoles(READ_OFFICE, ["admin", "receptionist"]));
 
 requestsRouter.get(
   "/",
@@ -210,6 +213,26 @@ requestsRouter.get(
       include: requestInclude,
     });
     res.json({ requests: requests.map(serializeRequest) });
+  }),
+);
+
+// Free booking windows for a date (for the request being moved, or for a location type).
+requestsRouter.get(
+  "/visit-slots",
+  asyncHandler(async (req, res) => {
+    const date = String(req.query.date ?? "");
+    const requestId = typeof req.query.requestId === "string" ? req.query.requestId : "";
+    const request = requestId ? await prisma.serviceRequest.findUnique({ where: { id: requestId } }) : null;
+    if (requestId && !request) throw new HttpError(404, "Service request not found");
+    const technicianType = request ? request.technicianTypeRequired : req.query.locationType === "in_shop" ? "service_center" : "mobile";
+    const slots = await availableSlots({
+      date,
+      technicianType,
+      serviceCenterId: request?.serviceCenterId ?? (typeof req.query.serviceCenterId === "string" && req.query.serviceCenterId ? req.query.serviceCenterId : null),
+      ignoreRequestId: request?.id,
+      technicianId: request?.assignedTechnicianId ?? null,
+    });
+    res.json({ date, slots: slots.map(({ slot, left, free }) => ({ slot, left, free })) });
   }),
 );
 
@@ -269,6 +292,7 @@ requestsRouter.get(
         method: row.method,
         amount: money(row.amount),
         note: row.note,
+        fiscalReceiptNumber: row.fiscalReceiptNumber,
         createdByName: row.createdByName,
         createdAt: row.createdAt.toISOString(),
       })),
@@ -302,6 +326,71 @@ requestsRouter.post(
       submittedByCustomer: false,
     });
     res.status(201).json({ request: serializeRequest(result.request), assignment: result.assignment, repeat: result.repeat });
+  }),
+);
+
+requestsRouter.post(
+  "/:id/visit",
+  asyncHandler(async (req, res) => {
+    const body = parseBody(z.object({ date: z.string().trim(), slot: z.string().trim() }), req.body);
+    await scheduleVisit({ requestId: req.params.id, date: body.date, slot: body.slot, actor: staffActor(req.staff), byCustomer: false });
+    res.json({ request: serializeRequest(await prisma.serviceRequest.findUniqueOrThrow({ where: { id: req.params.id }, include: requestInclude })) });
+  }),
+);
+
+requestsRouter.post(
+  "/:id/visit/confirm",
+  asyncHandler(async (req, res) => {
+    await confirmVisit(req.params.id, staffActor(req.staff));
+    res.json({ request: serializeRequest(await prisma.serviceRequest.findUniqueOrThrow({ where: { id: req.params.id }, include: requestInclude })) });
+  }),
+);
+
+// Several requests at once: assign a technician, set the priority or cancel. Each one is checked on its own.
+requestsRouter.post(
+  "/bulk",
+  asyncHandler(async (req, res) => {
+    const body = parseBody(
+      z.object({
+        ids: z.array(z.string().min(1)).min(1).max(100),
+        action: z.enum(["assign", "priority", "cancel"]),
+        technicianId: z.string().min(1).nullable().optional(),
+        priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
+        reason: z.string().trim().max(300).optional(),
+      }),
+      req.body,
+    );
+    const actor = staffActor(req.staff);
+    const ok: string[] = [];
+    const failed: Array<{ id: string; code: string }> = [];
+    let technician: { id: string; technicianType: string | null; isActive: boolean; role: string } | null = null;
+    if (body.action === "assign" && body.technicianId) {
+      technician = await prisma.staffUser.findUnique({ where: { id: body.technicianId }, select: { id: true, technicianType: true, isActive: true, role: true } });
+      if (!technician || technician.role !== "technician" || !technician.isActive) throw new HttpError(400, "Technician not found");
+    }
+    if (body.action === "priority" && !body.priority) throw new HttpError(400, "Choose a priority", "invalidInput");
+    for (const id of [...new Set(body.ids)]) {
+      try {
+        const existing = await prisma.serviceRequest.findUnique({ where: { id } });
+        if (!existing) throw new HttpError(404, "Service request not found", "requestNotFound");
+        if (body.action === "assign") {
+          if (technician && technician.technicianType !== existing.technicianTypeRequired) throw new HttpError(400, "This technician does not match the required type", "techTypeMismatch");
+          await prisma.serviceRequest.update({ where: { id }, data: { assignedTechnicianId: technician?.id ?? null, assignedAt: technician ? new Date() : null } });
+          pushJobAssigned(technician?.id, existing);
+          await writeAudit({ actor, action: "request.assign", entityType: "ServiceRequest", entityId: id, oldValue: { assignedTechnicianId: existing.assignedTechnicianId }, newValue: { assignedTechnicianId: technician?.id ?? null, bulk: true } });
+        } else if (body.action === "priority") {
+          await prisma.serviceRequest.update({ where: { id }, data: { priority: body.priority } });
+          await writeAudit({ actor, action: "request.update", entityType: "ServiceRequest", entityId: id, oldValue: { priority: existing.priority }, newValue: { priority: body.priority, bulk: true } });
+        } else {
+          await changeRequestStatus({ requestId: id, next: "cancelled", actor: { audit: actor, role: req.staff!.role }, reason: body.reason || "Cancelled by the office" });
+        }
+        publishRequest("request:updated", { id, customerId: existing.customerId });
+        ok.push(id);
+      } catch (error) {
+        failed.push({ id, code: error instanceof HttpError ? error.code : "generic" });
+      }
+    }
+    res.json({ ok, failed });
   }),
 );
 
@@ -398,6 +487,9 @@ requestsRouter.post(
     if (body.kind === "refund" && body.amount > before.net) {
       throw new HttpError(400, "A refund cannot be larger than what was paid", "refundTooLarge");
     }
+    if (body.kind === "payment" && !body.fiscalReceiptNumber && (await getAppSettings()).requireFiscalReceipt) {
+      throw new HttpError(400, "Enter the fiscal receipt number for this payment", "fiscalReceiptRequired");
+    }
     await prisma.payment.create({
       data: {
         serviceRequestId: request.id,
@@ -405,6 +497,7 @@ requestsRouter.post(
         method: body.method,
         amount: body.amount,
         note: body.note || null,
+        fiscalReceiptNumber: body.fiscalReceiptNumber || null,
         createdById: staff.sub,
         createdByName: staff.name,
       },
@@ -471,6 +564,7 @@ requestsRouter.patch(
         where: { id: existing.id },
         data: { assignedTechnicianId: nextTechnicianId, assignedAt: nextTechnicianId ? new Date() : null },
       });
+      pushJobAssigned(nextTechnicianId, existing);
       await writeAudit({ actor, action: "request.assign", entityType: "ServiceRequest", entityId: existing.id, oldValue: { assignedTechnicianId: existing.assignedTechnicianId }, newValue: { assignedTechnicianId: nextTechnicianId } });
     }
 

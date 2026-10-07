@@ -41,6 +41,15 @@ export function useStaffAlerts() {
   };
 }
 
+/** Where an alert leads: its request, otherwise the screen that handles that kind of alert. */
+function alertTarget(item: StaffAlert) {
+  if (item.serviceRequestId) return `/app/requests/${item.serviceRequestId}`;
+  if (item.code === "warrantyPlanRequested") return "/app/warranty-plans";
+  if (item.code === "deletionRequest" && typeof item.params?.customerId === "string") return `/app/customers/${item.params.customerId}`;
+  if (item.code === "weeklyDigest") return "/app?view=full";
+  return "/app/catalog";
+}
+
 export function StaffAlertsInbox({ compact = false }: { compact?: boolean }) {
   const { t, i18n } = useTranslation();
   const { list, notifications, unread, lowStock, markOne, markAll } = useStaffAlerts();
@@ -84,7 +93,7 @@ export function StaffAlertsInbox({ compact = false }: { compact?: boolean }) {
           {notifications.map((item) => (
             <li key={item.id} className={item.isRead ? "bg-white" : "bg-[#F5EBFD]"}>
               <Link
-                to={item.serviceRequestId ? `/app/requests/${item.serviceRequestId}` : "/app/catalog"}
+                to={alertTarget(item)}
                 onClick={() => {
                   if (!item.isRead) markOne.mutate(item.id);
                 }}

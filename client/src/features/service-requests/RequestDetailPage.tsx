@@ -19,6 +19,7 @@ import { EstimateBuilder } from "../request-panels/EstimateBuilder";
 import { EstimateStatusChip, EstimateView } from "../request-panels/EstimateView";
 import { NotesPanel } from "../request-panels/NotesPanel";
 import { PaymentsPanel, type PaymentPayload } from "../request-panels/PaymentsPanel";
+import { VisitPanel } from "../request-panels/VisitPanel";
 import { withApiBase } from "../../lib/apiBase";
 import { api, apiErrorMessage } from "../../lib/api";
 import { defectLabel, formatDate, formatDateTime, formatMoney, formatPhone, formatRequestId, formatStamp, mapsUrl, technicianTypeLabel } from "../../lib/format";
@@ -383,6 +384,8 @@ export function RequestDetailPage() {
         </section>
       </div>
 
+      <VisitPanel request={request} token={token} canEdit={role === "admin" || role === "receptionist"} onChanged={refresh} />
+
       {request.intakeChecklist.length > 0 || request.intakeNotes || request.intakeSignatureUrl ? (
         <Card title={t("intake.title")}>
           {request.intakeChecklist.length > 0 ? (
@@ -501,7 +504,7 @@ export function RequestDetailPage() {
       ) : null}
 
       <Card title={t("payments.title")}>
-        <PaymentsPanel summary={data.paymentSummary} payments={data.payments} fiscalReceiptNumber={request.fiscalReceiptNumber} busy={pay.isPending} onSubmit={(payload) => pay.mutate(payload)} />
+        <PaymentsPanel summary={data.paymentSummary} payments={data.payments} fiscalReceiptNumber={request.fiscalReceiptNumber} requireFiscal={data.settings?.requireFiscalReceipt} busy={pay.isPending} onSubmit={(payload) => pay.mutate(payload)} />
       </Card>
 
       <Card title={t("notes.title")} hint={t("notes.hint")}>

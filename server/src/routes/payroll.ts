@@ -8,7 +8,8 @@ import { parseReportRange, serializeWindow } from "../lib/reportRange.js";
 import { DONE_STATUSES } from "../lib/status.js";
 import { money } from "../lib/warranty.js";
 import { staffActor, writeAudit } from "../lib/audit.js";
-import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
+import { readWriteRoles, requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
+import { READ_MONEY, READ_OFFICE } from "../lib/roles.js";
 
 /** Piece-rate pay: a percentage of the labor (services) on each finished job, a fixed amount per job, and manual bonuses or penalties. */
 export async function earningsFor(technicianId: string, window: ReturnType<typeof parseReportRange>) {
@@ -47,7 +48,7 @@ export async function earningsFor(technicianId: string, window: ReturnType<typeo
 }
 
 export const payrollRouter = Router();
-payrollRouter.use(staffAuth, requireStaffRole("admin"));
+payrollRouter.use(staffAuth, readWriteRoles(READ_MONEY, ["admin"]));
 
 payrollRouter.get(
   "/",

@@ -1,8 +1,9 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { VisitPicker, type VisitChoice } from "../../components/VisitPicker";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Camera, MapPin, Navigation, Store, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { WarrantyBadge } from "../../components/Badges";
 import { Field } from "../../components/Field";
 import { PageSkeleton } from "../../components/PageSkeleton";
@@ -27,7 +28,8 @@ export function PortalNewRequestPage() {
 
   const [step, setStep] = useState(1);
   const [type, setType] = useState<ServiceType>("repair");
-  const [saleId, setSaleId] = useState("");
+  const [params] = useSearchParams();
+  const [saleId, setSaleId] = useState(() => params.get("saleId") ?? "");
   const [productId, setProductId] = useState("");
   const [useCatalog, setUseCatalog] = useState(false);
   const [issueDescription, setIssueDescription] = useState("");
@@ -38,7 +40,7 @@ export function PortalNewRequestPage() {
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
   const [serialNumber, setSerialNumber] = useState("");
-  const [scheduledAt, setScheduledAt] = useState("");
+  const [visit, setVisit] = useState<VisitChoice | null>(null);
   const [serviceCenterId, setServiceCenterId] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -72,7 +74,7 @@ export function PortalNewRequestPage() {
 
   const create = useMutation({
     mutationFn: async (values: Record<string, unknown>) => {
-      const data = await api<{ request: PortalRequest }>("/api/customer/requests", {
+      const data = await api<{ request: PortalRequest; visitError?: string | null }>("/api/customer/requests", {
         method: "POST",
         token,
         body: JSON.stringify(values),
@@ -85,7 +87,9 @@ export function PortalNewRequestPage() {
       return data;
     },
     onSuccess: async (data) => {
-      notify(t("portal.created"));
+      // The request exists even when the chosen window was taken meanwhile; say so and let the customer pick again.
+      if (data.visitError) notify(t("visit.notBooked"), "error");
+      else notify(t("portal.created"));
       await queryClient.invalidateQueries({ queryKey: ["customer"] });
       navigate(`/portal/requests/${data.request.id}`);
     },
@@ -128,7 +132,8 @@ export function PortalNewRequestPage() {
       productId: useCatalog ? productId : undefined,
       issueDescription,
       serialNumber: serialNumber.trim() || null,
-      scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+      visitDate: visit?.slot ? visit.date : null,
+      visitSlot: visit?.slot ? visit.slot : null,
       serviceCenterId: type === "repair" && locationType === "in_shop" && serviceCenterId ? serviceCenterId : null,
       defectType: type === "repair" && defectType ? defectType : null,
       locationType: type === "installation" ? "on_site" : locationType,
@@ -432,8 +437,13 @@ export function PortalNewRequestPage() {
               <p className="text-sm text-neutral-500">{t("portal.inShopReview")}</p>
             )}
 
-            <Field label={locationType === "on_site" || type === "installation" ? t("portal.preferredTime") : t("portal.preferredVisit")} hint={t("portal.preferredTimeHint")}>
-              <input className={portalInputClass} type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} />
+            <Field label={locationType === "on_site" || type === "installation" ? t("portal.preferredTime") : t("portal.preferredVisit")} hint={t("visit.optionalHint")}>
+              <VisitPicker
+                token={token}
+                value={visit}
+                onChange={setVisit}
+                slotsUrl={(date) => `/api/customer/visit-slots?date=${date}&locationType=${type === "installation" || locationType === "on_site" ? "on_site" : "in_shop"}${type === "repair" && locationType === "in_shop" && serviceCenterId ? `&serviceCenterId=${serviceCenterId}` : ""}`}
+              />
             </Field>
             {type === "repair" && locationType === "in_shop" && (centersQuery.data?.centers ?? []).length > 0 ? (
               <Field label={t("centers.center")} hint={t("centers.pickHint")}>

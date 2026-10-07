@@ -16,6 +16,7 @@ import { useMemo, useState, type HTMLAttributes, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import { StatusBadge, TypeBadge } from "../../components/Badges";
+import { Modal } from "../../components/Modal";
 import { OverflowLink, OverflowMenu } from "../../components/OverflowMenu";
 import { PauseDialog } from "../../components/PauseDialog";
 import { PageSkeleton } from "../../components/PageSkeleton";
@@ -112,9 +113,13 @@ export function TechnicianKanbanPage() {
     },
   });
 
+  const [etaFor, setEtaFor] = useState<TechJob | null>(null);
   const enRoute = useMutation({
-    mutationFn: (id: string) => api(`/api/staff/my-jobs/${id}/en-route`, { method: "POST", token }),
-    onSuccess: () => notify(t("tech.enRouteSaved")),
+    mutationFn: ({ id, etaMinutes }: { id: string; etaMinutes?: number }) => api(`/api/staff/my-jobs/${id}/en-route`, { method: "POST", token, body: JSON.stringify(etaMinutes ? { etaMinutes } : {}) }),
+    onSuccess: () => {
+      setEtaFor(null);
+      notify(t("tech.enRouteSaved"));
+    },
     onError: (error) => notify(apiErrorMessage(error, t), "error"),
     onSettled: async () => {
       await queryClient.invalidateQueries({ queryKey: ["staff", "my-jobs"] });
@@ -233,12 +238,26 @@ export function TechnicianKanbanPage() {
               onMove={moveJob}
               onStatus={moveStatus}
               onArrived={(job) => arrive.mutate(job.id)}
-              onEnRoute={(job) => enRoute.mutate(job.id)}
+              onEnRoute={(job) => setEtaFor(job)}
             />
           ))}
         </div>
         <DragOverlay>{activeJob ? <JobCard job={activeJob} now={now} overlay /> : null}</DragOverlay>
       </DndContext>
+
+      <Modal open={Boolean(etaFor)} onClose={() => setEtaFor(null)} title={t("tech.etaTitle")}>
+        <p className="text-sm text-neutral-600">{t("tech.etaHint", { name: etaFor?.customer.name ?? "" })}</p>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {[10, 20, 30, 45, 60, 90].map((minutes) => (
+            <button key={minutes} type="button" disabled={enRoute.isPending} onClick={() => etaFor && enRoute.mutate({ id: etaFor.id, etaMinutes: minutes })} className="min-h-12 rounded-xl border border-neutral-300 text-sm font-bold hover:border-[#7B00E0] hover:bg-[#F5EBFD]">
+              {t("tech.etaMinutes", { minutes })}
+            </button>
+          ))}
+        </div>
+        <button type="button" disabled={enRoute.isPending} onClick={() => etaFor && enRoute.mutate({ id: etaFor.id })} className="mt-3 w-full text-center text-sm font-semibold text-neutral-600 hover:underline">
+          {t("tech.etaSkip")}
+        </button>
+      </Modal>
 
       <PauseDialog
         name={pauseJob?.customer.name ?? null}

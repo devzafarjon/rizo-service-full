@@ -9,16 +9,19 @@ import {
   ChevronDown,
   ClipboardList,
   Copy,
+  Boxes,
   Database,
   Kanban,
+  LifeBuoy,
+  ListChecks,
   LayoutDashboard,
   Map as MapIcon,
   Package,
   PackageCheck,
   Plus,
   QrCode,
-  Receipt,
   ScrollText,
+  ShieldCheck,
   ShoppingBag,
   Store,
   UserCog,
@@ -27,7 +30,7 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
-import { REPORT_LINKS } from "../../features/reporting/reportNav";
+import { MAIN_REPORT_LINKS } from "../../features/reporting/reportNav";
 import type { StaffRole } from "../../lib/types";
 
 export type NavItem = {
@@ -49,20 +52,24 @@ export const ADMIN_DAILY: NavItem[] = [
   { to: "/app/customers", labelKey: "nav.customers", icon: Users, roles: OFFICE, end: true },
 ];
 
+// The receipts list is not here any more: every request has its receipt on the request page.
 export const ADMIN_MANAGEMENT: NavItem[] = [
-  { to: "/app/reports", labelKey: "nav.reports", icon: BarChart3, roles: ["admin"], tour: "reports" },
+  { to: "/app/reports", labelKey: "nav.reports", icon: BarChart3, roles: ["admin", "accountant"], tour: "reports" },
   { to: ANALYTICS_PATH, labelKey: "nav.analytics", icon: LayoutDashboard, roles: ["admin"] },
   { to: "/app/requests", labelKey: "nav.requests", icon: ClipboardList, roles: OFFICE, end: true },
   { to: "/app/calendar", labelKey: "nav.calendar", icon: CalendarClock, roles: OFFICE },
   { to: "/app/map", labelKey: "nav.map", icon: MapIcon, roles: OFFICE },
-  { to: "/app/catalog", labelKey: "nav.inventory", icon: Package, roles: ["admin"] },
-  { to: "/app/part-orders", labelKey: "nav.partOrders", icon: PackageCheck, roles: OFFICE },
+  { to: "/app/catalog", labelKey: "nav.inventory", icon: Package, roles: ["admin", "warehouse"] },
+  { to: "/app/part-orders", labelKey: "nav.partOrders", icon: PackageCheck, roles: ["admin", "receptionist", "warehouse"] },
+  { to: "/app/tech-stock", labelKey: "nav.techStock", icon: Boxes, roles: ["admin", "warehouse"] },
   { to: "/app/sales", labelKey: "nav.sales", icon: ShoppingBag, roles: OFFICE },
-  { to: "/app/receipts", labelKey: "nav.receipts", icon: Receipt, roles: OFFICE },
+  { to: "/app/warranty-plans", labelKey: "nav.warrantyPlans", icon: ShieldCheck, roles: ["admin", "receptionist", "accountant"] },
   { to: "/app/kiosk", labelKey: "nav.kiosk", icon: Store, roles: OFFICE },
   { to: "/app/scan", labelKey: "nav.scan", icon: QrCode, roles: OFFICE },
   { to: "/app/schedule", labelKey: "nav.schedule", icon: CalendarDays, roles: ["admin"] },
   { to: "/app/centers", labelKey: "nav.centers", icon: Building2, roles: OFFICE },
+  { to: "/app/checklists", labelKey: "nav.checklists", icon: ListChecks, roles: ["admin"] },
+  { to: "/app/help", labelKey: "nav.help", icon: LifeBuoy, roles: ["admin"] },
   { to: "/app/staff", labelKey: "nav.staff", icon: UserCog, roles: ["admin"] },
   { to: "/app/audit", labelKey: "nav.activity", icon: ScrollText, roles: ["admin"] },
   { to: "/app/customers/duplicates", labelKey: "nav.duplicates", icon: Copy, roles: ["admin"] },
@@ -71,6 +78,7 @@ export const ADMIN_MANAGEMENT: NavItem[] = [
 
 export const TECH_NAV: NavItem[] = [
   { to: "/app/my-jobs", labelKey: "nav.myJobs", icon: Wrench, roles: ["technician"] },
+  { to: "/app/my-stock", labelKey: "nav.myStock", icon: Boxes, roles: ["technician"] },
   { to: "/app/my-earnings", labelKey: "nav.myEarnings", icon: Wallet, roles: ["technician"] },
 ];
 
@@ -139,7 +147,7 @@ function NavItemLink({
       </NavLink>
       {isReports ? (
         <div className="mt-0.5 mb-1 ml-[1.1rem] flex flex-col border-l border-gray-200 pl-4">
-          {REPORT_LINKS.map((link) => (
+          {MAIN_REPORT_LINKS.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
@@ -170,7 +178,9 @@ export function StaffNavLinks({
 }) {
   const { t } = useTranslation();
   const location = useLocation();
-  const [mgmtOpen, setMgmtOpen] = useState(() => managementOpenByPath(location.pathname, location.search));
+  const daily = ADMIN_DAILY.filter((item) => item.roles.includes(role));
+  // Roles with no daily links (accountant, warehouse) get the management list open.
+  const [mgmtOpen, setMgmtOpen] = useState(() => daily.length === 0 || managementOpenByPath(location.pathname, location.search));
 
   useEffect(() => {
     if (managementOpenByPath(location.pathname, location.search)) {
@@ -200,12 +210,15 @@ export function StaffNavLinks({
 
   return (
     <nav className={navClass}>
-      <p className="px-2 pt-1 pb-1 text-[11px] font-bold tracking-wide text-gray-500 uppercase">{t("nav.dailyUse")}</p>
-      {ADMIN_DAILY.filter((item) => item.roles.includes(role)).map((item) => (
-        <NavItemLink key={item.to} item={item} onNavigate={onNavigate} />
-      ))}
-
-      <div className="mx-2 mt-3 mb-2 border-t border-gray-200" />
+      {daily.length > 0 ? (
+        <>
+          <p className="px-2 pt-1 pb-1 text-[11px] font-bold tracking-wide text-gray-500 uppercase">{t("nav.dailyUse")}</p>
+          {daily.map((item) => (
+            <NavItemLink key={item.to} item={item} onNavigate={onNavigate} />
+          ))}
+          <div className="mx-2 mt-3 mb-2 border-t border-gray-200" />
+        </>
+      ) : null}
 
       <button
         type="button"

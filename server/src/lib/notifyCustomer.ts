@@ -4,7 +4,9 @@ import { emitToCustomer } from "./realtime.js";
 import { serializeNamed, type NamedRecord } from "./named.js";
 import { statusLabel } from "./status.js";
 import { dispatchOutbound } from "./notifyDispatch.js";
+import { telegramButtonsFor } from "./telegramText.js";
 import { env } from "../config.js";
+import { pushToCustomer } from "./push.js";
 
 type NotificationParams = Record<string, unknown>;
 
@@ -32,7 +34,7 @@ export function serializeNotification(row: {
 
 export async function createCustomerNotification(
   customerId: string,
-  serviceRequestId: string,
+  serviceRequestId: string | null,
   message: string,
   code?: string,
   params?: NotificationParams,
@@ -50,14 +52,19 @@ export async function createCustomerNotification(
   emitToCustomer(customerId, "notification:created", payload);
   const customer = await prisma.customer.findUnique({
     where: { id: customerId },
-    select: { phone: true, telegramChatId: true },
+    select: { phone: true, telegramChatId: true, preferredChannel: true, anonymizedAt: true, locale: true },
   });
-  if (customer) {
+  if (customer && !customer.anonymizedAt) {
+    void pushToCustomer(customerId, { message, code, params, serviceRequestId, notificationId: row.id });
+    // "telegram" only counts when the chat is linked; otherwise the customer would hear nothing.
+    const onlyTelegram = customer.preferredChannel === "telegram" && Boolean(customer.telegramChatId);
+    const onlySms = customer.preferredChannel === "sms";
     await dispatchOutbound({
-      target: { phone: customer.phone, telegramChatId: customer.telegramChatId },
+      target: { phone: onlyTelegram ? null : customer.phone, telegramChatId: onlySms ? null : customer.telegramChatId },
       body: message,
       code: code ?? "customer",
-      entityId: serviceRequestId,
+      entityId: serviceRequestId ?? undefined,
+      telegramButtons: serviceRequestId ? telegramButtonsFor({ code, params, requestId: serviceRequestId, locale: customer.locale }) : undefined,
     });
   }
   return payload;

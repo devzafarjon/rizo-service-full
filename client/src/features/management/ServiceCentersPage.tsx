@@ -13,7 +13,7 @@ import { api, apiErrorMessage } from "../../lib/api";
 import { UZBEKISTAN_REGIONS, regionLabel } from "../../lib/regions";
 import type { ServiceCenter } from "../../lib/types";
 
-const EMPTY = { name: "", regionCode: "01", address: "", phone: "", workingHours: "", lat: "", lng: "", isAuthorized: true, isActive: true };
+const EMPTY = { name: "", regionCode: "01", address: "", phone: "", workingHours: "", lat: "", lng: "", isAuthorized: true, isActive: true, isPartner: false, payoutPercent: "0", payoutFixedPerJob: "0" };
 
 /** Where customers can bring a device. Also published on the public centers page. */
 export function ServiceCentersPage() {
@@ -39,6 +39,8 @@ export function ServiceCentersPage() {
         workingHours: form.workingHours || null,
         lat: form.lat === "" ? null : Number(form.lat),
         lng: form.lng === "" ? null : Number(form.lng),
+        payoutPercent: Number(form.payoutPercent) || 0,
+        payoutFixedPerJob: Number(form.payoutFixedPerJob) || 0,
       });
       return editing && editing !== "new"
         ? api(`/api/staff/service-centers/${editing.id}`, { method: "PATCH", token, body })
@@ -55,7 +57,7 @@ export function ServiceCentersPage() {
   function start(center: ServiceCenter | "new") {
     setEditing(center);
     setError(null);
-    setForm(center === "new" ? EMPTY : { name: center.name, regionCode: center.regionCode, address: center.address, phone: center.phone ?? "", workingHours: center.workingHours ?? "", lat: center.lat == null ? "" : String(center.lat), lng: center.lng == null ? "" : String(center.lng), isAuthorized: center.isAuthorized, isActive: center.isActive });
+    setForm(center === "new" ? EMPTY : { name: center.name, regionCode: center.regionCode, address: center.address, phone: center.phone ?? "", workingHours: center.workingHours ?? "", lat: center.lat == null ? "" : String(center.lat), lng: center.lng == null ? "" : String(center.lng), isAuthorized: center.isAuthorized, isActive: center.isActive, isPartner: center.isPartner ?? false, payoutPercent: String(center.payoutPercent ?? 0), payoutFixedPerJob: String(center.payoutFixedPerJob ?? 0) });
   }
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -105,6 +107,7 @@ export function ServiceCentersPage() {
                 <Td>
                   <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${center.isActive ? "bg-emerald-50 text-emerald-700" : "bg-neutral-100 text-neutral-500"}`}>{center.isActive ? t("centers.active") : t("centers.inactive")}</span>
                   {center.isAuthorized ? <span className="ml-1 rounded-full bg-[#F5EBFD] px-2.5 py-1 text-xs font-bold text-[#7B00E0]">{t("centers.authorized")}</span> : null}
+                  {center.isPartner ? <span className="ml-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800">{t("centers.partner")}</span> : null}
                 </Td>
                 {isAdmin ? (
                   <Td className="text-right">
@@ -158,7 +161,21 @@ export function ServiceCentersPage() {
               <input type="checkbox" checked={form.isActive} onChange={(event) => setForm({ ...form, isActive: event.target.checked })} />
               {t("centers.active")}
             </label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={form.isPartner} onChange={(event) => setForm({ ...form, isPartner: event.target.checked })} />
+              {t("centers.partner")}
+            </label>
           </div>
+          {form.isPartner ? (
+            <div className="grid grid-cols-2 gap-3 rounded-xl bg-amber-50/50 p-3">
+              <Field label={t("centers.payoutPercent")} hint={t("centers.payoutHint")}>
+                <input className={inputClass} type="number" min={0} max={100} step="0.5" value={form.payoutPercent} onChange={(event) => setForm({ ...form, payoutPercent: event.target.value })} />
+              </Field>
+              <Field label={t("centers.payoutFixed")}>
+                <input className={inputClass} type="number" min={0} value={form.payoutFixedPerJob} onChange={(event) => setForm({ ...form, payoutFixedPerJob: event.target.value })} />
+              </Field>
+            </div>
+          ) : null}
           {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
           <div className="flex justify-end gap-2">
             <button type="button" onClick={() => setEditing(null)} className="h-11 rounded-xl px-4 text-sm font-semibold text-neutral-600 hover:bg-neutral-100">

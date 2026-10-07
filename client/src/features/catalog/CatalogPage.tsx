@@ -21,15 +21,17 @@ import { segmentedGroupClass, segmentedTabClass } from "../../components/segment
 
 export function CatalogPage() {
   const { t } = useTranslation();
-  const { token } = useStaffAuth();
+  const { token, user } = useStaffAuth();
+  // The warehouse manager only works with spare parts; prices of products and services stay with the admin.
+  const partsOnly = user?.role === "warehouse";
   const products = useQuery({
     queryKey: ["staff", "products"],
-    enabled: Boolean(token),
+    enabled: Boolean(token) && !partsOnly,
     queryFn: () => api<{ products: Product[] }>("/api/staff/products", { token }),
   });
   const services = useQuery({
     queryKey: ["staff", "services"],
-    enabled: Boolean(token),
+    enabled: Boolean(token) && !partsOnly,
     queryFn: () => api<{ services: CatalogService[] }>("/api/staff/catalog/services", { token }),
   });
   const parts = useQuery({
@@ -43,7 +45,7 @@ export function CatalogPage() {
     queryFn: () => api<{ categories: string[] }>("/api/staff/catalog/categories", { token }),
   });
 
-  if (products.isLoading || services.isLoading || parts.isLoading) {
+  if ((!partsOnly && (products.isLoading || services.isLoading)) || parts.isLoading) {
     return <PageSkeleton />;
   }
 
@@ -53,7 +55,7 @@ export function CatalogPage() {
     { id: "services", label: t("catalog.services") },
     { id: "parts", label: t("catalog.parts") },
     { id: "codes", label: t("defectCodes.tab") },
-  ];
+  ].filter((tab) => !partsOnly || tab.id === "parts");
 
   return (
     <div>
@@ -71,18 +73,24 @@ export function CatalogPage() {
           ))}
         </TabList>
         <TabPanels>
-          <TabPanel>
-            <ProductsPanel items={products.data?.products ?? []} categories={categoryOptions} />
-          </TabPanel>
-          <TabPanel>
-            <ServicesPanel items={services.data?.services ?? []} categories={categoryOptions} />
-          </TabPanel>
+          {partsOnly ? null : (
+            <TabPanel>
+              <ProductsPanel items={products.data?.products ?? []} categories={categoryOptions} />
+            </TabPanel>
+          )}
+          {partsOnly ? null : (
+            <TabPanel>
+              <ServicesPanel items={services.data?.services ?? []} categories={categoryOptions} />
+            </TabPanel>
+          )}
           <TabPanel>
             <PartsPanel items={parts.data?.parts ?? []} categories={categoryOptions} />
           </TabPanel>
-          <TabPanel>
-            <DefectCodesPanel categories={categoryOptions} />
-          </TabPanel>
+          {partsOnly ? null : (
+            <TabPanel>
+              <DefectCodesPanel categories={categoryOptions} />
+            </TabPanel>
+          )}
         </TabPanels>
       </TabGroup>
     </div>
@@ -350,6 +358,7 @@ function PartsPanel({ items, categories }: { items: SparePart[]; categories: str
     stockQuantity: "0",
     lowStockThreshold: "3",
   });
+  const isAdmin = useStaffAuth().user?.role === "admin";
   const settings = useQuery({
     queryKey: ["staff", "settings"],
     enabled: Boolean(token),
@@ -415,7 +424,7 @@ function PartsPanel({ items, categories }: { items: SparePart[]; categories: str
 
   return (
     <CatalogSection actionLabel={t("catalog.newPart")} onCreate={() => start(null)}>
-      <label className="mb-4 flex items-center justify-between gap-3 rounded-2xl bg-neutral-50 px-4 py-3 text-sm">
+      <label className={`mb-4 items-center justify-between gap-3 rounded-2xl bg-neutral-50 px-4 py-3 text-sm ${isAdmin ? "flex" : "hidden"}`}>
         <span className="flex items-center gap-1.5 font-semibold">
           {t("catalog.blockZeroStock")}
           <InfoTip text={t("catalog.blockZeroStockTip")} />

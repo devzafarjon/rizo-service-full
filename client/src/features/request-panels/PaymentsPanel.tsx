@@ -13,13 +13,15 @@ export type PaymentPayload = { amount: number; method: PaymentMethod; kind: "pay
 export function PaymentsPanel({
   summary,
   payments,
-  fiscalReceiptNumber,
+  requireFiscal,
   busy,
   onSubmit,
 }: {
   summary: { due: number; paid: number; refunded: number; net: number; balance: number };
   payments: PaymentRow[];
-  fiscalReceiptNumber: string | null;
+  fiscalReceiptNumber?: string | null;
+  /** The admins switched on "every payment needs a fiscal receipt number". */
+  requireFiscal?: boolean;
   busy: boolean;
   onSubmit: (payload: PaymentPayload) => void;
 }) {
@@ -27,7 +29,8 @@ export function PaymentsPanel({
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [kind, setKind] = useState<"payment" | "refund">("payment");
-  const [fiscal, setFiscal] = useState(fiscalReceiptNumber ?? "");
+  // The receipt number belongs to one payment, so the field starts empty each time.
+  const [fiscal, setFiscal] = useState("");
   const [note, setNote] = useState("");
 
   const value = Number(amount);
@@ -56,6 +59,7 @@ export function PaymentsPanel({
                   {formatStamp(row.createdAt)}
                   {row.createdByName ? ` · ${row.createdByName}` : ""}
                   {row.note ? ` · ${row.note}` : ""}
+                  {row.fiscalReceiptNumber ? ` · ${t("payments.fiscalShort")} ${row.fiscalReceiptNumber}` : row.kind === "payment" ? ` · ${t("payments.noFiscal")}` : ""}
                 </span>
               </span>
               <span className={`shrink-0 font-bold tabular-nums ${row.kind === "refund" ? "text-red-700" : "text-emerald-700"}`}>
@@ -73,9 +77,11 @@ export function PaymentsPanel({
         onSubmit={(event) => {
           event.preventDefault();
           if (!(value > 0)) return;
+          if (requireFiscal && kind === "payment" && !fiscal.trim()) return;
           onSubmit({ amount: value, method, kind, note: note.trim() || undefined, fiscalReceiptNumber: fiscal.trim() || undefined });
           setAmount("");
           setNote("");
+          setFiscal("");
         }}
       >
         <Field label={t("payments.amount")}>
@@ -90,8 +96,8 @@ export function PaymentsPanel({
             ))}
           </select>
         </Field>
-        <Field label={t("payments.fiscal")} hint={t("payments.fiscalHint")}>
-          <input className={inputClass} value={fiscal} onChange={(event) => setFiscal(event.target.value)} />
+        <Field label={t("payments.fiscal")} hint={requireFiscal ? t("payments.fiscalRequired") : t("payments.fiscalHint")}>
+          <input className={inputClass} value={fiscal} required={Boolean(requireFiscal) && kind === "payment"} onChange={(event) => setFiscal(event.target.value)} />
         </Field>
         <Field label={t("payments.note")}>
           <input className={inputClass} value={note} onChange={(event) => setNote(event.target.value)} maxLength={200} />

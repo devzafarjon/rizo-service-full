@@ -8,7 +8,7 @@ import { Spinner } from "../../components/Spinner";
 import { SHOW_DEMO } from "../../lib/demo";
 import { homePathFor } from "../../lib/home";
 import { useToast } from "../../components/toast";
-import { apiErrorMessage } from "../../lib/api";
+import { ApiError, apiErrorMessage } from "../../lib/api";
 import { useStaffAuth } from "./StaffAuthContext";
 
 export function StaffLoginPage() {
@@ -19,6 +19,8 @@ export function StaffLoginPage() {
   const location = useLocation();
   const [phone, setPhone] = useState(SHOW_DEMO ? "998900000001" : "");
   const [password, setPassword] = useState(SHOW_DEMO ? "admin123" : "");
+  const [code, setCode] = useState("");
+  const [needCode, setNeedCode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,12 +33,14 @@ export function StaffLoginPage() {
     setSubmitting(true);
     setError(null);
     try {
-      const next = await login(phone, password);
+      const next = await login(phone, password, needCode ? code : undefined);
       notify(t("auth.signedIn"));
       const from = (location.state as { from?: string } | null)?.from;
       navigate(from || homePathFor(next.role), { replace: true });
     } catch (err) {
-      setError(apiErrorMessage(err, t));
+      // Two-step sign-in: the server asks for the six-digit code from the authenticator app.
+      if (err instanceof ApiError && err.code === "totpRequired") setNeedCode(true);
+      setError(err instanceof ApiError && err.code === "totpRequired" ? t("security.codeNeeded") : apiErrorMessage(err, t));
     } finally {
       setSubmitting(false);
     }
@@ -76,6 +80,12 @@ export function StaffLoginPage() {
               onChange={(event) => setPassword(event.target.value)}
             />
           </label>
+          {needCode ? (
+            <label className="mb-4 block">
+              <span className="mb-1.5 block text-[10.24px] font-bold tracking-wide text-gray-700 uppercase">{t("security.code")}</span>
+              <AuthInput icon={KeyRound} inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} placeholder="123456" autoFocus />
+            </label>
+          ) : null}
           {error ? <p className="mb-3 text-sm font-medium text-red-600">{error}</p> : null}
           <button type="submit" disabled={submitting} className="btn-rizo h-12 w-full text-sm">
             {submitting ? <Spinner className="h-4 w-4" /> : null}

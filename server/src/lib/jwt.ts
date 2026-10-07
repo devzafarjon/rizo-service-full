@@ -1,10 +1,11 @@
 import jwt, { type SignOptions } from "jsonwebtoken";
 import { env } from "../config.js";
+import type { StaffRoleName } from "./roles.js";
 
 export type StaffTokenPayload = {
   sub: string;
   scope: "staff";
-  role: "admin" | "technician" | "receptionist";
+  role: StaffRoleName;
   name: string;
   phone: string;
 };

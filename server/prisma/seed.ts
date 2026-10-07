@@ -541,12 +541,59 @@ async function main() {
     await prisma.serviceRequest.update({ where: { id: job.id }, data: { scheduledAt: visit } });
   }
 
+  // Demo data for the newer features: accountant, warehouse, checklists, help guides, warranty plans, a partner centre.
+  await prisma.staffUser.upsert({
+    where: { phone: "998900000006" },
+    update: {},
+    create: { name: "Gulnora Yusupova", phone: "998900000006", passwordHash: await password("acc12345"), role: StaffRole.accountant },
+  });
+  await prisma.staffUser.upsert({
+    where: { phone: "998900000007" },
+    update: {},
+    create: { name: "Rustam Qodirov", phone: "998900000007", passwordHash: await password("ware1234"), role: StaffRole.warehouse },
+  });
+  await prisma.staffUser.update({ where: { phone: "998900000002" }, data: { skillCategories: ["Refrigerators", "Washing machines", "Air conditioners"], baseLat: 41.3111, baseLng: 69.2797 } });
+  await prisma.staffUser.update({ where: { phone: "998900000004" }, data: { skillCategories: [], baseLat: 41.2995, baseLng: 69.2401 } });
+
+  if ((await prisma.checklistTemplate.count()) === 0) {
+    const item = (id: string, uz: string, ru: string, en: string, required = false) => ({ id, uz, ru, en, required });
+    await prisma.checklistTemplate.createMany({
+      data: [
+        { kind: "diagnosis", productCategory: null, items: [item("power", "Elektr ta'minotini tekshirish", "Проверить питание", "Check the power supply"), item("display", "Xato kodini yozib olish", "Записать код ошибки", "Note the error code"), item("visual", "Tashqi ko'rik (shikast, suv, chang)", "Внешний осмотр (повреждения, вода, пыль)", "Visual check (damage, water, dust)")] },
+        { kind: "completion", productCategory: null, items: [item("tested", "Qurilma ishlashi sinab ko'rildi", "Работа устройства проверена", "The device was tested", true), item("clean", "Ish joyi tozalandi", "Рабочее место убрано", "The work area was cleaned"), item("explained", "Mijozga tushuntirildi", "Клиенту объяснено", "Explained to the customer")] },
+        { kind: "completion", productCategory: "Refrigerators", items: [item("tested", "Qurilma ishlashi sinab ko'rildi", "Работа устройства проверена", "The device was tested", true), item("temp", "Sovutish harorati normal", "Температура охлаждения в норме", "Cooling temperature is normal", true), item("door", "Eshik zichligi tekshirildi", "Уплотнитель двери проверен", "Door seal checked"), item("clean", "Ish joyi tozalandi", "Рабочее место убрано", "The work area was cleaned")] },
+      ],
+    });
+  }
+  if ((await prisma.helpArticle.count()) === 0) {
+    await prisma.helpArticle.createMany({
+      data: [
+        { productCategory: "Refrigerators", titleUz: "Muzlatkich yaxshi sovutmayapti", titleRu: "Холодильник плохо охлаждает", titleEn: "The fridge does not cool well", bodyUz: "1. Eshik yaxshi yopilishini tekshiring.\n2. Orqa devor bilan oraliq kamida 5 sm bo'lsin.\n3. Haroratni 3-5 darajaga qo'ying.\n4. 24 soatda o'zgarmasa, servisga yozing.", bodyRu: "1. Проверьте, плотно ли закрывается дверь.\n2. Расстояние до задней стенки — не менее 5 см.\n3. Поставьте температуру 3–5 градусов.\n4. Если за 24 часа ничего не изменилось, напишите в сервис.", bodyEn: "1. Check that the door closes tightly.\n2. Leave at least 5 cm to the back wall.\n3. Set the temperature to 3-5 degrees.\n4. If nothing changes in 24 hours, write to the service.", sortOrder: 1 },
+        { productCategory: "Washing machines", titleUz: "Kir yuvish mashinasi suv to'kmayapti", titleRu: "Стиральная машина не сливает воду", titleEn: "The washing machine does not drain", bodyUz: "1. Drenaj filtrini tozalang.\n2. Shlang bukilib qolmaganini tekshiring.\n3. Mashinani o'chirib qayta yoqing.", bodyRu: "1. Очистите фильтр слива.\n2. Проверьте, не перегнут ли шланг.\n3. Выключите и снова включите машину.", bodyEn: "1. Clean the drain filter.\n2. Check that the hose is not kinked.\n3. Switch the machine off and on again.", sortOrder: 1 },
+        { productCategory: null, titleUz: "Servisga murojaat qilishdan oldin", titleRu: "Перед обращением в сервис", titleEn: "Before you contact the service", bodyUz: "Seriya raqami va xaridni tasdiqlovchi chekni tayyorlang. Nosozlikni telefon bilan suratga oling.", bodyRu: "Подготовьте серийный номер и чек. Сфотографируйте неисправность.", bodyEn: "Have the serial number and the receipt ready. Take a photo of the fault.", sortOrder: 9 },
+      ],
+    });
+  }
+  if ((await prisma.warrantyPlan.count()) === 0) {
+    await prisma.warrantyPlan.createMany({
+      data: [
+        { name: "+12 months", nameUz: "+12 oy kafolat", nameRu: "+12 месяцев гарантии", nameEn: "+12 months warranty", months: 12, price: 250000, productCategories: ["Refrigerators", "Washing machines", "Air conditioners", "Televisions"] },
+        { name: "+24 months", nameUz: "+24 oy kafolat", nameRu: "+24 месяца гарантии", nameEn: "+24 months warranty", months: 24, price: 450000, productCategories: ["Refrigerators", "Washing machines", "Air conditioners", "Televisions"] },
+      ],
+    });
+  }
+  if ((await prisma.serviceCenter.count({ where: { isPartner: true } })) === 0) {
+    await prisma.serviceCenter.create({ data: { name: "Samarkand partner service", regionCode: "30", address: "Registan 5, Samarkand", phone: "+998 66 200 00 02", workingHours: "Mon-Sat 09:00-18:00", lat: 39.654, lng: 66.9597, isPartner: true, payoutPercent: 30, payoutFixedPerJob: 8000 } });
+  }
+
   console.log("Seeded demo accounts and catalog:");
   console.log("  Admin      998900000001 / admin123");
   console.log("  Technician 998900000002 / tech123  (mobile)");
   console.log("  Technician 998900000004 / tech123  (service center)");
   console.log("  Front desk 998900000005 / desk123  (receptionist)");
   console.log("  Customer   998900000003 / customer123");
+  console.log("  Accountant 998900000006 / acc12345  (reports and money, read only)");
+  console.log("  Warehouse  998900000007 / ware1234  (parts and technician stock)");
   console.log("  Invoices   RZ-1001, RZ-1002, RZ-1003, RZ-1004");
 
   const { backfillNotificationI18n } = await import("../src/lib/notifyCustomer.js");

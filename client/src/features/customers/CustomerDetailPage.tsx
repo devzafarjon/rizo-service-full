@@ -20,7 +20,7 @@ import { SaleFormModal } from "../sales/SaleFormModal";
 export function CustomerDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams();
-  const { token } = useStaffAuth();
+  const { token, user } = useStaffAuth();
   const { notify } = useToast();
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
@@ -46,6 +46,15 @@ export function CustomerDetailPage() {
       notify(t("customers.updated"));
     },
     onError: (error) => setFormError(apiErrorMessage(error, t)),
+  });
+
+  const anonymize = useMutation({
+    mutationFn: () => api(`/api/staff/customers/${id}/anonymize`, { method: "POST", token }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["staff"] });
+      notify(t("customers.anonymized"));
+    },
+    onError: (error) => notify(apiErrorMessage(error, t), "error"),
   });
 
   const createSale = useMutation({
@@ -87,6 +96,18 @@ export function CustomerDetailPage() {
             {regionLabel(customer.regionCode)} ({customer.regionCode})
           </p>
           {customer.notes ? <p className="mt-3 max-w-xl text-sm text-neutral-700">{customer.notes}</p> : null}
+          {customer.deletionRequested ? (
+            <div className="mt-3 max-w-xl rounded-xl bg-red-50 px-3 py-2 text-sm text-red-800">
+              <p className="font-bold">{t("customers.deletionAsked")}</p>
+              <p className="mt-1">{t("customers.deletionHint")}</p>
+              {user?.role === "admin" ? (
+                <button type="button" className="mt-2 rounded-lg bg-red-700 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60" disabled={anonymize.isPending} onClick={() => window.confirm(t("customers.anonymizeConfirm")) && anonymize.mutate()}>
+                  {t("customers.anonymize")}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+          {customer.anonymized ? <p className="mt-3 inline-flex rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-600">{t("customers.anonymizedBadge")}</p> : null}
         </div>
         <div className="flex flex-wrap gap-2">
           <Link

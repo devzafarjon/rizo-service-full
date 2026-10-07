@@ -70,7 +70,12 @@
     "stepOf": "Step {{current}} of {{total}}",
     "priority": "Priority",
     "region": "Region",
-    "remove": "Remove"
+    "remove": "Remove",
+    "date": "Date",
+    "select": "Select",
+    "note": "Note",
+    "home": "Home",
+    "hoursShort": "h"
   },
   "languages": {
     "uz": "Oʻzbekcha",
@@ -161,7 +166,14 @@
     "centers": "Service centers",
     "staff": "Staff",
     "myEarnings": "My earnings",
-    "registerProduct": "Register product"
+    "registerProduct": "Register product",
+    "help": "Help",
+    "myProducts": "My products",
+    "account": "My account",
+    "techStock": "Technician stock",
+    "warrantyPlans": "Warranty plans",
+    "checklists": "Checklists",
+    "myStock": "My stock"
   },
   "staffHome": {
     "welcome": "Welcome back",
@@ -198,13 +210,22 @@
     "legalOverdue": "Legally overdue",
     "debt": "Customer debt",
     "avgWork": "Avg work time",
-    "vsPrevious": "vs previous period"
+    "vsPrevious": "vs previous period",
+    "serviceQuality": "Service quality",
+    "ftf": "First-time fix",
+    "callbacks": "Callbacks",
+    "callbackCost": "Callback cost",
+    "partsWait": "Parts wait (average)",
+    "ftfHint": "“First-time fix” is the share of repairs finished with no part order and no repeat request afterwards.",
+    "timeInStatus": "Average time in each status (hours)"
   },
   "shell": {
     "adminRole": "Admin / dispatcher",
     "available": "Available",
     "busy": "Busy",
-    "receptionistRole": "Receptionist"
+    "receptionistRole": "Receptionist",
+    "accountantRole": "Accountant",
+    "warehouseRole": "Warehouse manager"
   },
   "status": {
     "new": "New",
@@ -397,7 +418,18 @@
     "visitReminder": "Reminder: your visit for {{id}} is coming up.",
     "message": "{{id}}: {{text}}",
     "customerMessage": "New customer message on {{id}}.",
-    "productRegistered": "A customer registered a product: {{product}} ({{serial}})."
+    "productRegistered": "A customer registered a product: {{product}} ({{serial}}).",
+    "lowRating": "{{id}}: the customer rated {{rating}}/5",
+    "escalation": "{{id}} is still overdue (level {{level}}, {{hours}} h)",
+    "visitBooked": "{{id}}: visit set for {{date}} {{slot}}",
+    "cancelledByCustomer": "{{id}} was cancelled by the customer",
+    "warrantyPlanRequested": "{{customer}} asked for a warranty plan: {{plan}} ({{product}})",
+    "deletionRequest": "{{customer}} asked to delete their data",
+    "weeklyDigest": "Week {{from}} – {{to}}: {{created}} new, {{finished}} finished, {{open}} open, {{overdue}} overdue",
+    "visitScheduled": "A visit for {{id}} is set for {{date}} {{slot}}. Please confirm it.",
+    "etaUpdate": "The technician is on the way: about {{minutes}} min",
+    "warrantyExpiring": "The warranty for {{product}} ends on {{until}}. You can extend it under “My products”.",
+    "warrantyExtended": "The warranty for {{product}} is extended until {{until}} (+{{months}} months)."
   },
   "notifications": {
     "title": "Notifications",
@@ -469,7 +501,8 @@
     "warrantyRulesHint": "What the warranty covers for this product and when it starts.",
     "warrantyStarts": "Warranty starts",
     "coversLabor": "Covers labour",
-    "coversParts": "Covers parts"
+    "coversParts": "Covers parts",
+    "category": "Category"
   },
   "customers": {
     "title": "Customers",
@@ -525,7 +558,13 @@
     "noPurchasesBody": "Record a sale to calculate warranty expiry automatically.",
     "historyHint": "Every job for this customer is kept permanently — dates, type, and outcome stay on the profile.",
     "noJobsBody": "Installations and repairs for this customer will stay on this profile.",
-    "outcome": "Outcome"
+    "outcome": "Outcome",
+    "deletionAsked": "The customer asked to delete their data",
+    "deletionHint": "Name, phone and address are erased. Requests and payments stay for the accounts, without a name.",
+    "anonymize": "Erase personal data",
+    "anonymizeConfirm": "The customer's personal data will be erased for good. Continue?",
+    "anonymized": "Personal data erased",
+    "anonymizedBadge": "Personal data erased"
   },
   "sales": {
     "title": "Sales",
@@ -585,7 +624,17 @@
     "allStatuses": "All statuses",
     "createdFrom": "From",
     "createdTo": "To",
-    "searchPlaceholder": "Search customer, product, invoice, or request ID"
+    "searchPlaceholder": "Search customer, product, invoice, or request ID",
+    "selected": "{{count}} selected",
+    "selectAll": "Select all",
+    "clearSelection": "Clear selection",
+    "pickTechnician": "Choose a technician",
+    "assign": "Assign",
+    "pickPriority": "Priority",
+    "setPriority": "Set",
+    "bulkCancelConfirm": "Cancel {{count}} requests?",
+    "bulkDone": "Done for {{count}} requests",
+    "bulkPartial": "{{ok}} done, {{failed}} failed (technician type or status does not allow it)"
   },
   "newRequest": {
     "title": "New service request",
@@ -762,7 +811,11 @@
     "scheduledFor": "Visit: {{time}}",
     "diagnosisHint": "Pick the defect code from your diagnosis.",
     "workflow": "Workflow",
-    "workflowHint": "Diagnosis → estimate → repair. If the customer must decide, the job waits."
+    "workflowHint": "Diagnosis → estimate → repair. If the customer must decide, the job waits.",
+    "etaTitle": "How long will the trip take?",
+    "etaHint": "{{name}} will be told you are on the way and sees the estimate.",
+    "etaMinutes": "{{minutes}} min",
+    "etaSkip": "Continue without a time"
   },
   "job": {
     "timeline": "Timeline",
@@ -779,7 +832,8 @@
       "part": "at least one spare part",
       "photo": "at least one photo",
       "replacement": "the replacement product and serial number",
-      "estimate": "an approved estimate"
+      "estimate": "an approved estimate",
+      "checklist": "the required checklist items"
     },
     "addService": "Add service",
     "addPart": "Add part",
@@ -818,7 +872,8 @@
     "replacementProduct": "New product",
     "serialNumber": "New serial number",
     "replacementSaved": "Recorded: {{product}} · {{serial}}",
-    "saveReplacement": "Save replacement"
+    "saveReplacement": "Save replacement",
+    "carried": "You carry: {{count}}"
   },
   "receipt": {
     "title": "Receipts",
@@ -853,7 +908,7 @@
   "reports": {
     "title": "Reports",
     "intro": "Workload, resolution time, defects, revenue, and technician ratings.",
-    "hubIntro": "Admin-only analytics. Each report uses the same date range and can be exported as CSV for Excel.",
+    "hubIntro": "Analytics for admins and accountants. Each report uses the same date range and can be exported as CSV for Excel.",
     "export": "Export CSV / Excel",
     "from": "From",
     "to": "To",
@@ -949,7 +1004,11 @@
       "debts": "Debts",
       "debtsBody": "Jobs and customers with an unpaid balance.",
       "payroll": "Payroll",
-      "payrollBody": "Technician pay: percentage, fixed amount, bonuses and penalties."
+      "payrollBody": "Technician pay: percentage, fixed amount, bonuses and penalties.",
+      "partners": "Partner centres",
+      "partnersBody": "Jobs done by independent service centres and what they are owed.",
+      "fiscal": "Fiscal receipts",
+      "fiscalBody": "Payments taken without a fiscal receipt number."
     },
     "source": {
       "rizo_market": "RIZO market",
@@ -980,7 +1039,27 @@
     "topDefects": "Top defects",
     "totalDebt": "Total debt",
     "unitsSold": "Units sold",
-    "withoutCode": "Without code"
+    "withoutCode": "Without code",
+    "all": "All reports",
+    "groups": {
+      "main": "Main",
+      "money": "Money and settlements",
+      "other": "More"
+    },
+    "partnerCenter": "Partner centre",
+    "labour": "Labour (services)",
+    "payout": "Payout",
+    "totalPayout": "Total payout",
+    "partnerCenters": "Partner centres",
+    "noPartners": "No partner centres",
+    "noPartnersBody": "Mark a centre as “Partner” and set its terms on the centres page.",
+    "partnerLine": "{{jobs}} jobs · labour {{labour}} · payout {{payout}}",
+    "takenBy": "Taken by",
+    "withoutReceipt": "Payments without a receipt",
+    "amountWithoutReceipt": "Amount without a receipt number",
+    "fiscalNote": "Every payment from the public must be registered with a fiscal receipt. This lists payments with no number entered.",
+    "noFiscalGaps": "All in order",
+    "noFiscalGapsBody": "No payments without a receipt number."
   },
   "portal": {
     "homeTitle": "Your service requests",
@@ -1110,7 +1189,31 @@
     "storageDays": "Ready item storage (days)",
     "storageDaysHint": "How long a finished item is kept at the counter.",
     "requireEstimate": "Require an approved estimate before paid repair",
-    "requireEstimateTip": "When on, the technician cannot start a paid repair until the customer approves the estimate."
+    "requireEstimateTip": "When on, the technician cannot start a paid repair until the customer approves the estimate.",
+    "serviceTitle": "Visits, escalation and alerts",
+    "serviceBody": "Time windows customers pick from, escalating overdue jobs, the low-rating alert and summaries.",
+    "visitSlots": "Visit time windows",
+    "visitSlotsHint": "Comma separated: 09:00-11:00,11:00-13:00,14:00-16:00",
+    "visitCapacity": "Visits per technician per day",
+    "visitCapacityHint": "No more than this can be booked.",
+    "rescheduleLimit": "How often a customer may move a visit",
+    "rescheduleLimitHint": "After that only the service can move it.",
+    "cancelBefore": "Cancel/move cut-off (hours)",
+    "cancelBeforeHint": "Closer than this, a customer cannot change the visit.",
+    "lowRating": "Low-rating threshold",
+    "lowRatingHint": "A rating at or below this alerts the admins at once.",
+    "escalationHours": "Escalate an overdue job after (hours)",
+    "escalationHoursHint": "An overdue job is raised again with the admins after this long.",
+    "escalationUrgent": "Becomes urgent after (hours)",
+    "escalationUrgentHint": "After this long the job becomes urgent automatically.",
+    "expiryNotice": "Warranty-ending notice (days)",
+    "expiryNoticeHint": "The customer is told this many days before the warranty ends. 0 turns it off.",
+    "requireFiscal": "Fiscal receipt number for every payment",
+    "requireFiscalTip": "When on, a payment cannot be saved without a receipt number.",
+    "weeklyDigest": "Weekly summary",
+    "weeklyDigestTip": "Every Monday morning the admins get last week's summary (bell and Telegram).",
+    "sendDigest": "Send the summary now",
+    "digestSent": "Summary sent"
   },
   "feedback": {
     "thanks": "Thanks for the feedback",
@@ -1278,7 +1381,7 @@
     "serviceAlreadyOnJob": "This service is already on the job",
     "completedLocked": "Completed jobs cannot be edited",
     "jobIncomplete": "Add {{list}} before completing",
-    "stockInsufficient": "Only {{count}} {{name}} in stock",
+    "stockInsufficient": "Only {{count}} in stock.",
     "saleNotForCustomer": "This sale does not belong to the selected customer",
     "techTypeMismatch": "This technician does not match the required type",
     "needPurchaseOrProduct": "Select a past purchase or a product",
@@ -1324,13 +1427,37 @@
     "orderClosed": "This order is closed",
     "refundTooLarge": "The refund cannot exceed what was paid",
     "rejectionReasonRequired": "Give a reason for rejecting",
-    "requestClosed": "This request is closed",
+    "requestClosed": "This request is closed.",
     "serialExists": "This serial number already exists",
     "serialNotFound": "Serial number not found",
     "trackNotFound": "No request found. Check the number and phone.",
     "unpaidBalance": "There is an unpaid balance: {{balance}}",
     "warrantyEnded": "The warranty has ended",
-    "warrantyVoided": "The warranty has been voided"
+    "warrantyVoided": "The warranty has been voided",
+    "visitInPast": "You cannot pick a date that has passed.",
+    "visitTooFar": "Visits can be booked up to 30 days ahead.",
+    "slotInvalid": "Choose one of the offered time windows.",
+    "slotTaken": "That time was just taken. Pick another.",
+    "rescheduleLimit": "This visit was already moved the maximum number of times. Please call the service.",
+    "visitTooClose": "It is too late to change this visit. Please call the service.",
+    "noVisit": "No visit is booked for this request.",
+    "cancelNotAllowed": "Work has already started. Please call the service to cancel.",
+    "checklistIncomplete": "Tick the required checklist items before completing.",
+    "checklistExists": "A checklist for this category already exists.",
+    "techStockInsufficient": "The technician does not have that many ({{count}}).",
+    "planNotAvailable": "This plan is not available for this product.",
+    "planAlreadyRequested": "You already asked for a plan for this product.",
+    "planHandled": "This plan was already handled.",
+    "planInUse": "This plan was bought or requested. Switch it off instead of deleting it.",
+    "fiscalReceiptRequired": "Enter the fiscal receipt number for this payment.",
+    "totpRequired": "Enter the code from your authenticator app.",
+    "totpInvalid": "That code is not correct or has expired.",
+    "totpAlreadyOn": "Two-step sign-in is already on.",
+    "totpNotStarted": "Start the setup first.",
+    "customerHasOpenRequests": "The customer still has open requests. Finish them first.",
+    "integrationOff": "The market integration is not switched on.",
+    "badApiKey": "The API key is not valid.",
+    "unknownSku": "Some products are not in RIZO Service yet."
   },
   "customerStatus": {
     "new": "Received",
@@ -1429,7 +1556,11 @@
     "public": {
       "title": "Service centers",
       "intro": "Find your nearest RIZO service center."
-    }
+    },
+    "partner": "Partner",
+    "payoutPercent": "Share of labour, %",
+    "payoutHint": "For every finished job the partner is paid this percentage plus the fixed amount below.",
+    "payoutFixed": "Fixed amount per job"
   },
   "estimate": {
     "title": "Estimate",
@@ -1525,7 +1656,10 @@
       "payme": "Payme",
       "click": "Click",
       "other": "Other"
-    }
+    },
+    "fiscalShort": "receipt",
+    "noFiscal": "no receipt number",
+    "fiscalRequired": "Required: enter the receipt number from the cash register."
   },
   "notes": {
     "title": "Notes and messages",
@@ -1622,7 +1756,9 @@
     "roles": {
       "admin": "Admin",
       "technician": "Technician",
-      "receptionist": "Receptionist"
+      "receptionist": "Receptionist",
+      "accountant": "Accountant",
+      "warehouse": "Warehouse manager"
     },
     "technicianType": "Technician type",
     "password": "Password",
@@ -1636,7 +1772,12 @@
     "payPercent": "Percent of labour (%)",
     "payPercentHint": "Technician’s share of the labour value.",
     "payFixed": "Fixed amount per job",
-    "payFixedHint": "On top of the percentage, for each finished job."
+    "payFixedHint": "On top of the percentage, for each finished job.",
+    "skills": "Product categories they repair",
+    "skillsHint": "Leave empty for any. Jobs are assigned automatically by these categories.",
+    "baseLat": "Home base latitude",
+    "baseLng": "Home base longitude",
+    "baseHint": "Where the technician usually starts — used to pick the nearest one."
   },
   "register": {
     "title": "Register a product",
@@ -1699,5 +1840,298 @@
     "light": "Light",
     "dark": "Dark",
     "system": "Match device"
+  },
+  "security": {
+    "title": "Security",
+    "intro": "Protect your account: besides the password, a code from an app on your phone is asked.",
+    "twoStep": "Two-step sign-in",
+    "statusOn": "On: a code from your app is asked at sign-in.",
+    "statusOff": "Off. Recommended, especially for admins.",
+    "setUp": "Start setting up",
+    "step1": "Install Google Authenticator, Microsoft Authenticator or 1Password on your phone.",
+    "step2": "In the app choose “add account” and scan the QR code below.",
+    "step3": "Enter the 6-digit code the app shows.",
+    "qrAlt": "QR code for two-step sign-in",
+    "orType": "If you cannot scan, type this key by hand:",
+    "code": "Code from the app",
+    "codeNeeded": "Enter the 6-digit code from your app.",
+    "turnOn": "Turn on",
+    "turnOff": "Turn off",
+    "offHint": "To turn it off, enter your password and the current code from the app.",
+    "nowOn": "Two-step sign-in is on",
+    "nowOff": "Two-step sign-in is off",
+    "reset": "Reset 2FA",
+    "resetConfirm": "Switch off two-step sign-in for {{name}}? (For a lost phone.)",
+    "resetDone": "Two-step sign-in was switched off"
+  },
+  "checklists": {
+    "title": "Checklists",
+    "intro": "Steps a technician ticks off during diagnosis and before completing a job. A job cannot be completed until the required items are ticked.",
+    "new": "New checklist",
+    "edit": "Edit checklist",
+    "saved": "Checklist saved",
+    "emptyTitle": "No checklists yet",
+    "emptyBody": "For example, add a required item “Cooling temperature is normal” for refrigerators.",
+    "allCategories": "All categories",
+    "confirmDelete": "Delete this checklist?",
+    "required": "Required",
+    "requiredHint": "Required item",
+    "addItem": "Add an item",
+    "kindLabel": "When",
+    "kind": {
+      "diagnosis": "Diagnosis",
+      "completion": "Before completing"
+    }
+  },
+  "checklist": {
+    "title": "Checklist",
+    "hint": "The job cannot be completed until the required items are ticked.",
+    "diagnosis": "Diagnosis",
+    "completion": "Before completing"
+  },
+  "help": {
+    "adminTitle": "Help centre",
+    "adminIntro": "Short guides for simple problems a customer can fix without a visit. They show in the app, on the website and on the tracking page.",
+    "new": "New guide",
+    "edit": "Edit guide",
+    "saved": "Guide saved",
+    "emptyTitle": "No guides yet",
+    "emptyBody": "Start with the most common problems: “does not cool”, “does not drain”, “does not switch on”.",
+    "general": "General",
+    "hidden": "Hidden",
+    "confirmDelete": "Delete this guide?",
+    "video": "Video link",
+    "videoHint": "Must start with https:// (for example YouTube).",
+    "order": "Order",
+    "titleLabel": "Title",
+    "bodyLabel": "Text (one step per line)",
+    "published": "Show to customers",
+    "title": "Help",
+    "intro": "You can fix simple problems yourself. If that does not help, contact the service.",
+    "watch": "Watch the video",
+    "noneTitle": "No guides yet",
+    "noneBody": "Guides will be added soon. For now, contact the service."
+  },
+  "techStock": {
+    "title": "Parts the technicians carry",
+    "intro": "The warehouse hands parts to a technician and takes unused ones back. On a job the technician uses what they carry first.",
+    "issue": "Hand out a part",
+    "takeBack": "Take back",
+    "saved": "Saved",
+    "noTechnicians": "No active technicians",
+    "carrying": "Carrying: {{count}}",
+    "nothing": "Nothing yet.",
+    "recent": "Recent movements",
+    "noMoves": "No movements yet.",
+    "technician": "Technician",
+    "what": "What happened",
+    "by": "By",
+    "inWarehouse": "{{count}} in the warehouse",
+    "kind": {
+      "issue": "Handed out",
+      "return": "Returned",
+      "used": "Used on a job",
+      "unused": "Back from a job",
+      "adjust": "Adjustment"
+    },
+    "mineTitle": "My parts",
+    "mineIntro": "The parts you carry. They are used first on a job.",
+    "mineEmpty": "You carry no parts",
+    "mineEmptyBody": "Ask the warehouse if you need some."
+  },
+  "plans": {
+    "title": "Warranty plans",
+    "intro": "Paid warranty extension: a customer asks for it or buys at the counter; once paid, the warranty is extended automatically.",
+    "sell": "Sell at the counter",
+    "newPlan": "New plan",
+    "editPlan": "Edit plan",
+    "saved": "Plan saved",
+    "paidDone": "Payment taken, warranty extended",
+    "noPlans": "No plans yet",
+    "noPlansBody": "For example, create a “+12 months warranty” plan and set its price.",
+    "planName": "Plan",
+    "months": "Months",
+    "price": "Price",
+    "categories": "Categories",
+    "active": "Active",
+    "off": "Off",
+    "warrantyUntil": "Warranty until",
+    "takePayment": "Take payment",
+    "findSale": "Find the purchase",
+    "findSaleHint": "Invoice, serial number, customer or product",
+    "confirmPayment": "Confirm payment",
+    "requested": "Your request was sent. The service will contact you.",
+    "tab": {
+      "requested": "Requests",
+      "paid": "History",
+      "plans": "Plans"
+    },
+    "empty": {
+      "requested": "No new requests",
+      "paid": "No sales yet"
+    },
+    "status": {
+      "requested": "Requested",
+      "paid": "Paid",
+      "cancelled": "Cancelled"
+    }
+  },
+  "products": {
+    "title": "My products",
+    "intro": "Your purchases, warranty dates and a way to book service.",
+    "emptyTitle": "No products yet",
+    "emptyBody": "If you bought a RIZO product elsewhere, add it.",
+    "warrantyUntil": "Warranty until {{date}}",
+    "warrantyEnded": "Warranty ended on {{date}}",
+    "daysLeft": "{{count}} days left",
+    "unverified": "The warranty is provisional until the service verifies it.",
+    "bookService": "Book service",
+    "extend": "Extend the warranty",
+    "extendTitle": "Extend the warranty",
+    "noPlans": "There are no plans for this product yet.",
+    "extendBody": "Choose a plan. A service employee takes the payment, then the warranty is extended.",
+    "ask": "Ask for it",
+    "asked": "Asked",
+    "payAtService": "You are not charged now."
+  },
+  "account": {
+    "title": "My account",
+    "intro": "How messages reach you, and control over your personal data.",
+    "saved": "Saved",
+    "channel": "Where to send messages",
+    "channelBody": "Request status, estimates and visit messages.",
+    "channels": {
+      "both": "SMS and Telegram",
+      "sms": "SMS only",
+      "telegram": "Telegram only"
+    },
+    "telegramLinked": "Telegram is linked.",
+    "telegramHow": "To link Telegram, write to the RIZO Service bot: /start and send your phone number. Until Telegram is linked, messages come by SMS.",
+    "data": "My data",
+    "dataBody": "You can download everything we hold about you as a file.",
+    "export": "Download my data",
+    "deleteBody": "You can ask us to erase your personal data (name, phone, address). Requests and payments stay for the accounts, without a name.",
+    "deleteAsk": "Ask to erase my data",
+    "deleteConfirm": "Send a request to erase your data? The service will review it.",
+    "deleteAsked": "Request sent",
+    "deletePending": "Your erasure request is being reviewed.",
+    "deleteWithdraw": "Withdraw the request",
+    "deleteCancelled": "Request withdrawn"
+  },
+  "pay": {
+    "title": "Pay online",
+    "body": "Amount due: {{amount}}.",
+    "note": "After you pay, the service records it. If it takes long, call the service."
+  },
+  "visit": {
+    "title": "Visit time",
+    "date": "Date",
+    "window": "Time window",
+    "noSlots": "No free time on this day. Pick another day.",
+    "pickDate": "Pick a day first.",
+    "optionalHint": "Optional: pick a day and time. You can change it later.",
+    "notBooked": "The request was created, but the chosen time was just taken. Pick another time on the request page.",
+    "saved": "Visit time saved",
+    "confirmed": "Confirmed",
+    "notConfirmed": "Waiting for confirmation",
+    "confirmedNote": "The visit is confirmed",
+    "noneCustomer": "No visit time yet. You can pick a time that suits you.",
+    "none": "No visit time set.",
+    "eta": "The technician is on the way, about {{minutes}} min",
+    "confirmButton": "Confirm the visit",
+    "confirmAsk": "A visit is set for {{when}}. Does it suit you?",
+    "move": "Move the visit",
+    "book": "Pick a time",
+    "cancelRequest": "Cancel the request",
+    "cancelConfirm": "Cancel this request?",
+    "cancelled": "The request was cancelled",
+    "callToMove": "To change the time again, please call the service.",
+    "moved": "moved {{count}} time(s)",
+    "markConfirmed": "Customer confirmed (by phone)",
+    "staffNote": "The customer is told and should confirm the time.",
+    "escalated": "Overdue job escalated (level {{level}})"
+  },
+  "legal": {
+    "privacy": "Privacy policy",
+    "terms": "Terms of use",
+    "updated": "Updated: October 2026",
+    "privacyDoc": {
+      "title": "Privacy policy",
+      "sections": [
+        {
+          "h": "Who we are",
+          "p": "RIZO Service is the after-sales installation and repair service for RIZO products. This policy explains how your personal data is used on the website and in the apps."
+        },
+        {
+          "h": "What we keep",
+          "p": "Your name, phone number, address (and your location if you share it), the products you bought, serial numbers, service requests, photos and messages you send, payments, ratings and comments. A technician's name is shown to you by first name only."
+        },
+        {
+          "h": "Why we use it",
+          "p": "To provide the service (installation, repair, warranty), to contact you (SMS, Telegram, in-app messages), to handle estimates and payments, and for the records the law requires. We do not sell your data or share it with third parties for advertising."
+        },
+        {
+          "h": "Who can see it",
+          "p": "Only authorised RIZO staff, depending on their role. The technician working for you sees your name, phone and address. Messages travel through an SMS provider and Telegram; online payments go through Payme or Click."
+        },
+        {
+          "h": "Photos and signatures",
+          "p": "Photos of the product and the signature at hand-over are attached to the request and used only to confirm the service."
+        },
+        {
+          "h": "How long we keep it",
+          "p": "For the warranty period and as long as the law requires for accounts. If you ask us to erase your data, your name, phone and address are removed; requests and payments stay for the accounts, without a name."
+        },
+        {
+          "h": "Your rights",
+          "p": "On the “My account” page you can download everything we hold about you as a file, choose how you are messaged (SMS or Telegram) and ask us to erase your data. To correct a mistake, contact the service."
+        },
+        {
+          "h": "Security",
+          "p": "Data travels over HTTPS, staff access depends on their role, and important changes are logged. Staff can switch on two-step sign-in."
+        },
+        {
+          "h": "Contact and changes",
+          "p": "For questions, use the contact details on the “Service centres” page. If this policy changes, it will be updated on this page."
+        }
+      ]
+    },
+    "termsDoc": {
+      "title": "Terms of use",
+      "sections": [
+        {
+          "h": "Using the service",
+          "p": "The website and apps are for requesting and following installation, repair and warranty service for RIZO products."
+        },
+        {
+          "h": "Account and security",
+          "p": "Keep your sign-in details secret. You are responsible for what is done through your account. If someone used it without your knowledge, tell the service."
+        },
+        {
+          "h": "Requests, estimates and payment",
+          "p": "A paid repair starts after you approve the estimate. You choose the optional lines yourself. When the work is done the balance is paid; until it is paid in full the device may be held back."
+        },
+        {
+          "h": "Warranty",
+          "p": "The warranty follows the product's terms and usually runs from the installation date. Warranty extension plans are paid and take effect once the payment is accepted. The repair deadlines set by law are kept."
+        },
+        {
+          "h": "Visits and changes",
+          "p": "You can choose a visit time and move it a limited number of times. When the visit is close, changes go through the service. If nobody is there to meet us, a repeat trip may be charged."
+        },
+        {
+          "h": "Your duties",
+          "p": "Give correct details (address, phone, serial number), let the technician reach the product and send photos of the fault."
+        },
+        {
+          "h": "Liability",
+          "p": "The service is responsible for the quality of its work and its warranty duties within the law. Damage caused by misuse or by wrong information from the customer is not covered by the warranty."
+        },
+        {
+          "h": "Changes and law",
+          "p": "These terms may be updated; the new version is published on this page. Disputes are settled under the law of the Republic of Uzbekistan."
+        }
+      ]
+    }
   }
 }
