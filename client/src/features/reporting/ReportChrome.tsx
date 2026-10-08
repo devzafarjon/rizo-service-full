@@ -69,8 +69,9 @@ export function ReportChrome({
 
 export function ReportPanel({ title, children }: { title?: string; children: ReactNode }) {
   return (
-    <section className="min-w-0 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
-      {title ? <h2 className="mb-4 text-base font-bold text-neutral-900">{title}</h2> : null}
+    // On phones a panel that holds a table drops its own frame: the table already shows one card per row (no card inside a card).
+    <section className="min-w-0 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm max-md:has-[table]:border-0 max-md:has-[table]:bg-transparent max-md:has-[table]:p-0 max-md:has-[table]:shadow-none">
+      {title ? <h2 className="mb-3 text-base font-bold text-neutral-900">{title}</h2> : null}
       {children}
     </section>
   );
