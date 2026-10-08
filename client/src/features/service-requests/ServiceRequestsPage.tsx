@@ -123,7 +123,8 @@ export function ServiceRequestsPage() {
       {canBulk && selected.length > 0 ? (
         <div className="sticky top-[4.5rem] z-20 mb-3 flex flex-wrap items-center gap-2 rounded-2xl border border-[#E0CDF2] bg-[#F5EBFD] px-4 py-3 shadow-sm">
           <span className="text-sm font-bold text-[#4B0089]">{t("requests.selected", { count: selected.length })}</span>
-          <select className={`${inputClass} h-10 w-auto min-w-40`} value={technicianId} onChange={(event) => setTechnicianId(event.target.value)} aria-label={t("common.technician")}>
+          <div className="flex w-full gap-2 sm:w-auto">
+          <select className={`${inputClass} h-10 min-w-0 flex-1 sm:w-auto sm:min-w-40 sm:flex-none`} value={technicianId} onChange={(event) => setTechnicianId(event.target.value)} aria-label={t("common.technician")}>
             <option value="">{t("requests.pickTechnician")}</option>
             <option value="none">{t("common.unassigned")}</option>
             {(technicians.data?.technicians ?? []).map((tech) => (
@@ -135,7 +136,9 @@ export function ServiceRequestsPage() {
           <button type="button" className="btn-rizo-ghost h-10" disabled={!technicianId || bulk.isPending} onClick={() => bulk.mutate({ action: "assign", technicianId: technicianId === "none" ? null : technicianId })}>
             {t("requests.assign")}
           </button>
-          <select className={`${inputClass} h-10 w-auto min-w-36`} value={priority} onChange={(event) => setPriority(event.target.value as "" | Priority)} aria-label={t("common.priority")}>
+          </div>
+          <div className="flex w-full gap-2 sm:w-auto">
+          <select className={`${inputClass} h-10 min-w-0 flex-1 sm:w-auto sm:min-w-36 sm:flex-none`} value={priority} onChange={(event) => setPriority(event.target.value as "" | Priority)} aria-label={t("common.priority")}>
             <option value="">{t("requests.pickPriority")}</option>
             {(["low", "medium", "high", "urgent"] as const).map((item) => (
               <option key={item} value={item}>
@@ -146,10 +149,11 @@ export function ServiceRequestsPage() {
           <button type="button" className="btn-rizo-ghost h-10" disabled={!priority || bulk.isPending} onClick={() => bulk.mutate({ action: "priority", priority })}>
             {t("requests.setPriority")}
           </button>
+          </div>
           <button type="button" className="h-10 rounded-lg px-3 text-sm font-bold text-red-700 hover:bg-red-50" disabled={bulk.isPending} onClick={() => window.confirm(t("requests.bulkCancelConfirm", { count: selected.length })) && bulk.mutate({ action: "cancel" })}>
             {t("common.cancel")}
           </button>
-          <button type="button" className="ml-auto text-sm font-semibold text-neutral-600 hover:underline" onClick={() => setSelected([])}>
+          <button type="button" className="ml-auto h-10 text-sm font-semibold text-neutral-600 hover:underline" onClick={() => setSelected([])}>
             {t("requests.clearSelection")}
           </button>
         </div>
@@ -166,6 +170,59 @@ export function ServiceRequestsPage() {
           }
         />
       ) : (
+        <>
+        {/* Phones: one card per request, so status, customer and date are visible without scrolling sideways. */}
+        {canBulk ? (
+          <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-neutral-600 md:hidden">
+            <input type="checkbox" className="h-5 w-5" checked={allSelected} onChange={() => setSelected(allSelected ? [] : requests.map((row) => row.id))} />
+            {t("requests.selectAll")}
+          </label>
+        ) : null}
+        <ul className="space-y-3 md:hidden">
+          {requests.map((request) => (
+            <li key={request.id} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="flex items-start gap-3">
+                {canBulk ? (
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-5 w-5 shrink-0"
+                    checked={selected.includes(request.id)}
+                    onChange={() => toggle(request.id)}
+                    aria-label={formatRequestId(request.displayId)}
+                  />
+                ) : null}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <Link to={`/app/requests/${request.id}`} className="text-[15px] font-bold text-[#7B00E0] hover:underline">
+                      {formatRequestId(request.displayId)}
+                    </Link>
+                    <StatusBadge status={request.status} />
+                  </div>
+                  <Link to={`/app/customers/${request.customer.id}`} className="mt-1 block truncate text-sm font-semibold text-gray-900">
+                    {request.customer.name}
+                  </Link>
+                  <p className="truncate text-sm text-gray-600">
+                    {localizedName(request.product)} <span className="text-xs text-neutral-500">· {request.product.sku}</span>
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    <TypeBadge type={request.type} />
+                    <LocationBadge type={request.locationType} />
+                    <PriorityBadge priority={request.priority} />
+                    <WarrantyBadge status={request.warrantyStatus} />
+                    {request.submittedByCustomer ? (
+                      <span className="inline-flex rounded-full bg-[#FFF4E5] px-2.5 py-1 text-xs font-bold text-[#C56A00]">{t("requests.customerChip")}</span>
+                    ) : null}
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-2 border-t border-[#F2F3F7] pt-2 text-xs text-neutral-500">
+                    <span className="min-w-0 truncate font-semibold text-gray-700">{request.assignedTechnician?.name ?? t("common.unassigned")}</span>
+                    <span className="shrink-0">{formatDateTime(request.createdAt)}</span>
+                  </div>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <div className="hidden md:block">
         <SurfaceTable>
           <thead>
             <tr className="border-b border-neutral-100">
@@ -230,6 +287,8 @@ export function ServiceRequestsPage() {
             ))}
           </tbody>
         </SurfaceTable>
+        </div>
+        </>
       )}
     </div>
   );
