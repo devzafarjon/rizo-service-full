@@ -8,7 +8,12 @@
   NODE_VERSION = "22"
 
 # Security headers for every page. The camera is used by the QR scanner and photo capture, location by the "use my position" buttons.
-# (No Content-Security-Policy yet: the map tiles and fonts would need a careful allow-list first.)
+#
+# Content-Security-Policy: only this site, Google Fonts, OpenStreetMap tiles and the API (https + the live-update websocket) may be
+# loaded. The one inline script (theme, in client/index.html) is allowed by its hash: if you edit that script, the hash changes;
+# compute the new one with  node -e "console.log('sha256-'+require('crypto').createHash('sha256').update(SCRIPT_TEXT).digest('base64'))"
+# or read the "Refused to execute inline script ... 'sha256-...'" message in the browser console. If the API moves to another
+# host, change both occurrences of rizo-service-api.onrender.com below.
 [[headers]]
   for = "/*"
   [headers.values]
@@ -16,3 +21,4 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(self), geolocation=(self), microphone=(), payment=()"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'sha256-qX8do644gw+mDGjMf7J+MXj/usXhxfE4cSKiLTUvp5U='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://rizo-service-api.onrender.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org; connect-src 'self' https://rizo-service-api.onrender.com wss://rizo-service-api.onrender.com; media-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"

@@ -132,7 +132,7 @@ integrationsRouter.post(
             type: "installation",
             customerId: customer.id,
             saleId: sale.id,
-            issueDescription: `Installation of ${product.name}`,
+            issueDescription: `O‘rnatish: ${product.name}`,
             locationType: "on_site",
             customerLocation: body.installation,
             source: "rizo_market",

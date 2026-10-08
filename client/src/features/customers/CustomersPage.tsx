@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -16,6 +16,8 @@ import { formatPhone } from "../../lib/format";
 import type { StaffCustomer } from "../../lib/types";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
 import { CustomerFormModal } from "./CustomerFormModal";
+import { usePagedList } from "../../lib/usePagedList";
+import { LoadMore } from "../../components/LoadMore";
 
 export function CustomersPage() {
   const { t } = useTranslation();
@@ -32,15 +34,9 @@ export function CustomersPage() {
   const [pendingDelete, setPendingDelete] = useState<StaffCustomer | null>(null);
   const [existing, setExisting] = useState<StaffCustomer | null>(null);
 
-  const list = useQuery({
-    queryKey: ["staff", "customers", debounced],
-    enabled: Boolean(token),
-    queryFn: () =>
-      api<{ customers: StaffCustomer[] }>(
-        `/api/staff/customers${debounced.trim() ? `?q=${encodeURIComponent(debounced.trim())}` : ""}`,
-        { token },
-      ),
-  });
+  const filters = new URLSearchParams();
+  if (debounced.trim()) filters.set("q", debounced.trim());
+  const list = usePagedList<StaffCustomer>({ queryKey: ["staff", "customers", debounced], path: "/api/staff/customers", params: filters, itemsKey: "customers", token });
 
   const save = useMutation({
     mutationFn: async (values: {
@@ -99,7 +95,7 @@ export function CustomersPage() {
     return <PageSkeleton />;
   }
 
-  const customers = list.data?.customers ?? [];
+  const customers = list.items;
 
   return (
     <div>
@@ -144,6 +140,7 @@ export function CustomersPage() {
       {customers.length === 0 ? (
         <EmptyState title={t("customers.emptyTitle")} body={t("customers.emptyBody")} />
       ) : (
+<>
         <SurfaceTable>
           <thead>
             <tr className="border-b border-neutral-100">
@@ -191,6 +188,8 @@ export function CustomersPage() {
             ))}
           </tbody>
         </SurfaceTable>
+        <LoadMore shown={customers.length} total={list.total} hasMore={list.hasMore} loading={list.loadingMore} onMore={list.loadMore} />
+</>
       )}
 
       <CustomerFormModal

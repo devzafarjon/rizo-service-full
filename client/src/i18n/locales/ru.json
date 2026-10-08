@@ -75,7 +75,9 @@
     "select": "Выберите",
     "note": "Заметка",
     "home": "Главная",
-    "hoursShort": "ч"
+    "hoursShort": "ч",
+    "loadMore": "Загрузить ещё",
+    "shownOf": "Показано {{shown}} из {{total}}"
   },
   "languages": {
     "uz": "Oʻzbekcha",
@@ -1500,7 +1502,9 @@
     "customerHasOpenRequests": "У клиента есть открытые заявки. Сначала завершите их.",
     "integrationOff": "Интеграция с маркетом не включена.",
     "badApiKey": "Неверный ключ API.",
-    "unknownSku": "Некоторых товаров ещё нет в RIZO Service."
+    "unknownSku": "Некоторых товаров ещё нет в RIZO Service.",
+    "amountWhole": "Введите сумму в целых сумах",
+    "amountTooLarge": "Сумма слишком велика"
   },
   "customerStatus": {
     "new": "Принята",

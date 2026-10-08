@@ -1,7 +1,8 @@
 import { pushJobAssigned } from "../lib/push.js";
 import { Router } from "express";
-import type { LocationType, RequestStatus, ServiceType } from "@prisma/client";
+import type { LocationType, Prisma, RequestStatus, ServiceType } from "@prisma/client";
 import { z } from "zod";
+import { pageInfo, parsePaging } from "../lib/paging.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { HttpError } from "../lib/httpError.js";
 import { parseBody } from "../lib/parse.js";
@@ -152,7 +153,8 @@ const estimateSchema = z.object({
 });
 
 const paymentSchema = z.object({
-  amount: z.coerce.number().positive("Enter an amount greater than 0"),
+  // Whole so'm only (there are no tiyin in practice), and never more than the column can hold.
+  amount: z.coerce.number().positive("Enter an amount greater than 0").int("Enter the amount in whole so'm").max(9_999_999_999, "The amount is too large"),
   method: z.enum(["cash", "card", "transfer", "payme", "click", "other"]).default("cash"),
   kind: z.enum(["payment", "refund"]).default("payment"),
   note: z.string().trim().max(200).optional().nullable(),
@@ -179,8 +181,7 @@ requestsRouter.get(
     const from = text("from");
     const to = text("to");
 
-    const requests = await prisma.serviceRequest.findMany({
-      where: {
+    const where: Prisma.ServiceRequestWhereInput = {
         AND: [
           overdue ? { overdueAt: { not: null }, status: { in: OPEN_STATUSES } } : {},
           legal ? { legalDueAt: { lt: new Date() }, status: { in: OPEN_STATUSES } } : {},
@@ -208,11 +209,19 @@ requestsRouter.get(
               }
             : {},
         ],
-      },
-      orderBy: overdue ? { overdueAt: "asc" } : from || to ? { scheduledAt: "asc" } : { createdAt: "desc" },
-      include: requestInclude,
-    });
-    res.json({ requests: requests.map(serializeRequest) });
+    };
+    const { take, skip } = parsePaging(req.query, 1000);
+    const [requests, total] = await Promise.all([
+      prisma.serviceRequest.findMany({
+        where,
+        orderBy: overdue ? { overdueAt: "asc" } : from || to ? { scheduledAt: "asc" } : { createdAt: "desc" },
+        include: requestInclude,
+        take,
+        skip,
+      }),
+      prisma.serviceRequest.count({ where }),
+    ]);
+    res.json({ requests: requests.map(serializeRequest), ...pageInfo(total, skip, requests.length) });
   }),
 );
 

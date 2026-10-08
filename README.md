@@ -333,7 +333,7 @@ Staff routes sit under `/api/staff/…` with a staff JWT. Customer routes sit un
 | `/api/staff/sales` | Sales + warranty |
 | `/api/staff/search` | Quick search |
 | `/api/staff/technicians` | Board + workload; `PATCH` role, type, availability, `isActive` |
-| `/api/staff/requests` | Create / list; `PATCH` changes status, technician or priority (pause needs `pauseReason` + `pauseHours`) |
+| `/api/staff/requests` | Create / list (`limit`, `offset` → also `total`, `hasMore`; no `limit` = up to 1000, same for customers and sales); `PATCH` changes status, technician or priority (pause needs `pauseReason` + `pauseHours`) |
 | `/api/staff/reports/dashboard` | Dashboard KPIs and chart series |
 | `/api/staff/reports/products` | Product report |
 | `/api/staff/reports/parts` | Spare-part report (`productId` optional) |

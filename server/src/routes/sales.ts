@@ -1,5 +1,7 @@
+import type { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
+import { pageInfo, parsePaging } from "../lib/paging.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { HttpError } from "../lib/httpError.js";
 import { parseBody } from "../lib/parse.js";
@@ -34,8 +36,7 @@ salesRouter.get(
     const invoice = typeof req.query.invoice === "string" ? req.query.invoice.trim() : "";
     const customerId = typeof req.query.customerId === "string" ? req.query.customerId : "";
     const digits = q.replace(/\D/g, "");
-    const sales = await prisma.sale.findMany({
-      where: {
+    const where: Prisma.SaleWhereInput = {
         AND: [
           customerId ? { customerId } : {},
           invoice ? { invoiceNumber: { equals: invoice, mode: "insensitive" } } : {},
@@ -51,15 +52,23 @@ salesRouter.get(
               }
             : {},
         ],
-      },
-      orderBy: { saleDate: "desc" },
-      include: {
-        customer: { select: { id: true, name: true, phone: true } },
-        product: true,
-        _count: { select: { requests: true } },
-      },
-    });
-    res.json({ sales: sales.map(serializeSale) });
+    };
+    const { take, skip } = parsePaging(req.query, 1000);
+    const [sales, total] = await Promise.all([
+      prisma.sale.findMany({
+        where,
+        orderBy: { saleDate: "desc" },
+        include: {
+          customer: { select: { id: true, name: true, phone: true } },
+          product: true,
+          _count: { select: { requests: true } },
+        },
+        take,
+        skip,
+      }),
+      prisma.sale.count({ where }),
+    ]);
+    res.json({ sales: sales.map(serializeSale), ...pageInfo(total, skip, sales.length) });
   }),
 );
 

@@ -75,7 +75,9 @@
     "select": "Select",
     "note": "Note",
     "home": "Home",
-    "hoursShort": "h"
+    "hoursShort": "h",
+    "loadMore": "Load more",
+    "shownOf": "Showing {{shown}} of {{total}}"
   },
   "languages": {
     "uz": "Oʻzbekcha",
@@ -1498,7 +1500,9 @@
     "customerHasOpenRequests": "The customer still has open requests. Finish them first.",
     "integrationOff": "The market integration is not switched on.",
     "badApiKey": "The API key is not valid.",
-    "unknownSku": "Some products are not in RIZO Service yet."
+    "unknownSku": "Some products are not in RIZO Service yet.",
+    "amountWhole": "Enter the amount in whole so‘m",
+    "amountTooLarge": "The amount is too large"
   },
   "customerStatus": {
     "new": "Received",

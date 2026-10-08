@@ -92,6 +92,8 @@ const MESSAGE_CODES: Record<string, string> = {
   "Set how long this pause should last": "pauseHoursRequired",
   "Pause duration must be greater than 0": "pauseHoursInvalid",
   "Pause cannot exceed 14 days": "pauseHoursMax",
+  "Enter the amount in whole so'm": "amountWhole",
+  "The amount is too large": "amountTooLarge",
   "Something went wrong": "server",
 };
 
@@ -111,7 +113,8 @@ export function errorHandler(rawErr: unknown, _req: Request, res: Response, _nex
   if (status >= 500) {
     console.error(err);
   }
-  const mapped = err instanceof HttpError && err.code !== "generic" ? err.code : MESSAGE_CODES[message];
+  // Validation errors all carry "invalidInput"; a known message gets its own, more precise code.
+  const mapped = err instanceof HttpError && err.code !== "generic" && !(err.code === "invalidInput" && MESSAGE_CODES[message]) ? err.code : MESSAGE_CODES[message];
   const code = mapped ?? (status === 500 ? "server" : "generic");
   res.status(status).json({
     error: status === 500 ? "Something went wrong" : message,

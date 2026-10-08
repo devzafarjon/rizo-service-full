@@ -53,3 +53,10 @@ Scratch DB for QA: point `DATABASE_URL` at another database, `prisma migrate dep
 ## Growth suite (added 2026-10)
 Visit slots + capacity (`lib/visits.ts`), ETA, skill/distance assignment (`lib/assignment.ts`), checklists (`lib/checklists.ts`), technician stock (`lib/techStock.ts`), help articles, paid warranty plans (`lib/warrantyPlans.ts`), partner centre payouts, per-payment fiscal receipts, TOTP two-step sign-in (`lib/totp.ts`), privacy export/erase, weekly digest (`lib/digest.ts`), escalation (in `lib/sla.ts`), service KPIs (`lib/serviceKpis.ts`), Telegram buttons (`lib/telegramBot.ts`, `lib/telegramText.ts`), market API (`routes/integrations.ts`). New settings are in `lib/settings.ts`. Two extra scripts: `npm run smoke:growth`. Production runs `prisma migrate deploy` on start, so a migration goes live with the deploy.
 **Never model periodic / seasonal maintenance** (still true): no "service due" reminders, no maintenance plans — paid *warranty extensions* are fine.
+
+## Lists, tables and the site's security headers (added 2026-10)
+- **Paging**: `GET /api/staff/requests|customers|sales` take `limit` (1–200) and `offset` and always answer `total` + `hasMore`; without `limit` they return up to 1000 rows (calendar, map, receipts, the board and the mobile apps rely on that). Screens use `usePagedList` + `<LoadMore>` (50 per page).
+- **Tables**: always use `SurfaceTable` / `Th` / `Td`. Below `md` it turns into one card per row by itself (column names come from the header row), so never add a separate phone layout and never let a table scroll sideways.
+- **Payments are whole so'm** (`amount` integer, max 9 999 999 999).
+- **CSP** lives in `netlify.toml`. It allows the site itself, Google Fonts, OpenStreetMap tiles and the API (https + wss). If the inline theme script in `client/index.html` changes, update its sha256 in the policy; if the API host changes, update both occurrences. Test a change by serving `client/dist` with the same header and watching the console for "Refused to …".
+

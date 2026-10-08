@@ -75,7 +75,9 @@
     "select": "Tanlang",
     "note": "Izoh",
     "home": "Bosh sahifa",
-    "hoursShort": "soat"
+    "hoursShort": "soat",
+    "loadMore": "Yana yuklash",
+    "shownOf": "{{shown}} ta / {{total}} ta ko‘rsatilgan"
   },
   "languages": {
     "uz": "Oʻzbekcha",
@@ -1498,7 +1500,9 @@
     "customerHasOpenRequests": "Mijozda ochiq so‘rovlar bor. Avval ularni yakunlang.",
     "integrationOff": "Bozor bilan integratsiya yoqilmagan.",
     "badApiKey": "API kaliti noto‘g‘ri.",
-    "unknownSku": "Ba‘zi mahsulotlar hali RIZO Service’da yo‘q."
+    "unknownSku": "Ba‘zi mahsulotlar hali RIZO Service’da yo‘q.",
+    "amountWhole": "Summani butun so‘mda kiriting",
+    "amountTooLarge": "Summa juda katta"
   },
   "customerStatus": {
     "new": "Qabul qilindi",

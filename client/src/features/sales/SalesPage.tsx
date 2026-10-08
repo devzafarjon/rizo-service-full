@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Printer, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -18,6 +18,8 @@ import { localizedName } from "../../lib/localized";
 import type { Sale } from "../../lib/types";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
 import { SaleFormModal } from "./SaleFormModal";
+import { usePagedList } from "../../lib/usePagedList";
+import { LoadMore } from "../../components/LoadMore";
 
 export function SalesPage() {
   const { t } = useTranslation();
@@ -37,17 +39,10 @@ export function SalesPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Sale | null>(null);
 
-  const list = useQuery({
-    queryKey: ["staff", "sales", debounced, invoiceParam],
-    enabled: Boolean(token),
-    queryFn: () => {
-      const search = new URLSearchParams();
-      if (invoiceParam) search.set("invoice", invoiceParam);
-      else if (debounced.trim()) search.set("q", debounced.trim());
-      const suffix = search.toString() ? `?${search}` : "";
-      return api<{ sales: Sale[] }>(`/api/staff/sales${suffix}`, { token });
-    },
-  });
+  const filters = new URLSearchParams();
+  if (invoiceParam) filters.set("invoice", invoiceParam);
+  else if (debounced.trim()) filters.set("q", debounced.trim());
+  const list = usePagedList<Sale>({ queryKey: ["staff", "sales", debounced, invoiceParam], path: "/api/staff/sales", params: filters, itemsKey: "sales", token });
 
   const save = useMutation({
     mutationFn: (values: Record<string, unknown>) => {
@@ -92,7 +87,7 @@ export function SalesPage() {
     onError: (error) => notify(apiErrorMessage(error, t), "error"),
   });
 
-  const sales = list.data?.sales ?? [];
+  const sales = list.items;
   const highlighted = useMemo(() => invoiceParam.toUpperCase(), [invoiceParam]);
 
   if (list.isLoading) {
@@ -141,6 +136,7 @@ export function SalesPage() {
       {sales.length === 0 ? (
         <EmptyState title={t("sales.emptyTitle")} body={t("sales.emptyBody")} />
       ) : (
+<>
         <SurfaceTable>
           <thead>
             <tr className="border-b border-neutral-100">
@@ -243,6 +239,8 @@ export function SalesPage() {
             ))}
           </tbody>
         </SurfaceTable>
+        <LoadMore shown={sales.length} total={list.total} hasMore={list.hasMore} loading={list.loadingMore} onMore={list.loadMore} />
+</>
       )}
 
       <SaleFormModal

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import crypto from "node:crypto";
+import { pageInfo, parsePaging } from "../lib/paging.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { HttpError } from "../lib/httpError.js";
 import { parseBody } from "../lib/parse.js";
@@ -109,21 +110,28 @@ customersRouter.get(
   asyncHandler(async (req, res) => {
     const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
     const digits = normalizePhone(q);
-    const customers = await prisma.customer.findMany({
-      where: q
-        ? {
-            OR: [
-              ...(digits.length >= 3 ? [{ phone: { contains: digits } }] : []),
-              { name: { contains: q, mode: "insensitive" as const } },
-            ],
-          }
-        : undefined,
-      orderBy: { createdAt: "desc" },
-      include: {
-        _count: { select: { sales: true, requests: true } },
-      },
-    });
-    res.json({ customers: customers.map(serializeCustomer) });
+    const where = q
+      ? {
+          OR: [
+            ...(digits.length >= 3 ? [{ phone: { contains: digits } }] : []),
+            { name: { contains: q, mode: "insensitive" as const } },
+          ],
+        }
+      : undefined;
+    const { take, skip } = parsePaging(req.query, 1000);
+    const [customers, total] = await Promise.all([
+      prisma.customer.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        include: {
+          _count: { select: { sales: true, requests: true } },
+        },
+        take,
+        skip,
+      }),
+      prisma.customer.count({ where }),
+    ]);
+    res.json({ customers: customers.map(serializeCustomer), ...pageInfo(total, skip, customers.length) });
   }),
 );
 

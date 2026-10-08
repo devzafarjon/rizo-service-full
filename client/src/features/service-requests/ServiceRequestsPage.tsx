@@ -16,6 +16,8 @@ import { localizedName } from "../../lib/localized";
 import { ALL_STATUSES } from "../../lib/status";
 import type { Priority, RequestStatus, ServiceRequest, ServiceType, TechnicianSummary } from "../../lib/types";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
+import { usePagedList } from "../../lib/usePagedList";
+import { LoadMore } from "../../components/LoadMore";
 
 const TYPE_FILTERS: Array<"" | ServiceType> = ["", "installation", "repair"];
 
@@ -35,18 +37,11 @@ export function ServiceRequestsPage() {
   const [status, setStatus] = useState<"" | RequestStatus>("");
   const debounced = useDebouncedValue(q, 250);
 
-  const list = useQuery({
-    queryKey: ["staff", "requests", debounced, type, status],
-    enabled: Boolean(token),
-    queryFn: () => {
-      const search = new URLSearchParams();
-      if (debounced.trim()) search.set("q", debounced.trim());
-      if (type) search.set("type", type);
-      if (status) search.set("status", status);
-      const suffix = search.toString() ? `?${search}` : "";
-      return api<{ requests: ServiceRequest[] }>(`/api/staff/requests${suffix}`, { token });
-    },
-  });
+  const filters = new URLSearchParams();
+  if (debounced.trim()) filters.set("q", debounced.trim());
+  if (type) filters.set("type", type);
+  if (status) filters.set("status", status);
+  const list = usePagedList<ServiceRequest>({ queryKey: ["staff", "requests", debounced, type, status], path: "/api/staff/requests", params: filters, itemsKey: "requests", token });
 
   const technicians = useQuery({
     queryKey: ["staff", "technicians"],
@@ -70,7 +65,7 @@ export function ServiceRequestsPage() {
     return <PageSkeleton />;
   }
 
-  const requests = list.data?.requests ?? [];
+  const requests = list.items;
   const allSelected = requests.length > 0 && requests.every((row) => selected.includes(row.id));
   const toggle = (id: string) => setSelected((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
 
@@ -288,6 +283,7 @@ export function ServiceRequestsPage() {
           </tbody>
         </SurfaceTable>
         </div>
+        <LoadMore shown={requests.length} total={list.total} hasMore={list.hasMore} loading={list.loadingMore} onMore={list.loadMore} />
         </>
       )}
     </div>
