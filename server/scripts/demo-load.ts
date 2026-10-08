@@ -15,10 +15,17 @@
  *   DEMO_DESK                 "phone:password" of a receptionist/admin who takes payments (default 998900000005:desk123)
  *   DEMO_TECHS                "phone:password,phone:password" of one mobile and one service-centre technician
  *   DEMO_CONFIRM=yes          required when the database is not on this computer
+ *   DEMO_QUIET_PUSH           yes/no. While loading, the registered phones' push tokens are set aside (and restored afterwards) so
+ *                             they are not flooded with hundreds of notifications. Default: yes for a remote database.
+ *   DEMO_QUIET_WAIT           seconds to wait after the load before the tokens come back (the overdue check runs every minute
+ *                             and alerts about the open demo requests); default 200
  *
  * Everything it creates is marked (customers carry the note DEMO-DATA, products the SKU prefix DEMO-);
  * `npm run demo:clean -w server` removes it again.
  */
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { PrismaClient } from "@prisma/client";
 import { between, chance, COMMENTS, fullName, HIGH_TAGS, ISSUES, LOW_TAGS, mulberry32, OPERATORS, pick, place, rating, REJECT_REASONS, type Rng } from "./demo/data.js";
 import { demoImage } from "./demo/images.js";
@@ -31,7 +38,12 @@ const TECH_LOGINS = (process.env.DEMO_TECHS ?? "998900000002:tech123,99890000000
 const CUSTOMER_PASSWORD = "Demo12345";
 const MARK = "DEMO-DATA";
 const DAY = 86_400_000;
-const prisma = new PrismaClient();
+// Neon's pooled address (…-pooler…) needs Prisma told so; the direct address needs nothing.
+const dbUrl = (() => {
+  const url = process.env.DATABASE_URL ?? "";
+  return /-pooler/.test(url) && !/pgbouncer=/.test(url) ? `${url}${url.includes("?") ? "&" : "?"}pgbouncer=true` : url;
+})();
+const prisma = new PrismaClient(dbUrl ? { datasources: { db: { url: dbUrl } } } : undefined);
 
 type Json = Record<string, any>;
 const stats: Record<string, number> = {};
@@ -401,7 +413,7 @@ async function customerFlow(index: number, ctx: Ctx) {
   const saleDate = ymd(new Date(t0.getTime() - saleAgo * DAY));
   const [low, high] = PRICE[product.category] ?? [3_000_000, 8_000_000];
   const serial = `DM-${String(index + 1).padStart(4, "0")}-${between(rng, 10000, 99999)}`;
-  const saleRes = ok(await post("/api/staff/sales", ctx.admin, { customerId: c.id, productId: product.id, quantity: 1, saleDate, pricePaid: Math.round(between(rng, low, high) / 10_000) * 10_000, serialNumber: serial }), "create sale");
+  const saleRes = ok(await post("/api/staff/sales", ctx.admin, { customerId: c.id, productId: product.id, quantity: 1, saleDate, pricePaid: Math.round(between(rng, low, high) / 10_000) * 10_000, serialNumber: serial, invoiceNumber: `DM-${String(index + 1).padStart(4, "0")}` }), "create sale");
   const sale = { ...saleRes.body.sale, serialNumber: serial };
   bump("sales");
 
@@ -440,7 +452,6 @@ async function customerFlow(index: number, ctx: Ctx) {
 }
 
 async function main() {
-  const dbUrl = process.env.DATABASE_URL ?? "";
   const host = (() => {
     try {
       return new URL(dbUrl.replace(/^postgres(ql)?:/, "http:")).hostname;
@@ -451,8 +462,21 @@ async function main() {
   const local = ["localhost", "127.0.0.1", "::1", ""].includes(host) && /localhost|127\.0\.0\.1/.test(API);
   console.log(`API ${API}\nDatabase host: ${host || "(none)"}\nCustomers to create: ${COUNT}`);
   if (!dbUrl) throw new Error("DATABASE_URL is required (the timestamps are moved with SQL)");
+  // The requests go to the API and the timestamps are moved in the database: both must be the same environment, or the
+  // demo rows would be written to one place and never dated in the other.
+  const apiIsLocal = /localhost|127\.0\.0\.1/.test(API);
+  const dbIsLocal = ["localhost", "127.0.0.1", "::1"].includes(host);
+  if (apiIsLocal !== dbIsLocal) {
+    throw new Error(`The API (${apiIsLocal ? "local" : "remote"}) and the database (${dbIsLocal ? "local" : "remote"}) are not the same environment. Nothing was written.`);
+  }
   if (!local && process.env.DEMO_CONFIRM !== "yes") {
     throw new Error("This is not a local database: it would receive ~" + COUNT + " demo customers. Run again with DEMO_CONFIRM=yes if that is what you want.");
+  }
+  // Fail early, before anything is written, when the database address is wrong.
+  try {
+    await prisma.$queryRawUnsafe("select 1");
+  } catch {
+    throw new Error("Cannot connect to the database: check DATABASE_URL (the direct Neon address, with the current password).");
   }
   const started = Date.now();
   const admin = (await login("staff", ADMIN_PHONE, ADMIN_PASSWORD)).token;
@@ -463,7 +487,43 @@ async function main() {
   const mobile = techs.find((t) => t.technicianType === "mobile" && byId.has(t.id));
   const shop = techs.find((t) => t.technicianType === "service_center" && byId.has(t.id));
   if (!mobile || !shop) throw new Error("Need one mobile and one service-centre technician login (DEMO_TECHS)");
+  const catalog = (await http<{ services: Json[] }>("/api/staff/catalog/services", { token: admin })).body.services;
+  if (!catalog || catalog.length === 0) throw new Error("The service catalogue is empty: add the services (Catalog) first, the demo repairs need them");
 
+  // Quiet mode: the phones that are signed in would get a push for every request. Set their tokens aside for the load.
+  const quiet = (process.env.DEMO_QUIET_PUSH ?? (local ? "no" : "yes")) === "yes";
+  const stash = quiet ? await prisma.deviceToken.findMany() : [];
+  const backupFile = path.join(os.tmpdir(), `rizo-device-tokens-${Date.now()}.json`);
+  let restored = false;
+  const restoreTokens = async () => {
+    if (!quiet || restored) return;
+    restored = true;
+    const back = await prisma.deviceToken.createMany({ data: stash, skipDuplicates: true });
+    console.log(`Push tokens restored (${back.count} of ${stash.length}).`);
+  };
+  if (quiet) {
+    fs.writeFileSync(backupFile, JSON.stringify(stash), { mode: 0o600 });
+    await prisma.deviceToken.deleteMany();
+    console.log(`Push is quiet: ${stash.length} device token(s) set aside (copy: ${backupFile}). They come back when the load is over.`);
+    const onStop = async () => {
+      await restoreTokens().catch(() => undefined);
+      process.exit(130);
+    };
+    process.once("SIGINT", onStop);
+    process.once("SIGTERM", onStop);
+  }
+  try {
+    await load();
+  } finally {
+    if (quiet) {
+      const wait = Number(process.env.DEMO_QUIET_WAIT ?? 200);
+      console.log(`Waiting ${wait} s so the alerts about the demo requests pass before the phones are switched back on…`);
+      await new Promise((resolve) => setTimeout(resolve, wait * 1000));
+      await restoreTokens();
+    }
+  }
+
+  async function load() {
   await seedProducts(admin);
   const products = (await http<{ products: Json[] }>("/api/staff/products", { token: admin })).body.products;
   const services = (await http<{ services: Json[] }>("/api/staff/catalog/services", { token: admin })).body.services;
@@ -489,6 +549,7 @@ async function main() {
   console.log("\nDone in " + Math.round((Date.now() - started) / 1000) + " s. Created:");
   for (const key of Object.keys(stats).sort()) console.log(`  ${key.padEnd(24)} ${stats[key]}`);
   if (failures) console.log(`  (${failures} customer(s) failed; run again to fill the gaps: finished ones are skipped)`);
+  }
 }
 
 main()
