@@ -27,7 +27,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { PrismaClient } from "@prisma/client";
-import { between, chance, COMMENTS, fullName, HIGH_TAGS, ISSUES, LOW_TAGS, mulberry32, OPERATORS, pick, place, rating, REJECT_REASONS, type Rng } from "./demo/data.js";
+import { between, chance, COMMENTS, fullName, HIGH_TAGS, ISSUES, LOW_TAGS, mulberry32, OPERATORS, pick, place, rating, REJECT_REASONS, type Rng, DEMO_CENTERS } from "./demo/data.js";
 import { demoImage } from "./demo/images.js";
 
 const API = (process.env.API ?? "http://localhost:4100").replace(/\/+$/, "");
@@ -97,11 +97,13 @@ const tashkentDmy = (date: Date) => {
 const ymd = (date: Date) => new Date(date.getTime() + 5 * 3600_000).toISOString().slice(0, 10);
 
 // ---------- scenarios ----------
-type Scenario = "install" | "warrantyRepair" | "paidRepair" | "replace" | "rejected" | "cancelled" | "openNew" | "openWorking" | "openEstimate";
+type Scenario = "install" | "warrantyRepair" | "warrantyExtras" | "paidRepair" | "replace" | "refund" | "rejected" | "cancelled" | "openNew" | "openDiagnosing" | "openWorking" | "openEstimate" | "openParts" | "openPaused";
 function pickScenario(rng: Rng): Scenario {
   const r = rng();
+  // Every status of the filter list gets several examples out of 150 customers.
   const table: Array<[Scenario, number]> = [
-    ["install", 0.33], ["warrantyRepair", 0.22], ["paidRepair", 0.19], ["replace", 0.04], ["rejected", 0.03], ["cancelled", 0.04], ["openNew", 0.05], ["openWorking", 0.06], ["openEstimate", 0.04],
+    ["install", 0.26], ["warrantyRepair", 0.17], ["warrantyExtras", 0.07], ["paidRepair", 0.15], ["replace", 0.05], ["refund", 0.04], ["rejected", 0.04], ["cancelled", 0.04],
+    ["openNew", 0.03], ["openDiagnosing", 0.03], ["openEstimate", 0.03], ["openParts", 0.03], ["openPaused", 0.03], ["openWorking", 0.03],
   ];
   let acc = 0;
   for (const [name, p] of table) {
@@ -162,7 +164,7 @@ async function runScenario(ctx: Ctx, scenario: Scenario, c: { id: string; token:
     locationType: inShop ? "in_shop" : "on_site",
     technicianTypeRequired: inShop ? "service_center" : "mobile",
     assignedTechnicianId: tech.id,
-    ...(inShop ? { serviceCenterId: pick(rng, ctx.centers).id } : { customerLocation: { address: c.address, lat: c.lat, lng: c.lng } }),
+    ...(inShop ? { serviceCenterId: pick(rng, ctx.centers)?.id } : { customerLocation: { address: c.address, lat: c.lat, lng: c.lng } }),
     ...(isInstall ? {} : { defectType: chance(rng, 0.2) ? "dead_on_arrival" : "failed_during_use" }),
   };
   // A quarter of the requests are sent by the customer from the portal; the office then assigns a technician.
@@ -211,9 +213,37 @@ async function runScenario(ctx: Ctx, scenario: Scenario, c: { id: string; token:
   }
   if (scenario === "replace") {
     ok(await post(`/api/staff/requests/${requestId}/decision`, ctx.admin, { decision: "replace", replacement: { productId: product.id, serialNumber: `DEMO-NEW-${sale.serialNumber}` } }), "replace");
+    // Half of the customers collect the new unit (picked up), the rest still have it waiting (replaced).
+    if (inShop && chance(rng, 0.5)) {
+      const pickup = await post(`/api/customer/requests/${requestId}/pickup`, c.token, {});
+      if (pickup.status < 300) return out({ lagMs: between(rng, 30, 90) * 3600_000, pickupLagMs: between(rng, 2, 40) * 3600_000 });
+    }
     return out({ lagMs: between(rng, 30, 90) * 3600_000 });
   }
+  if (scenario === "refund") {
+    await move("in_progress");
+    await diagnose();
+    const amount = Math.round(Number(sale.pricePaid ?? 0));
+    ok(await post(`/api/staff/requests/${requestId}/decision`, ctx.admin, { decision: "refund", refundMethod: pick(rng, ["cash", "card", "transfer"]), ...(amount > 0 ? { refundAmount: amount } : {}), note: pick(rng, ["Mijoz pulni qaytarishni so‘radi", "Ta’mirlab bo‘lmadi, to‘liq qaytarildi", "Qurilma tanlovi mos kelmadi"]) }), "refund");
+    return out({ lagMs: between(rng, 30, 100) * 3600_000 });
+  }
   if (scenario === "openNew") return out({ kind: "open" });
+  if (scenario === "openDiagnosing") {
+    await move("in_progress");
+    ok(await patch(`/api/staff/my-jobs/${requestId}`, tech.token, { status: "diagnosing" }), "diagnosing");
+    return out({ kind: "open" });
+  }
+  if (scenario === "openParts") {
+    await move("in_progress");
+    await diagnose();
+    ok(await patch(`/api/staff/my-jobs/${requestId}`, tech.token, { status: "awaiting_parts" }), "awaiting parts");
+    return out({ kind: "open" });
+  }
+  if (scenario === "openPaused") {
+    await move("in_progress");
+    ok(await patch(`/api/staff/my-jobs/${requestId}`, tech.token, { status: "paused", pauseReason: pick(rng, ["Mijoz uyda yo‘q", "Ehtiyot qism kutilmoqda", "Mijoz boshqa kunga so‘radi"]), pauseHours: 336 }), "pause");
+    return out({ kind: "open" });
+  }
   if (scenario === "openWorking") {
     await move("in_progress");
     if (!isInstall) {
@@ -237,20 +267,36 @@ async function runScenario(ctx: Ctx, scenario: Scenario, c: { id: string; token:
     return out({ lagMs: between(rng, 3, 30) * 3600_000 });
   }
 
-  if (scenario === "warrantyRepair") {
+  if (scenario === "warrantyRepair" || scenario === "warrantyExtras") {
     await move("in_progress");
     await diagnose();
     // A callback inside the repair warranty is recognised by the server and already decided as a free warranty repair.
     if (opts.repeat) await move("in_progress");
     else ok(await post(`/api/staff/requests/${requestId}/decision`, ctx.admin, { decision: "warranty_repair" }), "decision");
     await addService();
-    await uploadPhotos(tech.token, requestId, category, rng, between(rng, 2, 3));
-    await completeJob(tech.token, requestId);
-    if (inShop && chance(rng, 0.88)) {
-      ok(await post(`/api/customer/requests/${requestId}/pickup`, c.token, {}), "pickup");
-      return out({ lagMs: between(rng, 30, 120) * 3600_000, pickupLagMs: between(rng, 2, 60) * 3600_000 });
+    // Under warranty the repair is free, but extras (a second service, delivery, a cable…) are still charged.
+    let extrasTotal = 0;
+    if (scenario === "warrantyExtras") {
+      const second = ctx.services.filter((svc) => svc.productCategories.includes(category))[1] ?? ctx.services[1];
+      if (second) await post(`/api/staff/my-jobs/${requestId}/service-lines`, tech.token, { serviceCatalogItemId: second.id });
+      const price = between(rng, 3, 15) * 10_000;
+      ok(await post(`/api/staff/my-jobs/${requestId}/extra-expenses`, tech.token, { description: pick(rng, ["Kabel almashtirish", "Qo‘shimcha mahkamlash to‘plami", "Yetkazib berish", "Drenaj shlangi", "Tozalash xizmati"]), price }), "extra expense");
+      extrasTotal = price;
     }
-    return out({ lagMs: (inShop ? between(rng, 30, 120) : between(rng, 3, 30)) * 3600_000 });
+    await uploadPhotos(tech.token, requestId, category, rng, between(rng, 2, 3));
+    const done = await completeJob(tech.token, requestId);
+    const due: number = done.body.job.finalCost ?? extrasTotal;
+    let paidExtras = false;
+    if (scenario === "warrantyExtras" && due > 0 && chance(rng, 0.7)) {
+      ok(await post(`/api/staff/requests/${requestId}/payments`, ctx.desk, { amount: due, method: pick(rng, ["cash", "card", "click"]) }), "extras payment");
+      paidExtras = true;
+    }
+    const mayPickUp = scenario === "warrantyRepair" || paidExtras || due === 0;
+    if (inShop && mayPickUp && chance(rng, 0.88)) {
+      ok(await post(`/api/customer/requests/${requestId}/pickup`, c.token, {}), "pickup");
+      return out({ lagMs: between(rng, 30, 120) * 3600_000, pickupLagMs: between(rng, 2, 60) * 3600_000, paid: paidExtras });
+    }
+    return out({ lagMs: (inShop ? between(rng, 30, 120) : between(rng, 3, 30)) * 3600_000, paid: paidExtras });
   }
 
   // paid repair: estimate -> the customer approves -> repair -> payment -> pickup
@@ -261,6 +307,11 @@ async function runScenario(ctx: Ctx, scenario: Scenario, c: { id: string; token:
   const detail = await http<Json>(`/api/customer/requests/${requestId}`, { token: c.token });
   const estimate = detail.body.request?.estimate;
   ok(await post(`/api/customer/requests/${requestId}/estimates/${estimate.id}/approve`, c.token, { selectedOptionalLineIds: [] }), "approve estimate");
+  if (chance(rng, 0.35)) {
+    const another = ctx.services.filter((item) => item.id !== svc.id && item.productCategories.includes(category))[0];
+    if (another) await post(`/api/staff/my-jobs/${requestId}/service-lines`, tech.token, { serviceCatalogItemId: another.id });
+    await post(`/api/staff/my-jobs/${requestId}/extra-expenses`, tech.token, { description: pick(rng, ["Yetkazib berish", "Kabel almashtirish", "Qo‘shimcha materiallar"]), price: between(rng, 2, 12) * 10_000 });
+  }
   await uploadPhotos(tech.token, requestId, category, rng, between(rng, 2, 3));
   const done = await completeJob(tech.token, requestId);
   const total: number = done.body.job.finalCost ?? 0;
@@ -422,7 +473,7 @@ async function customerFlow(index: number, ctx: Ctx) {
   try {
     first = await runScenario(ctx, scenario, c, sale, product, rng, { viaPortal: chance(rng, 0.25) });
   } catch (error) {
-    throw new Error(`${error instanceof Error ? error.message : error} [scenario ${scenario}, product ${product.sku}, sold ${saleDate}, request ${daysAgo} days ago]`);
+    throw new Error(`${error instanceof Error ? error.message : error}${error instanceof Error && error.stack ? ` @ ${(error.stack.split("\n")[1] ?? "").trim().replace(/^.*\//, "")}` : ""} [scenario ${scenario}, product ${product.sku}, sold ${saleDate}, request ${daysAgo} days ago]`);
   }
   outcomes.push({ outcome: first, t0 });
 
@@ -527,7 +578,16 @@ async function main() {
   await seedProducts(admin);
   const products = (await http<{ products: Json[] }>("/api/staff/products", { token: admin })).body.products;
   const services = (await http<{ services: Json[] }>("/api/staff/catalog/services", { token: admin })).body.services;
-  const centers = (await http<{ centers: Json[] }>("/api/staff/service-centers", { token: admin })).body.centers;
+  // Service centres across the regions (the ones that already exist are kept); a service-centre technician without a centre joins the first.
+  let centers = (await http<{ centers: Json[] }>("/api/staff/service-centers", { token: admin })).body.centers;
+  for (const center of DEMO_CENTERS) {
+    if (centers.some((existing) => existing.name === center.name)) continue;
+    const created = await post("/api/staff/service-centers", admin, { ...center, workingHours: "Du–Sha 09:00–18:00", isAuthorized: true, isActive: true });
+    if (created.status === 201) bump("service centres");
+  }
+  centers = (await http<{ centers: Json[] }>("/api/staff/service-centers", { token: admin })).body.centers;
+  if (!shop.serviceCenterId && centers[0]) ok(await patch(`/api/staff/staff/${shop.id}`, admin, { serviceCenterId: centers[0].id }), "service-centre technician joins a centre");
+  if (centers.length === 0) throw new Error("There is no service centre in the system: add one (Service centres) and put the service-centre technician in it, then run again. Nothing was written yet.");
   const ctx: Ctx = { admin, desk, mobile: { id: mobile.id, token: byId.get(mobile.id)! }, shop: { id: shop.id, token: byId.get(shop.id)! }, products, services, centers };
 
   let next = 0;

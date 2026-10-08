@@ -71,3 +71,22 @@ export function rating(rng: Rng) {
   const r = rng();
   return r < 0.56 ? 5 : r < 0.82 ? 4 : r < 0.91 ? 3 : r < 0.96 ? 2 : 1;
 }
+
+/** Service centres in the regions of Uzbekistan (created once; the phone numbers are placeholders). */
+export const DEMO_CENTERS = [
+  { name: "RIZO Service — Chilonzor", regionCode: "01", address: "Toshkent shahri, Chilonzor tumani, Bunyodkor ko‘chasi 9", phone: "+998712000001", lat: 41.2755, lng: 69.2035 },
+  { name: "RIZO Service — Yunusobod", regionCode: "01", address: "Toshkent shahri, Yunusobod tumani, Amir Temur shoh ko‘chasi 108", phone: "+998712000003", lat: 41.3646, lng: 69.2874 },
+  { name: "RIZO Service — Chirchiq", regionCode: "10", address: "Toshkent viloyati, Chirchiq shahri, Navoiy ko‘chasi 24", phone: "+998702000004", lat: 41.4689, lng: 69.5822 },
+  { name: "RIZO Service — Guliston", regionCode: "20", address: "Sirdaryo viloyati, Guliston shahri, Mustaqillik ko‘chasi 15", phone: "+998672000005", lat: 40.4897, lng: 68.7842 },
+  { name: "RIZO Service — Jizzax", regionCode: "25", address: "Jizzax viloyati, Jizzax shahri, Sharof Rashidov ko‘chasi 40", phone: "+998722000006", lat: 40.1158, lng: 67.8422 },
+  { name: "RIZO Service — Samarqand", regionCode: "30", address: "Samarqand viloyati, Samarqand shahri, Registon ko‘chasi 12", phone: "+998662000002", lat: 39.6542, lng: 66.9597 },
+  { name: "RIZO Service — Farg‘ona", regionCode: "40", address: "Farg‘ona viloyati, Farg‘ona shahri, Al-Farg‘oniy ko‘chasi 33", phone: "+998732000007", lat: 40.3864, lng: 71.7864 },
+  { name: "RIZO Service — Namangan", regionCode: "50", address: "Namangan viloyati, Namangan shahri, Uychi ko‘chasi 6", phone: "+998692000008", lat: 40.9983, lng: 71.6726 },
+  { name: "RIZO Service — Andijon", regionCode: "60", address: "Andijon viloyati, Andijon shahri, Bobur shoh ko‘chasi 71", phone: "+998742000009", lat: 40.7821, lng: 72.3442 },
+  { name: "RIZO Service — Qarshi", regionCode: "70", address: "Qashqadaryo viloyati, Qarshi shahri, Islom Karimov ko‘chasi 52", phone: "+998752000010", lat: 38.8606, lng: 65.7891 },
+  { name: "RIZO Service — Termiz", regionCode: "75", address: "Surxondaryo viloyati, Termiz shahri, Al-Termiziy ko‘chasi 18", phone: "+998762000011", lat: 37.2242, lng: 67.2783 },
+  { name: "RIZO Service — Buxoro", regionCode: "80", address: "Buxoro viloyati, Buxoro shahri, Mustaqillik ko‘chasi 29", phone: "+998652000012", lat: 39.7747, lng: 64.4286 },
+  { name: "RIZO Service — Navoiy", regionCode: "85", address: "Navoiy viloyati, Navoiy shahri, Galaba ko‘chasi 14", phone: "+998792000013", lat: 40.0844, lng: 65.3792 },
+  { name: "RIZO Service — Urganch", regionCode: "90", address: "Xorazm viloyati, Urganch shahri, Al-Xorazmiy ko‘chasi 47", phone: "+998622000014", lat: 41.5506, lng: 60.6317 },
+  { name: "RIZO Service — Nukus", regionCode: "95", address: "Qoraqalpog‘iston Respublikasi, Nukus shahri, Berdaq ko‘chasi 22", phone: "+998612000015", lat: 42.4531, lng: 59.6103 },
+];
