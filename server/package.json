@@ -17,7 +17,9 @@
     "push-test": "node --import tsx/esm scripts/push-test.ts",
     "backup": "node --import tsx/esm scripts/backup.ts",
     "set-password": "node --import tsx/esm scripts/set-password.ts",
-    "add-demo-accounts": "node --import tsx/esm scripts/add-demo-accounts.ts"
+    "add-demo-accounts": "node --import tsx/esm scripts/add-demo-accounts.ts",
+    "demo:load": "node --import tsx/esm scripts/demo-load.ts",
+    "demo:clean": "node --import tsx/esm scripts/demo-clean.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

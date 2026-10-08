@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { pageInfo, parsePaging } from "../lib/paging.js";
@@ -98,33 +98,39 @@ salesRouter.post(
     const saleDate = parseDateOnly(body.saleDate);
     const warrantyMonths = body.warrantyMonths ?? product.warrantyMonths;
     const warrantyExpiry = warrantyExpiryFor({ saleDate, installationDate: null, warrantyMonths, extensionMonths: 0 }, product);
-    const invoiceNumber = body.invoiceNumber?.toUpperCase() || (await nextInvoiceNumber());
     const serialNumber = body.serialNumber?.trim() || null;
     if (serialNumber && (await prisma.sale.findFirst({ where: { serialNumber, productId: product.id } }))) {
       throw new HttpError(409, "This serial number is already registered", "serialExists");
     }
-    try {
-      const sale = await prisma.sale.create({
-        data: {
-          customerId: body.customerId,
-          productId: body.productId,
-          quantity: body.quantity,
-          saleDate,
-          pricePaid: body.pricePaid,
-          warrantyMonths,
-          warrantyExpiry,
-          invoiceNumber,
-          serialNumber,
-        },
-        include: {
-          customer: { select: { id: true, name: true, phone: true } },
-          product: true,
-          _count: { select: { requests: true } },
-        },
-      });
-      res.status(201).json({ sale: serializeSale(sale) });
-    } catch (error) {
-      handlePrismaError(error, { invoice_number: "This invoice number is already in use", invoiceNumber: "This invoice number is already in use" });
+    // An invoice number the office typed is used as is. A generated one is only a guess: two sales saved at the same moment
+    // can guess the same number, so a clash is retried with a new one instead of failing the second sale.
+    for (let attempt = 0; ; attempt += 1) {
+      const invoiceNumber = body.invoiceNumber?.toUpperCase() || (await nextInvoiceNumber(attempt));
+      try {
+        const sale = await prisma.sale.create({
+          data: {
+            customerId: body.customerId,
+            productId: body.productId,
+            quantity: body.quantity,
+            saleDate,
+            pricePaid: body.pricePaid,
+            warrantyMonths,
+            warrantyExpiry,
+            invoiceNumber,
+            serialNumber,
+          },
+          include: {
+            customer: { select: { id: true, name: true, phone: true } },
+            product: true,
+            _count: { select: { requests: true } },
+          },
+        });
+        res.status(201).json({ sale: serializeSale(sale) });
+        return;
+      } catch (error) {
+        if (!body.invoiceNumber && attempt < 8 && isInvoiceClash(error)) continue;
+        handlePrismaError(error, { invoice_number: "This invoice number is already in use", invoiceNumber: "This invoice number is already in use" });
+      }
     }
   }),
 );
@@ -318,16 +324,24 @@ async function assertCustomerAndProduct(customerId: string, productId: string) {
   return { customer, product };
 }
 
-async function nextInvoiceNumber() {
+async function nextInvoiceNumber(attempt = 0) {
   const count = await prisma.sale.count();
+  // Later attempts jump ahead by a random amount, so two sales that clashed do not clash again.
+  const jump = attempt === 0 ? 0 : attempt * 3 + Math.floor(Math.random() * 25);
   for (let offset = 1; offset <= 20; offset += 1) {
-    const candidate = `RZ-${String(1000 + count + offset).padStart(4, "0")}`;
+    const candidate = `RZ-${String(1000 + count + jump + offset).padStart(4, "0")}`;
     const exists = await prisma.sale.findUnique({ where: { invoiceNumber: candidate } });
     if (!exists) {
       return candidate;
     }
   }
   return `RZ-${Date.now()}`;
+}
+
+function isInvoiceClash(error: unknown) {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") return false;
+  const target = error.meta?.target;
+  return (Array.isArray(target) ? target : [String(target ?? "")]).some((item) => String(item).includes("invoice"));
 }
 
 function serializeSale(sale: {

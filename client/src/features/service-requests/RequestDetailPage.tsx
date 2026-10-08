@@ -494,7 +494,9 @@ export function RequestDetailPage() {
           {data.photos.length > 0 ? (
             <div className="mt-4 grid grid-cols-3 gap-2">
               {data.photos.map((photo) => (
-                <img key={photo.id} src={withApiBase(photo.photoUrl)} alt={t("common.jobPhoto")} className="h-24 w-full rounded-xl object-cover" />
+                <a key={photo.id} href={withApiBase(photo.photoUrl)} target="_blank" rel="noreferrer" className="block">
+                  <img src={withApiBase(photo.photoUrl)} alt={t("common.jobPhoto")} className="aspect-[4/3] w-full rounded-xl object-cover" />
+                </a>
               ))}
             </div>
           ) : null}
