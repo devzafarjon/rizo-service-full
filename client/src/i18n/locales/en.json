@@ -2147,5 +2147,13 @@
         }
       ]
     }
+  },
+  "camera": {
+    "title": "Camera",
+    "starting": "Starting the camera…",
+    "flip": "Switch camera",
+    "denied": "Camera access is blocked. Allow it with the camera icon in the browser address bar, or choose a photo from a file.",
+    "unavailable": "No camera found, or it is in use. Choose a photo from a file.",
+    "chooseFile": "Choose a file"
   }
 }

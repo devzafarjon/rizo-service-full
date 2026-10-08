@@ -1,10 +1,11 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { VisitPicker, type VisitChoice } from "../../components/VisitPicker";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Camera, MapPin, Navigation, Store, X } from "lucide-react";
+import { Camera, ImagePlus, MapPin, Navigation, Store, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { WarrantyBadge } from "../../components/Badges";
+import { CameraCapture, canUseLiveCamera } from "../../components/CameraCapture";
 import { Field } from "../../components/Field";
 import { PageSkeleton } from "../../components/PageSkeleton";
 import { Spinner } from "../../components/Spinner";
@@ -35,6 +36,8 @@ export function PortalNewRequestPage() {
   const [issueDescription, setIssueDescription] = useState("");
   const [defectType, setDefectType] = useState<"dead_on_arrival" | "failed_during_use" | "">("");
   const [photos, setPhotos] = useState<File[]>([]);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const [locationType, setLocationType] = useState<LocationType>("on_site");
   const [address, setAddress] = useState(user?.address ?? "");
   const [lat, setLat] = useState("");
@@ -332,13 +335,35 @@ export function PortalNewRequestPage() {
             <div>
               <p className="mb-2 text-sm font-semibold text-neutral-700">{t("portal.addPhotos")}</p>
               <p className="mb-3 text-xs text-neutral-500">{t("portal.addPhotosHint")}</p>
-              <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-neutral-100 px-4 text-sm font-bold">
-                <Camera size={16} />
-                {t("common.takePhoto")}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => (canUseLiveCamera() ? setCameraOpen(true) : cameraInputRef.current?.click())}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#FFF4E5] px-4 text-sm font-bold text-[#C56A00]"
+                >
+                  <Camera size={16} />
+                  {t("common.takePhoto")}
+                </button>
+                <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-neutral-100 px-4 text-sm font-bold">
+                  <ImagePlus size={16} />
+                  {t("job.addPhotos")}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="sr-only"
+                    onChange={(event) => {
+                      const next = Array.from(event.target.files ?? []);
+                      setPhotos((current) => [...current, ...next].slice(0, 8));
+                      event.target.value = "";
+                    }}
+                  />
+                </label>
                 <input
+                  ref={cameraInputRef}
                   type="file"
                   accept="image/*"
-                  multiple
+                  capture="environment"
                   className="sr-only"
                   onChange={(event) => {
                     const next = Array.from(event.target.files ?? []);
@@ -346,7 +371,13 @@ export function PortalNewRequestPage() {
                     event.target.value = "";
                   }}
                 />
-              </label>
+              </div>
+              <CameraCapture
+                open={cameraOpen}
+                onClose={() => setCameraOpen(false)}
+                onCapture={(file) => setPhotos((current) => [...current, file].slice(0, 8))}
+                onFallback={() => cameraInputRef.current?.click()}
+              />
               {previews.length > 0 ? (
                 <ul className="mt-3 grid grid-cols-3 gap-2">
                   {previews.map((item, index) => (

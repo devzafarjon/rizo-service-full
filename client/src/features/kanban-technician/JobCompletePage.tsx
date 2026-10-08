@@ -6,6 +6,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { EstimateBuilder } from "../request-panels/EstimateBuilder";
 import { EstimateView } from "../request-panels/EstimateView";
 import { StatusBadge, TypeBadge, WarrantyBadge } from "../../components/Badges";
+import { CameraCapture, canUseLiveCamera } from "../../components/CameraCapture";
 import { EmptyState } from "../../components/EmptyState";
 import { Field, inputClass } from "../../components/Field";
 import { PageSkeleton } from "../../components/PageSkeleton";
@@ -52,6 +53,7 @@ export function JobCompletePage() {
   const queryClient = useQueryClient();
   const galleryRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const [extraOpen, setExtraOpen] = useState(false);
   const [extraDescription, setExtraDescription] = useState("");
   const [extraPrice, setExtraPrice] = useState("");
@@ -396,7 +398,7 @@ export function JobCompletePage() {
             <button
               type="button"
               disabled={busy}
-              onClick={() => cameraRef.current?.click()}
+              onClick={() => (canUseLiveCamera() ? setCameraOpen(true) : cameraRef.current?.click())}
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#FFF4E5] text-sm font-bold text-[#C56A00]"
             >
               <Camera size={18} />
@@ -414,6 +416,7 @@ export function JobCompletePage() {
           </div>
         )}
         <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFiles} />
+        <CameraCapture open={cameraOpen} onClose={() => setCameraOpen(false)} onCapture={(file) => photoMut.mutate({ files: [file] })} onFallback={() => cameraRef.current?.click()} />
         <input ref={galleryRef} type="file" accept="image/*" multiple className="hidden" onChange={onFiles} />
       </Section>
 

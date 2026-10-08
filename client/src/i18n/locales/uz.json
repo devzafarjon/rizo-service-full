@@ -2147,5 +2147,13 @@
         }
       ]
     }
+  },
+  "camera": {
+    "title": "Kamera",
+    "starting": "Kamera ishga tushmoqda…",
+    "flip": "Kamerani almashtirish",
+    "denied": "Kameraga ruxsat berilmagan. Brauzer manzil satridagi kamera belgisidan ruxsat bering yoki rasmni fayldan tanlang.",
+    "unavailable": "Kamera topilmadi yoki band. Rasmni fayldan tanlang.",
+    "chooseFile": "Fayldan tanlash"
   }
 }
