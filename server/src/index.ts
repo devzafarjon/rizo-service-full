@@ -10,6 +10,10 @@ import { runHousekeeping, syncOverdueRequests } from "./lib/sla.js";
 import { maybeSendWeeklyDigest } from "./lib/digest.js";
 import { startTelegramBot } from "./lib/telegramBot.js";
 
+// A failed fire-and-forget promise is logged instead of taking the whole API down (Node exits on an unhandled rejection).
+// Uncaught exceptions still crash on purpose: the host restarts the process in a clean state.
+process.on("unhandledRejection", (reason) => console.error("[unhandledRejection]", reason));
+
 const app = createApp();
 const server = http.createServer(app);
 

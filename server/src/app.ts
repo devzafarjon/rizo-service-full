@@ -84,6 +84,10 @@ export function createApp() {
   app.use("/api/public", publicRouter);
   app.use("/api/integrations", integrationsRouter);
 
+  // Anything under /api that no router answered: JSON, like every other API reply (not Express's HTML page).
+  app.use("/api", (_req, res) => {
+    res.status(404).json({ error: "Not found", code: "notFound" });
+  });
   app.use(errorHandler);
   return app;
 }

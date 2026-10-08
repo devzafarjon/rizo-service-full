@@ -1329,7 +1329,21 @@
       "staff.active": "Xodim holati o‘zgardi",
       "staff.create": "Xodim yaratildi",
       "staff.password": "Xodim paroli almashtirildi",
-      "staff.role": "Xodim roli o‘zgardi"
+      "staff.role": "Xodim roli o‘zgardi",
+      "checklist.create": "Tekshiruv ro‘yxati yaratildi",
+      "checklist.update": "Tekshiruv ro‘yxati tahrirlandi",
+      "checklist.delete": "Tekshiruv ro‘yxati o‘chirildi",
+      "customer.anonymize": "Mijoz ma’lumotlari anonimlashtirildi",
+      "help.create": "Yordam maqolasi qo‘shildi",
+      "help.update": "Yordam maqolasi tahrirlandi",
+      "help.delete": "Yordam maqolasi o‘chirildi",
+      "request.escalated": "So‘rov yuqori darajaga ko‘tarildi",
+      "request.visitConfirmed": "Mijoz tashrifni tasdiqladi",
+      "sale.import": "Sotuv RIZO marketdan kelib tushdi",
+      "sale.warranty.plan": "Kafolat rejasi qo‘llandi",
+      "stock.issue": "Texnikka ehtiyot qism berildi",
+      "stock.return": "Texnikdan ehtiyot qism qaytarildi",
+      "warrantyPlan.cancel": "Kafolat rejasi bekor qilindi"
     }
   },
   "errors": {

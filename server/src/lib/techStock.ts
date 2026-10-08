@@ -33,12 +33,16 @@ async function techQuantity(tx: Prisma.TransactionClient, technicianId: string, 
  */
 export async function consumeForJob(tx: Prisma.TransactionClient, input: { technicianId: string; part: PartIdentity; quantity: number; requestId: string }) {
   const carried = await techQuantity(tx, input.technicianId, input.part.id);
-  const fromTech = Math.min(carried, input.quantity);
+  let fromTech = Math.min(carried, input.quantity);
   if (fromTech > 0) {
-    await tx.technicianStock.update({
-      where: { technicianId_sparePartId: { technicianId: input.technicianId, sparePartId: input.part.id } },
+    // Guarded: if another job took the units in the meantime, the technician's stock never goes below zero.
+    const taken = await tx.technicianStock.updateMany({
+      where: { technicianId: input.technicianId, sparePartId: input.part.id, quantity: { gte: fromTech } },
       data: { quantity: { decrement: fromTech } },
     });
+    if (taken.count === 0) fromTech = 0;
+  }
+  if (fromTech > 0) {
     await tx.stockMovement.create({
       data: { sparePartId: input.part.id, technicianId: input.technicianId, kind: "used", quantity: fromTech, serviceRequestId: input.requestId },
     });
@@ -98,9 +102,14 @@ export async function issueToTechnician(input: { technicianId: string; sparePart
 /** Technician back to the warehouse. */
 export async function returnFromTechnician(input: { technicianId: string; sparePartId: string; quantity: number; by: { id: string; name: string }; note?: string | null }) {
   return prisma.$transaction(async (tx) => {
-    const carried = await techQuantity(tx, input.technicianId, input.sparePartId);
-    if (carried < input.quantity) throw new HttpError(400, `The technician only has ${carried}`, "techStockInsufficient", { count: carried });
-    await tx.technicianStock.update({ where: { technicianId_sparePartId: { technicianId: input.technicianId, sparePartId: input.sparePartId } }, data: { quantity: { decrement: input.quantity } } });
+    const taken = await tx.technicianStock.updateMany({
+      where: { technicianId: input.technicianId, sparePartId: input.sparePartId, quantity: { gte: input.quantity } },
+      data: { quantity: { decrement: input.quantity } },
+    });
+    if (taken.count === 0) {
+      const carried = await techQuantity(tx, input.technicianId, input.sparePartId);
+      throw new HttpError(400, `The technician only has ${carried}`, "techStockInsufficient", { count: carried });
+    }
     await tx.sparePart.update({ where: { id: input.sparePartId }, data: { stockQuantity: { increment: input.quantity } } });
     await tx.stockMovement.create({
       data: { sparePartId: input.sparePartId, technicianId: input.technicianId, kind: "return", quantity: input.quantity, note: input.note ?? null, createdById: input.by.id, createdByName: input.by.name },

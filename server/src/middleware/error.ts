@@ -95,7 +95,17 @@ const MESSAGE_CODES: Record<string, string> = {
   "Something went wrong": "server",
 };
 
-export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction) {
+/** Client mistakes that arrive as plain errors (bad JSON, oversized body, a number the database column cannot hold) are 4xx, not 500. */
+function asClientError(err: unknown): HttpError | null {
+  const type = typeof err === "object" && err !== null && "type" in err ? String((err as { type: unknown }).type) : "";
+  if (type === "entity.parse.failed") return new HttpError(400, "The request body is not valid JSON", "invalidInput");
+  if (type === "entity.too.large") return new HttpError(413, "The request is too large", "invalidInput");
+  if (err instanceof Error && /numeric field overflow|"22003"/.test(err.message)) return new HttpError(400, "A number is too large", "invalidInput");
+  return null;
+}
+
+export function errorHandler(rawErr: unknown, _req: Request, res: Response, _next: NextFunction) {
+  const err = asClientError(rawErr) ?? rawErr;
   const status = err instanceof HttpError ? err.status : 500;
   const message = err instanceof Error ? err.message : "Unexpected error";
   if (status >= 500) {

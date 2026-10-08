@@ -6,3 +6,13 @@
 
 [build.environment]
   NODE_VERSION = "22"
+
+# Security headers for every page. The camera is used by the QR scanner and photo capture, location by the "use my position" buttons.
+# (No Content-Security-Policy yet: the map tiles and fonts would need a careful allow-list first.)
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(self), geolocation=(self), microphone=(), payment=()"

@@ -1329,7 +1329,21 @@
       "staff.active": "Staff activity changed",
       "staff.create": "Staff member created",
       "staff.password": "Staff password reset",
-      "staff.role": "Staff role changed"
+      "staff.role": "Staff role changed",
+      "checklist.create": "Checklist created",
+      "checklist.update": "Checklist edited",
+      "checklist.delete": "Checklist deleted",
+      "customer.anonymize": "Customer data anonymized",
+      "help.create": "Help article added",
+      "help.update": "Help article edited",
+      "help.delete": "Help article deleted",
+      "request.escalated": "Request escalated",
+      "request.visitConfirmed": "Customer confirmed the visit",
+      "sale.import": "Sale imported from RIZO market",
+      "sale.warranty.plan": "Warranty plan applied",
+      "stock.issue": "Part issued to a technician",
+      "stock.return": "Part returned by a technician",
+      "warrantyPlan.cancel": "Warranty plan cancelled"
     }
   },
   "errors": {

@@ -1331,7 +1331,21 @@
       "staff.active": "Изменена активность сотрудника",
       "staff.create": "Сотрудник создан",
       "staff.password": "Сменён пароль сотрудника",
-      "staff.role": "Изменена роль сотрудника"
+      "staff.role": "Изменена роль сотрудника",
+      "checklist.create": "Создан чек-лист",
+      "checklist.update": "Чек-лист изменён",
+      "checklist.delete": "Чек-лист удалён",
+      "customer.anonymize": "Данные клиента обезличены",
+      "help.create": "Добавлена статья помощи",
+      "help.update": "Статья помощи изменена",
+      "help.delete": "Статья помощи удалена",
+      "request.escalated": "Заявка эскалирована",
+      "request.visitConfirmed": "Клиент подтвердил визит",
+      "sale.import": "Продажа получена из RIZO market",
+      "sale.warranty.plan": "Применён план гарантии",
+      "stock.issue": "Запчасть выдана технику",
+      "stock.return": "Запчасть возвращена от техника",
+      "warrantyPlan.cancel": "План гарантии отменён"
     }
   },
   "errors": {
