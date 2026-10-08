@@ -1,4 +1,5 @@
 import { env } from "../config.js";
+import { sendEskizSms } from "./eskiz.js";
 import { prisma } from "./prisma.js";
 
 /** Admin alerts that also go to the admin Telegram chat. */
@@ -17,6 +18,10 @@ async function mark(id: string, status: "sent" | "failed", error?: string) {
 }
 
 export async function sendSms(to: string, body: string) {
+  if (env.smsProvider === "eskiz") {
+    await sendEskizSms(to, body);
+    return;
+  }
   if (!env.smsHttpUrl) {
     if (env.smsProvider === "console") {
       console.log(`[sms:console] to=${to} ${body}`);

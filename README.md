@@ -74,7 +74,8 @@ Optional notification and backup keys (see `server/.env.example`):
 
 | Key | Default | Purpose |
 | --- | --- | --- |
-| `SMS_PROVIDER` | `console` | `console` logs SMS (also password-reset texts); set `SMS_HTTP_URL` (+ optional `SMS_HTTP_TOKEN`) for a gateway |
+| `SMS_PROVIDER` | `console` | `console` logs SMS (also password-reset texts); `eskiz` sends through eskiz.uz (`ESKIZ_EMAIL`, `ESKIZ_PASSWORD`, `ESKIZ_SENDER` default `4546`); otherwise set `SMS_HTTP_URL` (+ optional `SMS_HTTP_TOKEN`) for a generic gateway |
+| `UPLOAD_BUCKET_ENDPOINT` / `UPLOAD_BUCKET_NAME` / `UPLOAD_BUCKET_ACCESS_KEY_ID` / `UPLOAD_BUCKET_SECRET_ACCESS_KEY` | empty | S3-compatible bucket (Cloudflare R2) for photos and signatures. Files are written to disk and copied to the bucket; a file missing on disk (a free host wipes it on deploy) is read back from the bucket. Without it, files stay on disk only |
 | `TELEGRAM_PROVIDER` | `console` | `console` logs Telegram; set `TELEGRAM_BOT_TOKEN` to use Bot API |
 | `TELEGRAM_ADMIN_CHAT_ID` | empty | Admin overdue / low-stock Telegram destination |
 | `FIREBASE_SERVICE_ACCOUNT` | empty | Push notifications: the Firebase service-account JSON (on the host). `FIREBASE_SERVICE_ACCOUNT_FILE` is a file path for local work. Without either, pushes are only logged. Never commit it |

@@ -3,6 +3,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { NextFunction, Request, Response } from "express";
 import multer from "multer";
+import express from "express";
+import { mirrorToBucket, readFromBucket, removeFromBucket } from "./bucket.js";
 import { HttpError } from "./httpError.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -14,11 +16,11 @@ export function ensureUploadsRoot() {
   fs.mkdirSync(uploadsRoot, { recursive: true });
 }
 
-export function savePickupSignature(requestId: string, dataUrl: string) {
+export async function savePickupSignature(requestId: string, dataUrl: string) {
   return saveSignature("pickup", requestId, dataUrl);
 }
 
-export function saveSignature(kind: "pickup" | "intake", requestId: string, dataUrl: string) {
+export async function saveSignature(kind: "pickup" | "intake", requestId: string, dataUrl: string) {
   const match = dataUrl.match(/^data:image\/(png|jpeg|jpg|webp);base64,(.+)$/i);
   if (!match) {
     throw new HttpError(400, "Signature image is invalid", "invalidSignature");
@@ -28,6 +30,7 @@ export function saveSignature(kind: "pickup" | "intake", requestId: string, data
   fs.mkdirSync(dir, { recursive: true });
   const filename = `sign-${Date.now()}.${ext}`;
   fs.writeFileSync(path.join(dir, filename), Buffer.from(match[2], "base64"));
+  await mirrorToBucket(`${kind}/${requestId}/${filename}`, path.join(dir, filename));
   return `/api/uploads/${kind}/${requestId}/${filename}`;
 }
 
@@ -46,6 +49,33 @@ export function removeUploadedFile(photoUrl: string) {
   const absolute = path.resolve(uploadsRoot, relative);
   if (!absolute.startsWith(uploadsRoot)) return;
   fs.unlink(absolute, () => undefined);
+  removeFromBucket(relative).catch((error) => console.error("[uploads] bucket delete failed", error instanceof Error ? error.message : error));
+}
+
+/**
+ * Serves /uploads and /api/uploads: the disk first, then the bucket (the disk is empty after a deploy on a free host).
+ * Bucket failures answer 404 instead of crashing the request.
+ */
+export function serveUploads() {
+  const fromDisk = express.static(uploadsRoot);
+  return (req: Request, res: Response, next: NextFunction) => {
+    fromDisk(req, res, async () => {
+      if (req.method !== "GET" && req.method !== "HEAD") return next();
+      const key = decodeURIComponent(req.path).replace(/^\/+/, "");
+      if (!key || key.includes("..")) return next();
+      try {
+        const object = await readFromBucket(key);
+        if (!object) return next();
+        res.setHeader("Content-Type", object.contentType);
+        res.setHeader("Cache-Control", "public, max-age=86400");
+        if (req.method === "HEAD") return res.end();
+        object.body.pipe(res);
+      } catch (error) {
+        console.error("[uploads] bucket read failed", error instanceof Error ? error.message : error);
+        next();
+      }
+    });
+  };
 }
 
 const storage = multer.diskStorage({
@@ -77,7 +107,14 @@ const upload = multer({
 export function acceptJobPhotos(req: Request, res: Response, next: NextFunction) {
   upload.array("photos", 8)(req, res, (err: unknown) => {
     if (!err) {
-      next();
+      const files = (req.files as Express.Multer.File[] | undefined) ?? [];
+      Promise.all(files.map((file) => mirrorToBucket(`jobs/${String(req.params.id)}/${file.filename}`, file.path))).then(
+        () => next(),
+        (copyError) => {
+          console.error("[uploads] bucket write failed", copyError instanceof Error ? copyError.message : copyError);
+          next(new HttpError(502, "Could not store the photos, try again"));
+        },
+      );
       return;
     }
     if (err instanceof multer.MulterError) {

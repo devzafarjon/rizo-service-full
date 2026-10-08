@@ -36,7 +36,7 @@ export async function confirmPickup(input: {
     }
   }
   const now = new Date();
-  const signatureUrl = input.signatureDataUrl ? savePickupSignature(existing.id, input.signatureDataUrl) : null;
+  const signatureUrl = input.signatureDataUrl ? await savePickupSignature(existing.id, input.signatureDataUrl) : null;
   const updated = await prisma.serviceRequest.update({
     where: { id: existing.id },
     data: {

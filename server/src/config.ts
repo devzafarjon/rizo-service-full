@@ -29,6 +29,10 @@ export const env = {
   smsProvider: process.env.SMS_PROVIDER ?? "console",
   smsHttpUrl: process.env.SMS_HTTP_URL ?? "",
   smsHttpToken: process.env.SMS_HTTP_TOKEN ?? "",
+  // SMS_PROVIDER=eskiz sends through eskiz.uz (the account e-mail and password; the sender is the approved name, "4546" while testing).
+  eskizEmail: process.env.ESKIZ_EMAIL ?? "",
+  eskizPassword: process.env.ESKIZ_PASSWORD ?? "",
+  eskizSender: process.env.ESKIZ_SENDER ?? "4546",
   telegramProvider: process.env.TELEGRAM_PROVIDER ?? "console",
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN ?? "",
   telegramAdminChatId: process.env.TELEGRAM_ADMIN_CHAT_ID ?? "",
@@ -42,6 +46,12 @@ export const env = {
   // or point FIREBASE_SERVICE_ACCOUNT_FILE at the file when developing. Without either, pushes are only logged.
   firebaseServiceAccount: process.env.FIREBASE_SERVICE_ACCOUNT ?? "",
   firebaseServiceAccountFile: process.env.FIREBASE_SERVICE_ACCOUNT_FILE ?? "",
+  // Photo / signature storage in an S3-compatible bucket (Cloudflare R2). Without it files stay on the server disk only,
+  // which a free host wipes on every deploy.
+  bucketEndpoint: process.env.UPLOAD_BUCKET_ENDPOINT ?? "",
+  bucketName: process.env.UPLOAD_BUCKET_NAME ?? "",
+  bucketAccessKeyId: process.env.UPLOAD_BUCKET_ACCESS_KEY_ID ?? "",
+  bucketSecretAccessKey: process.env.UPLOAD_BUCKET_SECRET_ACCESS_KEY ?? "",
   backupDir: process.env.BACKUP_DIR ?? "",
   backupRetainDays: Number(process.env.BACKUP_RETAIN_DAYS ?? 30),
   backupEnabled: process.env.BACKUP_ENABLED === "true",

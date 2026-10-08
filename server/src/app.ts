@@ -33,7 +33,7 @@ import { helpArticlesRouter } from "./routes/helpArticles.js";
 import { warrantyPlansRouter } from "./routes/warrantyPlans.js";
 import { integrationsRouter } from "./routes/integrations.js";
 import { customerDevicesRouter, staffDevicesRouter } from "./routes/devices.js";
-import { ensureUploadsRoot, uploadsRoot } from "./lib/uploads.js";
+import { ensureUploadsRoot, serveUploads } from "./lib/uploads.js";
 
 export function createApp() {
   const app = express();
@@ -48,8 +48,8 @@ export function createApp() {
   ensureUploadsRoot();
   app.use(cors({ origin: env.corsOrigins, credentials: true }));
   app.use(express.json({ limit: "4mb" }));
-  app.use("/uploads", express.static(uploadsRoot));
-  app.use("/api/uploads", express.static(uploadsRoot));
+  app.use("/uploads", serveUploads());
+  app.use("/api/uploads", serveUploads());
 
   app.use("/api/health", healthRouter);
   app.use("/api/staff/auth", staffAuthRouter);

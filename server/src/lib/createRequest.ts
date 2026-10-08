@@ -163,7 +163,7 @@ export async function createServiceRequest(input: CreateRequestInput) {
 
   let withSignature = created;
   if (input.intake?.signatureDataUrl) {
-    const url = saveSignature("intake", created.id, input.intake.signatureDataUrl);
+    const url = await saveSignature("intake", created.id, input.intake.signatureDataUrl);
     withSignature = await prisma.serviceRequest.update({ where: { id: created.id }, data: { intakeSignatureUrl: url }, include: requestInclude });
   }
 
