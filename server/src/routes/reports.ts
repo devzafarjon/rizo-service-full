@@ -14,7 +14,7 @@ import {
   roundMoney,
   trendSeries,
 } from "../lib/reportJobs.js";
-import { bucketKey, defaultGrain, parseReportRange, parseTrendGrain, serializeWindow } from "../lib/reportRange.js";
+import { bucketKey, createdAtWhere, defaultGrain, parseReportRange, parseTrendGrain, serializeWindow } from "../lib/reportRange.js";
 import { isDoneStatus, ALL_STATUSES } from "../lib/status.js";
 import { readWriteRoles, requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
 import { READ_MONEY, READ_OFFICE } from "../lib/roles.js";
@@ -652,6 +652,74 @@ reportsRouter.get(
       count: totals._count,
       total: roundMoney(toMoney(totals._sum.amount ?? 0)),
       rows: missing.map((row) => ({ id: row.id, requestId: row.serviceRequest.id, displayId: row.serviceRequest.displayId, method: row.method, amount: toMoney(row.amount), createdAt: row.createdAt.toISOString(), createdByName: row.createdByName })),
+    });
+  }),
+);
+
+// What customers wrote about finished jobs: every rating with its comment and tags, newest first, plus a summary.
+reportsRouter.get(
+  "/feedback",
+  asyncHandler(async (req, res) => {
+    const window = parseReportRange(req.query);
+    const technicianId = typeof req.query.technicianId === "string" && req.query.technicianId ? req.query.technicianId : undefined;
+    const ratingParam = (value: unknown) => {
+      const number = Number(value);
+      return Number.isInteger(number) && number >= 1 && number <= 5 ? number : undefined;
+    };
+    const minRating = ratingParam(req.query.minRating);
+    const maxRating = ratingParam(req.query.maxRating);
+    const withComment = req.query.withComment === "1" || req.query.withComment === "true";
+    const tag = typeof req.query.tag === "string" && req.query.tag ? req.query.tag : undefined;
+
+    const where = {
+      ...createdAtWhere(window),
+      ...(minRating || maxRating ? { rating: { ...(minRating ? { gte: minRating } : {}), ...(maxRating ? { lte: maxRating } : {}) } } : {}),
+      ...(withComment ? { comment: { not: null }, NOT: { comment: "" } } : {}),
+      ...(tag ? { tags: { has: tag } } : {}),
+      ...(technicianId ? { serviceRequest: { assignedTechnicianId: technicianId } } : {}),
+    };
+    const [rows, all] = await Promise.all([
+      prisma.feedback.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take: 500,
+        include: {
+          customer: { select: { id: true, name: true, phone: true } },
+          serviceRequest: { select: { id: true, displayId: true, type: true, product: { select: { id: true, name: true, nameUz: true, nameRu: true, nameEn: true } }, assignedTechnician: { select: { id: true, name: true } } } },
+        },
+      }),
+      prisma.feedback.findMany({ where, select: { rating: true, tags: true, comment: true } }),
+    ]);
+
+    const technicianRows = await prisma.serviceRequest.findMany({
+      where: { assignedTechnicianId: { not: null }, feedback: { is: createdAtWhere(window) } },
+      distinct: ["assignedTechnicianId"],
+      select: { assignedTechnician: { select: { id: true, name: true } } },
+    });
+    const distribution = [1, 2, 3, 4, 5].map((stars) => ({ rating: stars, count: all.filter((row) => row.rating === stars).length }));
+    const tagCounts = new Map<string, number>();
+    for (const row of all) for (const item of row.tags) tagCounts.set(item, (tagCounts.get(item) ?? 0) + 1);
+    res.json({
+      range: serializeWindow(window),
+      summary: {
+        count: all.length,
+        average: average(all.map((row) => row.rating)),
+        withComment: all.filter((row) => row.comment && row.comment.trim()).length,
+        distribution,
+        tags: [...tagCounts.entries()].map(([name, count]) => ({ tag: name, count })).sort((a, b) => b.count - a.count),
+      },
+      truncated: all.length > rows.length,
+      technicians: technicianRows.flatMap((row) => (row.assignedTechnician ? [row.assignedTechnician] : [])).sort((a, b) => a.name.localeCompare(b.name)),
+      items: rows.map((row) => ({
+        id: row.id,
+        createdAt: row.createdAt.toISOString(),
+        rating: row.rating,
+        comment: row.comment,
+        tags: row.tags,
+        customer: row.customer,
+        request: { id: row.serviceRequest.id, displayId: row.serviceRequest.displayId, type: row.serviceRequest.type, product: serializeNamed(row.serviceRequest.product) },
+        technician: row.serviceRequest.assignedTechnician,
+      })),
     });
   }),
 );

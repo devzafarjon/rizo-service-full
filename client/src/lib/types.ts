@@ -724,7 +724,31 @@ export type RequestDetailPayload = {
   defectCodes: DefectCodeOption[];
   returnReasons: DefectCodeOption[];
   repeatOf: { id: string; displayId: string } | null;
+  feedback: { rating: number; comment: string | null; tags: string[]; createdAt: string } | null;
   settings: AppSettings;
+};
+
+export type FeedbackReport = {
+  range: { preset: ReportPreset; from: string | null; to: string };
+  summary: {
+    count: number;
+    average: number | null;
+    withComment: number;
+    distribution: Array<{ rating: number; count: number }>;
+    tags: Array<{ tag: string; count: number }>;
+  };
+  truncated: boolean;
+  technicians: Array<{ id: string; name: string }>;
+  items: Array<{
+    id: string;
+    createdAt: string;
+    rating: number;
+    comment: string | null;
+    tags: string[];
+    customer: { id: string; name: string; phone: string };
+    request: { id: string; displayId: string; type: ServiceType; product: Named };
+    technician: { id: string; name: string } | null;
+  }>;
 };
 
 export type AppSettings = {

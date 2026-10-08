@@ -12,10 +12,11 @@ const legal: ReportLinkDef = { to: "/app/reports/legal", labelKey: "reports.nav.
 const debts: ReportLinkDef = { to: "/app/reports/debts", labelKey: "reports.nav.debts" };
 const payroll: ReportLinkDef = { to: "/app/reports/payroll", labelKey: "reports.nav.payroll" };
 const partners: ReportLinkDef = { to: "/app/reports/partners", labelKey: "reports.nav.partners" };
+const feedback: ReportLinkDef = { to: "/app/reports/feedback", labelKey: "reports.nav.feedback" };
 const fiscal: ReportLinkDef = { to: "/app/reports/fiscal", labelKey: "reports.nav.fiscal" };
 
 /** The reports looked at every day; the sidebar shows only these. */
-export const MAIN_REPORT_LINKS: readonly ReportLinkDef[] = [profit, technicians, legal, debts, products];
+export const MAIN_REPORT_LINKS: readonly ReportLinkDef[] = [profit, technicians, feedback, legal, debts, products];
 
 /** All reports in groups, as the reports hub shows them. */
 export const REPORT_GROUPS: ReadonlyArray<{ key: string; labelKey: string; links: readonly ReportLink[] }> = [

@@ -254,7 +254,7 @@ requestsRouter.get(
       include: { ...requestInclude, ...workInclude, pauses: { orderBy: { pausedAt: "asc" } } },
     });
     if (!request) throw new HttpError(404, "Service request not found");
-    const [services, parts, estimates, payments, notes, defectCodes, returnReasons, summary, settings, repeatOf] = await Promise.all([
+    const [services, parts, estimates, payments, notes, defectCodes, returnReasons, summary, settings, repeatOf, feedback] = await Promise.all([
       prisma.serviceCatalogItem.findMany({ where: { productCategories: { has: request.product.category } }, orderBy: { name: "asc" } }),
       prisma.sparePart.findMany({ where: { productCategories: { has: request.product.category } }, orderBy: { name: "asc" } }),
       prisma.estimate.findMany({ where: { serviceRequestId: request.id }, orderBy: { createdAt: "desc" }, include: estimateInclude }),
@@ -265,9 +265,11 @@ requestsRouter.get(
       paymentSummary(request.id),
       getAppSettings(),
       request.repeatOfId ? prisma.serviceRequest.findUnique({ where: { id: request.repeatOfId }, select: { id: true, displayId: true } }) : null,
+      prisma.feedback.findUnique({ where: { serviceRequestId: request.id } }),
     ]);
     res.json({
       request: serializeRequest(request),
+      feedback: feedback ? { rating: feedback.rating, comment: feedback.comment, tags: feedback.tags, createdAt: feedback.createdAt.toISOString() } : null,
       pauses: serializePauses(request.pauses),
       timeline: await loadTimeline(request),
       ...serializeJobWork(request, {

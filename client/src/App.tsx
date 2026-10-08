@@ -52,6 +52,7 @@ import { SerialCardPage } from "./features/management/SerialCardPage";
 import { ServiceCentersPage } from "./features/management/ServiceCentersPage";
 import { StaffPage } from "./features/management/StaffPage";
 import { WarrantyCardPage } from "./features/management/WarrantyCardPage";
+import { FeedbackReportPage } from "./features/reporting/FeedbackReport";
 import { DebtsReportPage, DefectsReportPage, FiscalReportPage, LegalReportPage, OutcomesReportPage, PartnersReportPage, PayrollReportPage } from "./features/reporting/MoreReports";
 import { ChecklistsPage } from "./features/catalog/ChecklistsPage";
 import { HelpAdminPage } from "./features/catalog/HelpAdminPage";
@@ -111,6 +112,7 @@ export default function App() {
             <Route path="reports/outcomes" element={<OutcomesReportPage />} />
             <Route path="reports/legal" element={<LegalReportPage />} />
             <Route path="reports/debts" element={<DebtsReportPage />} />
+            <Route path="reports/feedback" element={<FeedbackReportPage />} />
             <Route path="reports/payroll" element={<PayrollReportPage />} />
             <Route path="reports/partners" element={<PartnersReportPage />} />
             <Route path="reports/fiscal" element={<FiscalReportPage />} />

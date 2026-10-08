@@ -1008,7 +1008,9 @@
       "partners": "Hamkor markazlar",
       "partnersBody": "Mustaqil servis markazlari bajargan ishlar va ularga to‘lanadigan summa.",
       "fiscal": "Fiskal chek",
-      "fiscalBody": "Fiskal chek raqamisiz qabul qilingan to‘lovlar."
+      "fiscalBody": "Fiskal chek raqamisiz qabul qilingan to‘lovlar.",
+      "feedback": "Mijoz fikrlari",
+      "feedbackBody": "Mijozlar tugagan ishlarga qoldirgan baho, izoh va belgilar. Past baholarni alohida ko‘rib chiqing."
     },
     "source": {
       "rizo_market": "RIZO market",
@@ -1059,7 +1061,32 @@
     "amountWithoutReceipt": "Chek raqamisiz summa",
     "fiscalNote": "Aholidan olingan har bir to‘lov fiskal chek bilan rasmiylashtirilishi kerak. Bu yerda raqami kiritilmagan to‘lovlar ko‘rsatiladi.",
     "noFiscalGaps": "Hammasi joyida",
-    "noFiscalGapsBody": "Chek raqamisiz to‘lov yo‘q."
+    "noFiscalGapsBody": "Chek raqamisiz to‘lov yo‘q.",
+    "feedback": {
+      "average": "O‘rtacha baho",
+      "count": "Baholar soni",
+      "withComment": "Izohli baholar",
+      "distribution": "Baholar taqsimoti",
+      "topTags": "Eng ko‘p uchragan belgilar",
+      "noTags": "Belgilar yo‘q.",
+      "allTechnicians": "Barcha texniklar",
+      "onlyComments": "Faqat izohli",
+      "clearTag": "«{{tag}}» filtrini olib tashlash",
+      "emptyTitle": "Fikrlar topilmadi",
+      "emptyBody": "Tanlangan davr va filtr bo‘yicha mijoz fikri yo‘q.",
+      "noComment": "Izoh qoldirilmagan",
+      "truncated": "Eng so‘nggi 500 ta fikr ko‘rsatilgan. Davr yoki filtrni toraytiring.",
+      "rating": "Baho",
+      "comment": "Izoh",
+      "tags": "Belgilar",
+      "onRequest": "Mijoz bahosi",
+      "band": {
+        "all": "Hammasi",
+        "low": "Past (1–2)",
+        "mid": "O‘rta (3)",
+        "high": "Yuqori (4–5)"
+      }
+    }
   },
   "portal": {
     "homeTitle": "Xizmat so‘rovlaringiz",

@@ -28,6 +28,7 @@ import { canConfirmPickup } from "../../lib/pickup";
 import { nextStatuses, statusLabel } from "../../lib/status";
 import type { Priority, RequestDetailPayload, RequestStatus, TechnicianSummary } from "../../lib/types";
 import { useNow } from "../../lib/useNow";
+import { Stars } from "../reporting/FeedbackReport";
 
 const PRIORITIES: Priority[] = ["low", "medium", "high", "urgent"];
 const DECIDABLE: RequestStatus[] = ["new", "diagnosing", "awaiting_decision", "awaiting_parts", "in_progress"];
@@ -506,6 +507,26 @@ export function RequestDetailPage() {
       <Card title={t("payments.title")}>
         <PaymentsPanel summary={data.paymentSummary} payments={data.payments} fiscalReceiptNumber={request.fiscalReceiptNumber} requireFiscal={data.settings?.requireFiscalReceipt} busy={pay.isPending} onSubmit={(payload) => pay.mutate(payload)} />
       </Card>
+
+      {data.feedback ? (
+        <Card title={t("reports.feedback.onRequest")}>
+          <div className="flex flex-wrap items-center gap-2">
+            <Stars value={data.feedback.rating} />
+            <span className="text-sm font-extrabold">{data.feedback.rating} / 5</span>
+            <span className="text-xs text-neutral-500">{formatDateTime(data.feedback.createdAt)}</span>
+          </div>
+          {data.feedback.comment ? <p className="mt-2 text-sm whitespace-pre-line text-neutral-800">{data.feedback.comment}</p> : null}
+          {data.feedback.tags.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {data.feedback.tags.map((item) => (
+                <span key={item} className="inline-flex rounded-full bg-[#F5EBFD] px-2.5 py-1 text-xs font-bold text-[#4B0089]">
+                  {t(`feedback.tag.${item}`)}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </Card>
+      ) : null}
 
       <Card title={t("notes.title")} hint={t("notes.hint")}>
         <NotesPanel notes={data.notes} busy={addNote.isPending} onSubmit={(text, visibleToCustomer) => addNote.mutate({ text, visibleToCustomer })} />

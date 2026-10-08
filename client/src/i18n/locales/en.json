@@ -1008,7 +1008,9 @@
       "partners": "Partner centres",
       "partnersBody": "Jobs done by independent service centres and what they are owed.",
       "fiscal": "Fiscal receipts",
-      "fiscalBody": "Payments taken without a fiscal receipt number."
+      "fiscalBody": "Payments taken without a fiscal receipt number.",
+      "feedback": "Customer feedback",
+      "feedbackBody": "Ratings, comments and tags customers left after finished jobs. Review the low ratings first."
     },
     "source": {
       "rizo_market": "RIZO market",
@@ -1059,7 +1061,32 @@
     "amountWithoutReceipt": "Amount without a receipt number",
     "fiscalNote": "Every payment from the public must be registered with a fiscal receipt. This lists payments with no number entered.",
     "noFiscalGaps": "All in order",
-    "noFiscalGapsBody": "No payments without a receipt number."
+    "noFiscalGapsBody": "No payments without a receipt number.",
+    "feedback": {
+      "average": "Average rating",
+      "count": "Ratings",
+      "withComment": "With a comment",
+      "distribution": "Rating distribution",
+      "topTags": "Most common tags",
+      "noTags": "No tags.",
+      "allTechnicians": "All technicians",
+      "onlyComments": "Only with a comment",
+      "clearTag": "Clear the “{{tag}}” filter",
+      "emptyTitle": "No feedback found",
+      "emptyBody": "No customer feedback for this period and these filters.",
+      "noComment": "No comment left",
+      "truncated": "Showing the latest 500. Narrow the period or the filters.",
+      "rating": "Rating",
+      "comment": "Comment",
+      "tags": "Tags",
+      "onRequest": "Customer rating",
+      "band": {
+        "all": "All",
+        "low": "Low (1–2)",
+        "mid": "Mid (3)",
+        "high": "High (4–5)"
+      }
+    }
   },
   "portal": {
     "homeTitle": "Your service requests",
