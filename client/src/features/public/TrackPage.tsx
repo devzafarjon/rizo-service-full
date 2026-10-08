@@ -12,6 +12,7 @@ import { formatDate, formatMoney, formatRequestId, formatStamp } from "../../lib
 import { localizedName } from "../../lib/localized";
 import type { EstimateLine, EstimateStatus, Named, PayLinks, RequestStatus, TimelineEvent, WarrantyStatus } from "../../lib/types";
 import { portalInputClass } from "../portal/fields";
+import { PayButtons } from "../../components/PayButtons";
 
 type Track = {
   displayId: string;
@@ -123,9 +124,8 @@ export function TrackPage() {
               {payLinks.data?.enabled ? (
                 <div className="mt-3 rounded-xl bg-neutral-50 px-4 py-3">
                   <p className="text-sm font-semibold text-neutral-800">{t("pay.body", { amount: formatMoney(payLinks.data.amount) })}</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {payLinks.data.payme ? <a href={payLinks.data.payme} target="_blank" rel="noreferrer" className="btn-rizo h-10">Payme</a> : null}
-                    {payLinks.data.click ? <a href={payLinks.data.click} target="_blank" rel="noreferrer" className="btn-rizo-ghost h-10">Click</a> : null}
+                  <div className="mt-2">
+                    <PayButtons links={payLinks.data} compact />
                   </div>
                 </div>
               ) : null}

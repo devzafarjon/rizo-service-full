@@ -2066,7 +2066,8 @@
   "pay": {
     "title": "Onlayn to‘lov",
     "body": "To‘lanishi kerak: {{amount}}.",
-    "note": "To‘lovdan keyin servis uni tizimga kiritadi. Kechiksa, servisga qo‘ng‘iroq qiling."
+    "note": "To‘lovdan keyin servis uni tizimga kiritadi. Kechiksa, servisga qo‘ng‘iroq qiling.",
+    "placeholder": "Hozircha provayderning o‘z sahifasi ochiladi. To‘lovni servis xodimi tizimga kiritadi."
   },
   "visit": {
     "title": "Tashrif vaqti",

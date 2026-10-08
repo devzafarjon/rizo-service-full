@@ -10,6 +10,7 @@ import { useCustomerAuth } from "../auth/CustomerAuthContext";
 import { api, apiErrorMessage } from "../../lib/api";
 import { formatDate, formatMoney, formatStamp } from "../../lib/format";
 import type { PayLinks, PortalRequest } from "../../lib/types";
+import { PayButtons } from "../../components/PayButtons";
 
 /** The booked visit window: confirm it, move it, or withdraw the request. Also shows the technician's arrival estimate. */
 export function VisitCard({ request, onChanged }: { request: PortalRequest; onChanged: () => Promise<unknown> | void }) {
@@ -126,17 +127,8 @@ export function PayCard({ request, urlBase }: { request: { id: string; payment: 
         {t("pay.title")}
       </h2>
       <p className="mt-2 text-sm text-neutral-600">{t("pay.body", { amount: formatMoney(links.data.amount) })}</p>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {links.data.payme ? (
-          <a href={links.data.payme} target="_blank" rel="noreferrer" className="btn-rizo h-11">
-            Payme
-          </a>
-        ) : null}
-        {links.data.click ? (
-          <a href={links.data.click} target="_blank" rel="noreferrer" className="btn-rizo-ghost h-11">
-            Click
-          </a>
-        ) : null}
+      <div className="mt-3">
+        <PayButtons links={links.data} />
       </div>
       <p className="mt-3 text-xs text-neutral-500">{t("pay.note")}</p>
     </section>

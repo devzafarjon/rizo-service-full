@@ -853,4 +853,4 @@ export type FiscalReport = {
   rows: Array<{ id: string; requestId: string; displayId: string; method: PaymentMethod; amount: number; createdAt: string; createdByName: string | null }>;
 };
 
-export type PayLinks = { enabled: boolean; amount: number; payme?: string; click?: string };
+export type PayLinks = { enabled: boolean; amount: number; payme?: string; click?: string; placeholder?: boolean };
