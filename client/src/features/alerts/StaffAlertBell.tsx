@@ -11,7 +11,7 @@ export function StaffAlertBell() {
   return (
     <Popover className="relative" data-tour="notifications-bell">
       <PopoverButton
-        className="relative inline-flex h-11 w-11 items-center justify-center rounded-xl text-neutral-600 hover:bg-neutral-100"
+        className="relative inline-flex h-11 w-11 items-center justify-center rounded-lg text-neutral-600 hover:bg-neutral-100"
         aria-label={t("notifications.aria")}
       >
         <Bell size={20} />

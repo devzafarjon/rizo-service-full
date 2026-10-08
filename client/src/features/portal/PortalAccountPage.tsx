@@ -8,6 +8,7 @@ import { useCustomerAuth } from "../auth/CustomerAuthContext";
 import { api, apiErrorMessage } from "../../lib/api";
 import { withApiBase } from "../../lib/apiBase";
 import type { CustomerUser } from "../../lib/types";
+import { segmentedGroupClass, segmentedItemClass } from "../../components/segmented";
 
 const CHANNELS = ["both", "sms", "telegram"] as const;
 
@@ -67,9 +68,9 @@ export function PortalAccountPage() {
           {t("account.channel")}
         </h2>
         <p className="mt-2 text-sm text-neutral-600">{t("account.channelBody")}</p>
-        <div className="mt-3 inline-flex rounded-lg bg-neutral-100 p-1">
+        <div className={`${segmentedGroupClass} mt-3`}>
           {CHANNELS.map((item) => (
-            <button key={item} type="button" disabled={setChannel.isPending} onClick={() => setChannel.mutate(item)} className={`h-10 rounded-md px-4 text-sm font-bold ${channel === item ? "bg-white shadow-sm" : "text-neutral-600"}`}>
+            <button key={item} type="button" disabled={setChannel.isPending} onClick={() => setChannel.mutate(item)} className={`${segmentedItemClass(channel === item)} disabled:opacity-60`}>
               {t(`account.channels.${item}`)}
             </button>
           ))}

@@ -15,6 +15,7 @@ import { formatDate, formatMoney, formatStamp } from "../../lib/format";
 import { categoryLabel, localizedName } from "../../lib/localized";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
 import type { PaymentMethod, Sale, WarrantyPlan, WarrantyPurchase } from "../../lib/types";
+import { segmentedGroupClass, segmentedItemClass } from "../../components/segmented";
 
 const METHODS: PaymentMethod[] = ["cash", "card", "transfer", "payme", "click", "other"];
 const TABS = ["requested", "paid", "plans"] as const;
@@ -124,9 +125,9 @@ export function WarrantyPlansPage() {
         </div>
       </div>
 
-      <div className="mb-3 inline-flex rounded-lg bg-neutral-100 p-1">
+      <div className={`${segmentedGroupClass} mb-3`}>
         {TABS.map((item) => (
-          <button key={item} type="button" onClick={() => setTab(item)} className={`h-9 rounded-md px-4 text-sm font-bold ${tab === item ? "bg-white shadow-sm" : "text-neutral-600"}`}>
+          <button key={item} type="button" onClick={() => setTab(item)} className={segmentedItemClass(tab === item)}>
             {t(`plans.tab.${item}`)}
             {item === "requested" && all.some((row) => row.status === "requested") ? <span className="ml-2 rounded-full bg-[#7B00E0] px-2 py-0.5 text-[10px] text-white">{all.filter((row) => row.status === "requested").length}</span> : null}
           </button>

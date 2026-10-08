@@ -25,7 +25,7 @@ export function AccountMenu({
   return (
     <Menu>
       <MenuButton
-        className="inline-flex h-10 max-w-[12rem] items-center gap-2 rounded-lg px-1.5 hover:bg-gray-100 sm:px-2"
+        className="inline-flex h-11 max-w-[12rem] items-center gap-2 rounded-lg px-1.5 hover:bg-gray-100 sm:px-2"
         aria-label={t("common.accountMenu")}
       >
         <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#F5EBFD] text-xs font-extrabold text-[#7B00E0]">

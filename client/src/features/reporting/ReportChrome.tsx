@@ -5,7 +5,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { DateRangeBar } from "./DateRangeBar";
 import { REPORT_GROUPS } from "./reportNav";
 import type { ReportQuery } from "../../lib/reportQuery";
-import { segmentedGroupClass, segmentedItemClass } from "../../components/segmented";
+import { segmentedItemClass, segmentedScrollClass } from "../../components/segmented";
 
 export function ReportChrome({
   title,
@@ -45,7 +45,7 @@ export function ReportChrome({
           {t("reports.export")}
         </button>
       </div>
-      <nav className={`${segmentedGroupClass} mb-4 flex-nowrap overflow-x-auto`}>
+      <nav className={`${segmentedScrollClass} mb-4`}>
         <NavLink to="/app/reports" end className={({ isActive }) => `shrink-0 ${segmentedItemClass(isActive, "sm")}`}>
           {t("reports.all")}
         </NavLink>

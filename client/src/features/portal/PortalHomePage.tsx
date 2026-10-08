@@ -12,7 +12,7 @@ import { localizedName } from "../../lib/localized";
 import { isDoneStatus } from "../../lib/status";
 import type { PortalRequest, ServiceType } from "../../lib/types";
 import { FeedbackForm } from "./FeedbackForm";
-import { segmentedGroupClass, segmentedItemClass } from "../../components/segmented";
+import { segmentedItemClass, segmentedScrollClass } from "../../components/segmented";
 
 const TYPE_FILTERS: Array<"" | ServiceType> = ["", "installation", "repair"];
 const SCOPE_FILTERS = ["all", "open", "done"] as const;
@@ -67,7 +67,7 @@ export function PortalHomePage() {
         </div>
       ) : null}
 
-      <div className={`${segmentedGroupClass} mt-4 flex-nowrap overflow-x-auto`}>
+      <div className={`${segmentedScrollClass} mt-4`}>
         {SCOPE_FILTERS.map((value) => (
           <button
             key={value}
@@ -79,7 +79,7 @@ export function PortalHomePage() {
           </button>
         ))}
       </div>
-      <div className={`${segmentedGroupClass} mt-2 flex-nowrap overflow-x-auto`}>
+      <div className={`${segmentedScrollClass} mt-2`}>
         {TYPE_FILTERS.map((item) => (
           <button
             key={item || "all"}

@@ -10,7 +10,7 @@ export function LegalPage({ kind }: { kind: "privacy" | "terms" }) {
   const sections = t(`legal.${kind}Doc.sections`, { returnObjects: true }) as unknown;
   const list = Array.isArray(sections) ? (sections as Section[]) : [];
   return (
-    <BrandChrome action={<Link to="/" className="btn-rizo-ghost">{t("common.home")}</Link>}>
+    <BrandChrome action={<Link to="/" className="btn-rizo-ghost h-11">{t("common.home")}</Link>}>
       <article className="mx-auto w-full max-w-2xl px-4 pt-4 pb-16">
         <h1 className="text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{t(`legal.${kind}Doc.title`)}</h1>
         <p className="mt-1 text-sm text-neutral-500">{t("legal.updated")}</p>

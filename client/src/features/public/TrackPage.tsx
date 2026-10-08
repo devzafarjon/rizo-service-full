@@ -89,7 +89,7 @@ export function TrackPage() {
   const total = estimate ? estimate.lines.filter((line) => !line.isOptional || picked.includes(line.id)).reduce((sum, line) => sum + line.quantity * line.unitPrice, 0) : 0;
 
   return (
-    <BrandChrome action={<Link to="/track" className="btn-rizo-ghost">{t("track.another")}</Link>}>
+    <BrandChrome action={<Link to="/track" className="btn-rizo-ghost h-11">{t("track.another")}</Link>}>
       <div className="mx-auto w-full max-w-xl px-4 pt-4 pb-16">
         {data.isLoading ? (
           <div className="flex justify-center py-20">

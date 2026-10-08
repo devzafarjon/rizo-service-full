@@ -7,6 +7,7 @@ import { StatCard } from "../../components/StatCard";
 import { useStaffAuth } from "../auth/StaffAuthContext";
 import { api } from "../../lib/api";
 import { formatDate, formatMoney, formatRequestId } from "../../lib/format";
+import { segmentedGroupClass, segmentedItemClass } from "../../components/segmented";
 
 const PRESETS = ["week", "month", "quarter", "year"] as const;
 
@@ -37,9 +38,9 @@ export function MyEarningsPage() {
     <div>
       <h1 className="text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{t("payroll.myTitle")}</h1>
       <p className="mt-1 text-sm text-neutral-500">{t("payroll.myIntro", { percent: result.technician.payPercent, fixed: formatMoney(result.technician.payFixedPerJob) })}</p>
-      <div className="mt-4 inline-flex rounded-lg bg-neutral-100 p-1">
+      <div className={`${segmentedGroupClass} mt-4`}>
         {PRESETS.map((item) => (
-          <button key={item} type="button" onClick={() => setPreset(item)} className={`h-9 rounded-md px-4 text-sm font-bold ${preset === item ? "bg-white shadow-sm" : "text-neutral-600"}`}>
+          <button key={item} type="button" onClick={() => setPreset(item)} className={segmentedItemClass(preset === item)}>
             {t(`reports.preset.${item}`)}
           </button>
         ))}

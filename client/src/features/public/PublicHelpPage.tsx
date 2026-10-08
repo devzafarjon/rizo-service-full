@@ -13,7 +13,7 @@ export function PublicHelpPage() {
   const list = useQuery({ queryKey: ["public", "help"], queryFn: () => api<{ articles: HelpArticle[] }>("/api/public/help") });
   const articles = list.data?.articles ?? [];
   return (
-    <BrandChrome action={<Link to="/track" className="btn-rizo-ghost">{t("track.title")}</Link>}>
+    <BrandChrome action={<Link to="/track" className="btn-rizo-ghost h-11">{t("track.title")}</Link>}>
       <div className="mx-auto w-full max-w-2xl px-4 pt-4 pb-16">
         <h1 className="text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{t("help.title")}</h1>
         <p className="mt-1 mb-5 text-sm text-neutral-500">{t("help.intro")}</p>

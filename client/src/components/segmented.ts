@@ -1,6 +1,10 @@
 // RizoPost segmented control: light gray rail, active option is a solid brand-purple tab.
 export const segmentedGroupClass = "inline-flex max-w-full flex-wrap gap-1 rounded-lg border border-gray-200 bg-[#F1F5F9] p-1";
 
+/** One-row rail that scrolls sideways instead of wrapping (many tabs on a phone). Do not mix with segmentedGroupClass: flex-wrap and flex-nowrap fight. */
+export const segmentedScrollClass =
+  "inline-flex max-w-full flex-nowrap gap-1 overflow-x-auto rounded-lg border border-gray-200 bg-[#F1F5F9] p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
+
 export function segmentedItemClass(active: boolean, size: "md" | "sm" = "md") {
   const height = size === "sm" ? "h-8 px-3 text-[13px]" : "h-[42px] px-4 text-sm";
   return `inline-flex ${height} items-center justify-center whitespace-nowrap rounded-lg border transition ${

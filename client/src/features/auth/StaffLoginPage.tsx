@@ -49,7 +49,7 @@ export function StaffLoginPage() {
   return (
     <BrandChrome
       action={
-        <Link to="/portal/login" className="btn-rizo-ghost">
+        <Link to="/portal/login" className="btn-rizo-ghost h-11">
           {t("auth.openPortal")}
         </Link>
       }

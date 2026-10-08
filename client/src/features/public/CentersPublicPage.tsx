@@ -15,7 +15,7 @@ export function CentersPublicPage() {
   const centers = list.data?.centers ?? [];
   const regions = [...new Set(centers.map((center) => center.regionCode))];
   return (
-    <BrandChrome action={<Link to="/track" className="btn-rizo-ghost">{t("track.title")}</Link>}>
+    <BrandChrome action={<Link to="/track" className="btn-rizo-ghost h-11">{t("track.title")}</Link>}>
       <div className="mx-auto w-full max-w-2xl px-4 pt-4 pb-16">
         <h1 className="text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{t("centers.public.title")}</h1>
         <p className="mt-1 mb-5 text-sm text-neutral-500">{t("centers.public.intro")}</p>

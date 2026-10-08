@@ -27,7 +27,7 @@ export function TrackLookupPage() {
     lookup.mutate();
   }
   return (
-    <BrandChrome action={<Link to="/centers" className="btn-rizo-ghost">{t("centers.public.title")}</Link>}>
+    <BrandChrome action={<Link to="/centers" className="btn-rizo-ghost h-11">{t("centers.public.title")}</Link>}>
       <div className="mx-auto flex w-full max-w-[29rem] flex-col px-4 pt-6 pb-12 sm:pt-8">
         <div className="mb-8 text-center">
           <h1 className="text-[25px] leading-tight font-extrabold text-[#222834]">{t("track.title")}</h1>

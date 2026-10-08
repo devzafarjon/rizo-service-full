@@ -16,8 +16,8 @@ export function ThemeToggle({ variant = "staff" }: { variant?: "staff" | "portal
   const Icon = mode === "dark" ? Moon : mode === "light" ? Sun : Monitor;
   const buttonClass =
     variant === "dark"
-      ? "flex items-center rounded-lg px-2.5 py-2 text-white hover:bg-white/10"
-      : "flex items-center rounded-lg px-2.5 py-2 text-gray-700 hover:bg-gray-100";
+      ? "flex h-11 min-w-11 items-center justify-center rounded-lg px-2.5 text-white hover:bg-white/10"
+      : "flex h-11 min-w-11 items-center justify-center rounded-lg px-2.5 text-gray-700 hover:bg-gray-100";
 
   return (
     <Menu>

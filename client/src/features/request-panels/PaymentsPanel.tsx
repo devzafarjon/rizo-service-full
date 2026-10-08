@@ -4,6 +4,7 @@ import { Field, inputClass } from "../../components/Field";
 import { Spinner } from "../../components/Spinner";
 import { formatMoney, formatStamp } from "../../lib/format";
 import type { PaymentMethod, PaymentRow } from "../../lib/types";
+import { segmentedGroupClass, segmentedItemClass } from "../../components/segmented";
 
 const METHODS: PaymentMethod[] = ["cash", "card", "transfer", "payme", "click", "other"];
 
@@ -103,15 +104,15 @@ export function PaymentsPanel({
           <input className={inputClass} value={note} onChange={(event) => setNote(event.target.value)} maxLength={200} />
         </Field>
         <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
-          <div className="inline-flex rounded-lg bg-neutral-100 p-1">
+          <div className={segmentedGroupClass}>
             {(["payment", "refund"] as const).map((item) => (
-              <button key={item} type="button" onClick={() => setKind(item)} className={`h-9 rounded-md px-4 text-sm font-bold ${kind === item ? "bg-white shadow-sm" : "text-neutral-600"}`}>
+              <button key={item} type="button" onClick={() => setKind(item)} className={segmentedItemClass(kind === item, "sm")}>
                 {t(`payments.${item}`)}
               </button>
             ))}
           </div>
           {summary.balance > 0 && kind === "payment" ? (
-            <button type="button" onClick={() => setAmount(String(summary.balance))} className="h-9 rounded-md bg-neutral-100 px-3 text-sm font-bold">
+            <button type="button" onClick={() => setAmount(String(summary.balance))} className="h-[42px] rounded-lg bg-neutral-100 px-3 text-sm font-bold">
               {t("payments.fillBalance")}
             </button>
           ) : null}

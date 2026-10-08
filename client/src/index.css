@@ -137,8 +137,8 @@
 
   /* Secondary action: purple outline, like RizoPost's Filtr / Import / Eksport. */
   .btn-rizo-ghost {
-    height: 40px;
-    padding: 8px 16px;
+    /* Same 48px as .btn-rizo so a primary and a secondary button side by side line up; use h-11 / h-10 for compact spots. */
+    padding: 10px 24px;
     border-color: #7B00E0;
     background: #ffffff;
     color: #7B00E0;

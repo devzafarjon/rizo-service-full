@@ -14,6 +14,7 @@ import { api, apiErrorMessage } from "../../lib/api";
 import { formatDate, formatRequestId } from "../../lib/format";
 import { localizedName } from "../../lib/localized";
 import type { Named, PartOrder, SparePart } from "../../lib/types";
+import { segmentedGroupClass, segmentedItemClass } from "../../components/segmented";
 
 type Suggestion = Named & { id: string; stockQuantity: number; lowStockThreshold: number };
 const FILTERS = ["open", "received", "all"] as const;
@@ -103,9 +104,9 @@ export function PartOrdersPage() {
         </section>
       ) : null}
 
-      <div className="mb-3 inline-flex rounded-lg bg-neutral-100 p-1">
+      <div className={`${segmentedGroupClass} mb-3`}>
         {FILTERS.map((item) => (
-          <button key={item} type="button" onClick={() => setFilter(item)} className={`h-9 rounded-md px-4 text-sm font-bold ${filter === item ? "bg-white shadow-sm" : "text-neutral-600"}`}>
+          <button key={item} type="button" onClick={() => setFilter(item)} className={segmentedItemClass(filter === item)}>
             {t(`parts.filter.${item}`)}
           </button>
         ))}

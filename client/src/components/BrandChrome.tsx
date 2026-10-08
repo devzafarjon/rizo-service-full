@@ -32,7 +32,7 @@ export function BrandChrome({
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
           {action ?? (
-            <Link to="/login" className="btn-rizo-ghost">
+            <Link to="/login" className="btn-rizo-ghost h-11">
               {t("common.signIn")}
             </Link>
           )}

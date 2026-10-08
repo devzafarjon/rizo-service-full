@@ -32,8 +32,8 @@ export function LanguageSwitcher({
 
   const buttonClass =
     variant === "dark"
-      ? "flex items-center gap-2 rounded-lg px-3 py-2 text-white hover:bg-white/10"
-      : "flex items-center gap-2 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100";
+      ? "flex h-11 items-center gap-2 rounded-lg px-3 text-white hover:bg-white/10"
+      : "flex h-11 items-center gap-2 rounded-lg px-3 text-gray-700 hover:bg-gray-100";
 
   return (
     <>

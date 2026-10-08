@@ -16,7 +16,7 @@ export function HomePage() {
   return (
     <BrandChrome variant="landing"
       action={
-        <Link to={staffTo} className="btn-rizo-ghost">
+        <Link to={staffTo} className="btn-rizo-ghost h-11">
           {staff ? t("home.staffContinue") : t("home.staff")}
         </Link>
       }

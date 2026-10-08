@@ -11,6 +11,7 @@ import { formatDate, formatRequestId } from "../../lib/format";
 import { localizedName } from "../../lib/localized";
 import type { ServiceRequest } from "../../lib/types";
 import { todayIso } from "../../lib/warranty";
+import { segmentedGroupClass, segmentedItemClass } from "../../components/segmented";
 
 function addDays(iso: string, days: number) {
   const date = new Date(`${iso}T00:00:00.000Z`);
@@ -56,14 +57,14 @@ export function CalendarPage() {
           <h1 className="text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{t("calendar.title")}</h1>
           <p className="mt-1 text-sm text-neutral-500">{t("calendar.intro")}</p>
         </div>
-        <div className="inline-flex rounded-lg bg-neutral-100 p-1">
-          <button type="button" onClick={() => setOffset(offset - 1)} className="h-9 rounded-md px-4 text-sm font-bold">
+        <div className={segmentedGroupClass}>
+          <button type="button" onClick={() => setOffset(offset - 1)} className={segmentedItemClass(false)}>
             ←
           </button>
-          <button type="button" onClick={() => setOffset(0)} className="h-9 rounded-md bg-white px-4 text-sm font-bold shadow-sm">
+          <button type="button" onClick={() => setOffset(0)} className={segmentedItemClass(false)}>
             {t("calendar.today")}
           </button>
-          <button type="button" onClick={() => setOffset(offset + 1)} className="h-9 rounded-md px-4 text-sm font-bold">
+          <button type="button" onClick={() => setOffset(offset + 1)} className={segmentedItemClass(false)}>
             →
           </button>
         </div>

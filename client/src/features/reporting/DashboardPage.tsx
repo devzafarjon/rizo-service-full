@@ -73,10 +73,10 @@ export function DashboardPage() {
       </div>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label={t("reports.requests")} value={String(data.totals.requests)} delta={delta(data.totals.requests, data.previous?.requests)} />
-        <Kpi label={t("reports.paidRevenue")} value={formatMoney(data.totals.revenue)} accent="green" delta={delta(data.totals.revenue, data.previous?.revenue)} />
-        <Kpi label={t("reports.profit")} value={formatMoney(data.totals.profit)} delta={delta(data.totals.profit, data.previous?.profit)} />
-        <Kpi label={t("reports.avgHours")} value={formatDurationHours(data.totals.avgResolutionHours)} accent="orange" />
+        <Kpi reserveFooter label={t("reports.requests")} value={String(data.totals.requests)} delta={delta(data.totals.requests, data.previous?.requests)} />
+        <Kpi reserveFooter label={t("reports.paidRevenue")} value={formatMoney(data.totals.revenue)} accent="green" delta={delta(data.totals.revenue, data.previous?.revenue)} />
+        <Kpi reserveFooter label={t("reports.profit")} value={formatMoney(data.totals.profit)} delta={delta(data.totals.profit, data.previous?.profit)} />
+        <Kpi reserveFooter label={t("reports.avgHours")} value={formatDurationHours(data.totals.avgResolutionHours)} accent="orange" />
       </div>
 
       <h2 className="mt-6 mb-2 text-xs font-bold tracking-wide text-neutral-500 uppercase">{t("dashboard.serviceQuality")}</h2>
@@ -233,18 +233,29 @@ function delta(current: number, previous: number | undefined) {
   return Math.round(((current - previous) / Math.abs(previous)) * 100);
 }
 
-function Kpi({ label, value, accent = "purple", delta: change, to }: { label: string; value: string; accent?: StatAccent; delta?: number | null; to?: string }) {
+function Kpi({
+  label,
+  value,
+  accent = "purple",
+  delta: change,
+  to,
+  reserveFooter,
+}: {
+  label: string;
+  value: string;
+  accent?: StatAccent;
+  delta?: number | null;
+  to?: string;
+  /** Keep the change line's space on tiles that have none, so a row mixing both stays aligned. */
+  reserveFooter?: boolean;
+}) {
   const { t } = useTranslation();
-  const card = <StatCard label={label} value={value} accent={accent} />;
-  const body = (
-    <div>
-      {card}
-      {change != null ? (
-        <p className={`mt-1 px-1 text-xs font-bold ${change > 0 ? "text-emerald-700" : change < 0 ? "text-red-700" : "text-neutral-500"}`}>
-          {change > 0 ? "▲" : change < 0 ? "▼" : "•"} {Math.abs(change)}% {t("dashboard.vsPrevious")}
-        </p>
-      ) : null}
-    </div>
-  );
-  return to ? <Link to={to}>{body}</Link> : body;
+  const footer =
+    change != null ? (
+      <p className={change > 0 ? "text-emerald-700" : change < 0 ? "text-red-700" : "text-neutral-500"}>
+        {change > 0 ? "▲" : change < 0 ? "▼" : "•"} {Math.abs(change)}% {t("dashboard.vsPrevious")}
+      </p>
+    ) : undefined;
+  const card = <StatCard label={label} value={value} accent={accent} footer={footer} reserveFooter={reserveFooter} />;
+  return to ? <Link to={to} className="block h-full">{card}</Link> : card;
 }
