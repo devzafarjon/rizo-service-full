@@ -123,12 +123,12 @@ export function JobCompletePage() {
   });
 
   const photoMut = useMutation({
-    mutationFn: async (payload: { files?: FileList; photoId?: string }) => {
+    mutationFn: async (payload: { files?: File[]; photoId?: string }) => {
       if (payload.photoId) {
         return api<JobWorkPayload>(`/api/staff/my-jobs/${id}/photos/${payload.photoId}`, { method: "DELETE", token });
       }
       const formData = new FormData();
-      Array.from(payload.files ?? []).forEach((file) => formData.append("photos", file));
+      (payload.files ?? []).forEach((file) => formData.append("photos", file));
       return apiForm<JobWorkPayload>(`/api/staff/my-jobs/${id}/photos`, { token, formData });
     },
     onSuccess: replaceWork,
@@ -230,8 +230,9 @@ export function JobCompletePage() {
   const missingList = missing.map((code) => t(`job.gap.${code}`)).join(", ");
 
   function onFiles(event: ChangeEvent<HTMLInputElement>) {
-    const files = event.target.files;
-    if (files && files.length > 0) {
+    // Copy the files first: the FileList is live, and clearing the input below would empty it before the upload starts.
+    const files = Array.from(event.target.files ?? []);
+    if (files.length > 0) {
       photoMut.mutate({ files });
     }
     event.target.value = "";
