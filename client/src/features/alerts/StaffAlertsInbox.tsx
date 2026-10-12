@@ -46,6 +46,7 @@ function alertTarget(item: StaffAlert) {
   if (item.serviceRequestId) return `/app/requests/${item.serviceRequestId}`;
   if (item.code === "deletionRequest" && typeof item.params?.customerId === "string") return `/app/customers/${item.params.customerId}`;
   if (item.code === "weeklyDigest") return "/app?view=full";
+  if (item.code === "dailyReport" || item.code === "payrollSummary" || item.code === "deadlineSummary") return "/app/automation";
   return "/app/catalog";
 }
 

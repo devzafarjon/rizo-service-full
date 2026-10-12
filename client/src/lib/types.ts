@@ -1004,3 +1004,58 @@ export type WarehouseMovement = {
   createdByName: string | null;
   createdAt: string;
 };
+
+export type AutoJobKey = "deadline_watch" | "daily_report" | "weekly_digest" | "payroll_statements";
+export type AutoSettings = {
+  deadlineEnabled: boolean;
+  deadlineWarningPercent: number;
+  legalWarningDays: number;
+  dailyEnabled: boolean;
+  dailyReportHour: number;
+  payrollEnabled: boolean;
+  payrollPeriod: "weekly" | "monthly";
+  weeklyEnabled: boolean;
+};
+export type AutoRun = {
+  id: string;
+  jobKey: AutoJobKey;
+  trigger: "auto" | "manual";
+  ok: boolean;
+  summary: Record<string, any> | null;
+  error: string | null;
+  ranByName: string | null;
+  startedAt: string;
+  finishedAt: string | null;
+};
+export type AutoJob = {
+  key: AutoJobKey;
+  schedule: { type: "minutely" } | { type: "daily"; hour: number } | { type: "weekly"; weekday: number; hour: number } | { type: "monthly"; day: number; hour: number };
+  enabled: boolean;
+  lastRun: AutoRun | null;
+  lastAutoRun: AutoRun | null;
+  overdueSince: string | null;
+};
+export type AtRiskItem = {
+  id: string;
+  displayId: string;
+  product: string;
+  status: string;
+  priority: string;
+  technician: { id: string; name: string } | null;
+  kind: "sla" | "legal";
+  remainingMs: number;
+  percentLeft: number | null;
+  dueAt: string;
+};
+export type PayrollStatement = {
+  id: string;
+  from: string;
+  to: string;
+  kind: "auto" | "manual";
+  jobs: number;
+  jobsTotal: number;
+  adjustmentsTotal: number;
+  total: number;
+  createdAt: string;
+  technician: { id: string; name: string } | null;
+};

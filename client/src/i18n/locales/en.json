@@ -175,7 +175,8 @@
     "techStock": "Technician stock",
     "checklists": "Checklists",
     "myStock": "My stock",
-    "warehouses": "Warehouses"
+    "warehouses": "Warehouses",
+    "automation": "Automatic tasks"
   },
   "staffHome": {
     "welcome": "Welcome back",
@@ -444,7 +445,13 @@
     "transferRejected": "{{from}} cannot send {{product}}: {{reason}}.",
     "transferStale": "The request from {{who}} for {{qty}} × {{product}} has waited {{hours}} h.",
     "transferLate": "{{product}} ({{qty}}) is late, it was due {{date}}.",
-    "warehouseLow": "{{warehouse}}: {{product}} is running low ({{count}}, minimum {{min}})."
+    "warehouseLow": "{{warehouse}}: {{product}} is running low ({{count}}, minimum {{min}}).",
+    "deadlineSoon": "{{displayId}} ({{product}}): about {{hoursLeft}} h left before the deadline.",
+    "deadlineLegal": "{{displayId}} ({{product}}): about {{hoursLeft}} h left before the legal repair limit.",
+    "deadlineSummary": "{{count}} job(s) are close to their deadline ({{ids}}). Without a technician: {{unassigned}}.",
+    "dailyReport": "Daily report {{date}}: {{created}} new, {{finished}} finished, {{open}} open, {{overdue}} overdue, {{partsWaiting}} waiting for parts.",
+    "payrollStatement": "Your pay statement is ready ({{from}} – {{to}}): {{jobs}} jobs, total {{total}} so‘m.",
+    "payrollSummary": "Payroll {{from}} – {{to}}: {{technicians}} technicians, total {{total}} so‘m."
   },
   "notifications": {
     "title": "Notifications",
@@ -1414,7 +1421,8 @@
       "warehouse.create": "Warehouse added",
       "warehouse.update": "Warehouse changed",
       "warehouse.delete": "Warehouse deleted",
-      "warehouse.stock": "Warehouse stock changed"
+      "warehouse.stock": "Warehouse stock changed",
+      "autojob.run": "Automatic task run by hand"
     }
   },
   "errors": {
@@ -2430,5 +2438,114 @@
     "alertsOn": "Send alerts to Telegram",
     "notSetUp": "The Telegram bot is not set up yet. Ask your administrator.",
     "notSetUpAdmin": "The bot is not set up: set TELEGRAM_BOT_TOKEN on the server (and TELEGRAM_BOT_USERNAME, TELEGRAM_WEBHOOK_URL, TELEGRAM_WEBHOOK_SECRET); see “Telegram bot” in the README."
+  },
+  "auto": {
+    "title": "Automatic tasks",
+    "intro": "What the system does by itself: watches deadlines, sends the owner reports and calculates technicians' pay. A technician fills in nothing. Any task can be tried at once with “Run now”; if the server was asleep, a missed task runs by itself when it wakes.",
+    "on": "On",
+    "off": "Off",
+    "enabled": "Enabled",
+    "runNow": "Run now",
+    "lastRun": "Last run",
+    "never": "Never run yet",
+    "catchUp": "The scheduled time has passed: it will run by itself as soon as the server is awake.",
+    "ranOk": "Done: {{result}}",
+    "trigger": {
+      "auto": "automatic",
+      "manual": "by hand"
+    },
+    "schedule": {
+      "minutely": "Every minute",
+      "daily": "Every day at {{time}}",
+      "weekly": "Every Monday at {{time}}",
+      "monthly": "On the 1st of every month at {{time}}"
+    },
+    "job": {
+      "deadline_watch": {
+        "title": "Deadline watch",
+        "body": "Checks the open jobs. When a job's status timer or its legal repair limit is close to the end, the technician is warned in advance; the admins get one combined message."
+      },
+      "daily_report": {
+        "title": "Daily report",
+        "body": "Every day at the set hour it sends the owner the day's result: new and finished jobs, open and overdue, at risk, waiting for parts, money collected, average rating and the busiest technician."
+      },
+      "weekly_digest": {
+        "title": "Weekly report",
+        "body": "Every Monday morning it sends a short summary of the past week: jobs, revenue, ratings, first-time-fix rate."
+      },
+      "payroll_statements": {
+        "title": "Payroll",
+        "body": "When a week (or month) closes it calculates technicians' pay itself: percent of labour, fixed amount per job, bonuses and penalties. Each technician gets their own statement, the owner a total."
+      }
+    },
+    "result": {
+      "failed": "Error: {{error}}",
+      "off": "Switched off",
+      "deadline": "{{atRisk}} at risk, {{warned}} warned",
+      "daily": "{{created}} new, {{finished}} finished, {{open}} open, {{overdue}} overdue",
+      "weekly": "{{created}} new, {{finished}} finished, {{open}} open, {{overdue}} overdue",
+      "payroll": "{{technicians}} technicians, total {{total}}"
+    },
+    "settings": {
+      "title": "Settings",
+      "percent": "Warning threshold (%)",
+      "percentHint": "A job is warned about when this share of its time is left.",
+      "legalDays": "Before the legal limit (days)",
+      "legalDaysHint": "Warn when the legal repair limit is this many days away (0 = off).",
+      "dailyHour": "Daily report hour",
+      "dailyHourHint": "Tashkent time, 0–23.",
+      "payrollPeriod": "Payroll period",
+      "payrollPeriodHint": "Which period is closed into a statement.",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "atRisk": {
+      "title": "Jobs close to their deadline",
+      "intro": "Open jobs with less than {{percent}}% of their time left or less than {{days}} day(s) to the legal limit. Overdue jobs are not listed: they alert separately.",
+      "emptyTitle": "No job at risk",
+      "emptyBody": "Every job is within its time for now.",
+      "request": "Request",
+      "product": "Product",
+      "technician": "Technician",
+      "left": "Left",
+      "kind": "Kind",
+      "unassigned": "Unassigned",
+      "kinds": {
+        "sla": "Status timer",
+        "legal": "Legal limit"
+      }
+    },
+    "reports": {
+      "title": "Report history",
+      "intro": "Daily and weekly reports the system wrote by itself (they also go to the owner).",
+      "dailyTitle": "Daily report, {{date}}",
+      "weeklyTitle": "Week {{from}} – {{to}}",
+      "created": "New",
+      "finished": "Finished",
+      "open": "Open",
+      "overdue": "Overdue",
+      "atRisk": "At risk",
+      "partsWaiting": "Waiting for parts",
+      "collected": "Payments received",
+      "revenue": "Revenue",
+      "rating": "Average rating",
+      "top": "Busiest technician: {{name}} ({{count}} jobs)"
+    },
+    "statements": {
+      "title": "Pay statements",
+      "intro": "The system calculates technicians' pay itself and saves a statement when the period closes. “Interim” is the last 7 days taken with “Run now”.",
+      "emptyTitle": "No statements yet",
+      "emptyBody": "The first statement is made on Monday, or press “Run now”.",
+      "technician": "Technician",
+      "period": "Period",
+      "jobs": "Jobs",
+      "interim": "interim"
+    },
+    "myStatements": {
+      "title": "My statements",
+      "intro": "The system calculates your pay by itself; you fill in nothing.",
+      "empty": "No statement yet.",
+      "jobs": "{{count}} job(s)"
+    }
   }
 }

@@ -4,7 +4,7 @@ import { prisma } from "./prisma.js";
 import { call } from "./telegram/api.js";
 
 /** Admin alerts that also go to the admin Telegram chat. */
-const ADMIN_TELEGRAM_CODES = new Set(["overdue", "lowStock", "lowRating", "escalation", "weeklyDigest", "deletionRequest"]);
+const ADMIN_TELEGRAM_CODES = new Set(["overdue", "lowStock", "lowRating", "escalation", "weeklyDigest", "deletionRequest", "dailyReport", "payrollSummary", "deadlineSummary"]);
 
 export type DispatchTarget = {
   phone?: string | null;

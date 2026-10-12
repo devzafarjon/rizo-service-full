@@ -6,6 +6,7 @@ import { PageSkeleton } from "../../components/PageSkeleton";
 import { StatCard } from "../../components/StatCard";
 import { useStaffAuth } from "../auth/StaffAuthContext";
 import { api } from "../../lib/api";
+import type { PayrollStatement } from "../../lib/types";
 import { formatDate, formatMoney, formatRequestId } from "../../lib/format";
 import { segmentedGroupClass, segmentedItemClass } from "../../components/segmented";
 
@@ -30,6 +31,12 @@ export function MyEarningsPage() {
       }>(`/api/staff/my-jobs/earnings?preset=${preset}`, { token }),
   });
 
+  const statements = useQuery({
+    queryKey: ["staff", "auto", "my-statements"],
+    enabled: Boolean(token),
+    queryFn: () => api<{ statements: PayrollStatement[] }>("/api/staff/auto-jobs/my-statements", { token }),
+  });
+
   if (data.isLoading) return <PageSkeleton />;
   const result = data.data;
   if (!result) return <EmptyState title={t("reports.loadFailed")} body={t("reports.loadFailedBody")} />;
@@ -50,6 +57,25 @@ export function MyEarningsPage() {
         <StatCard label={t("payroll.jobsTotal")} value={formatMoney(result.jobsTotal)} accent="green" />
         <StatCard label={t("payroll.adjustments")} value={formatMoney(result.adjustmentsTotal)} accent={result.adjustmentsTotal < 0 ? "red" : "orange"} />
       </div>
+      <section className="mt-4 rounded-2xl border border-neutral-200 bg-white p-5">
+        <h2 className="text-sm font-bold tracking-wide text-neutral-500 uppercase">{t("auto.myStatements.title")}</h2>
+        <p className="mt-1 text-xs text-neutral-500">{t("auto.myStatements.intro")}</p>
+        {(statements.data?.statements ?? []).length === 0 ? <p className="mt-3 text-sm text-neutral-500">{t("auto.myStatements.empty")}</p> : null}
+        <ul className="mt-3 divide-y divide-neutral-100 text-sm">
+          {(statements.data?.statements ?? []).map((row) => (
+            <li key={row.id} className="flex items-center justify-between gap-3 py-2">
+              <span>
+                <span className="font-semibold">
+                  {formatDate(row.from)} – {formatDate(row.to)}
+                </span>
+                {row.kind === "manual" ? <span className="ml-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800 uppercase">{t("auto.statements.interim")}</span> : null}
+                <span className="block text-xs text-neutral-500">{t("auto.myStatements.jobs", { count: row.jobs })}</span>
+              </span>
+              <span className="font-bold tabular-nums">{formatMoney(row.total)}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
       <section className="mt-4 rounded-2xl border border-neutral-200 bg-white p-5">
         <h2 className="text-sm font-bold tracking-wide text-neutral-500 uppercase">{t("payroll.jobs")}</h2>
         {result.jobs.length === 0 ? <p className="mt-3 text-sm text-neutral-500">{t("payroll.noJobs")}</p> : null}

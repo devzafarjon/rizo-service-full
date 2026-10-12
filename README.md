@@ -290,6 +290,13 @@ One bot for customers and staff (`server/src/lib/telegram/`: `customer.ts`, `sta
 
 ---
 
+## Automatic tasks
+Admin page **Automatic tasks** (`/app/automation`; accountant read-only): the system does the routine work by itself so that nobody writes reports or watches the clock.
+- **Deadline watch** (every minute): a technician is warned once before a job's status timer ends or the legal repair limit is reached; the admins get one summary. The page lists the jobs at risk.
+- **Daily report** (every day at `daily_report_hour`, Tashkent): new / finished / open / overdue / at risk / waiting for parts, money collected, average rating, busiest technician. **Weekly report** (Monday 09:00): the existing digest.
+- **Payroll statements** (Monday 09:30 for the week before, or the 1st for the month before): pay of every technician (percent of labour + fixed per job + bonuses/penalties) is calculated and stored; each technician sees their own in *My earnings* (website and Texnik app) and gets a notification, the owner gets the total.
+- Each job has a **Run now** button (the payroll one shows the last 7 days up to now, marked "interim"), a switch, a run log and a catch-up: a job whose time passed while the free host slept runs as soon as the server wakes. Settings: warning share, legal-limit days, daily hour, payroll period.
+
 ## Request ID (`display_id`)
 
 Shown as `#DDMMYYRRNNNN`.

@@ -184,6 +184,7 @@ model StaffUser {
   schedules          TechnicianSchedule[]
   alerts             Notification[]       @relation("StaffAlerts")
   deviceTokens       DeviceToken[]
+  payrollStatements  PayrollStatement[]
   // Product categories this technician can repair (empty = any) and a home base used to pick the nearest one.
   skillCategories    String[]             @default([]) @map("skill_categories")
   baseLat            Float?               @map("base_lat")
@@ -968,4 +969,39 @@ model TelegramLinkToken {
 
   @@index([subjectId])
   @@map("telegram_link_tokens")
+}
+
+// One run of an automatic job (deadline watch, daily report, weekly digest, payroll statements), by schedule or by the "Run now" button.
+model AutoJobRun {
+  id         String    @id @default(cuid())
+  jobKey     String    @map("job_key")
+  trigger    String    @default("auto") // auto | manual
+  ok         Boolean   @default(true)
+  summary    Json?
+  error      String?
+  ranByName  String?   @map("ran_by_name")
+  startedAt  DateTime  @default(now()) @map("started_at")
+  finishedAt DateTime? @map("finished_at")
+
+  @@index([jobKey, startedAt])
+  @@map("auto_job_runs")
+}
+
+// Pay for one technician for one period, calculated by the system (percent of labour + fixed per job + bonuses/penalties).
+model PayrollStatement {
+  id               String    @id @default(cuid())
+  staffUserId      String    @map("staff_user_id")
+  periodFrom       DateTime  @map("period_from") @db.Date
+  periodTo         DateTime  @map("period_to") @db.Date
+  kind             String    @default("auto") // auto (closed period) | manual (last 7 days up to now)
+  jobs             Int
+  jobsTotal        Decimal   @map("jobs_total") @db.Decimal(14, 2)
+  adjustmentsTotal Decimal   @map("adjustments_total") @db.Decimal(14, 2)
+  total            Decimal   @db.Decimal(14, 2)
+  createdAt        DateTime  @default(now()) @map("created_at")
+  staffUser        StaffUser @relation(fields: [staffUserId], references: [id], onDelete: Cascade)
+
+  @@unique([staffUserId, periodFrom, periodTo])
+  @@index([periodTo])
+  @@map("payroll_statements")
 }
