@@ -7,7 +7,7 @@ import { tashkentCalendarDate } from "./lib/displayId.js";
 import { verifyToken } from "./lib/jwt.js";
 import { bindIo } from "./lib/realtime.js";
 import { runHousekeeping, syncOverdueRequests } from "./lib/sla.js";
-import { maybeSendWeeklyDigest } from "./lib/digest.js";
+import { tickAutoJobs } from "./lib/autoJobs.js";
 import { startTelegramBot } from "./lib/telegramBot.js";
 
 // A failed fire-and-forget promise is logged instead of taking the whole API down (Node exits on an unhandled rejection).
@@ -56,9 +56,10 @@ function startOpsJobs() {
   };
   runSla();
   setInterval(runSla, 60_000);
-  const tickDigest = () => void maybeSendWeeklyDigest().catch((error) => console.error("[digest]", error));
-  tickDigest();
-  setInterval(tickDigest, 30 * 60_000);
+  // Deadline watch, daily report, weekly digest and payroll statements (also catches up what was missed while the server slept).
+  const tickAuto = () => void tickAutoJobs().catch((error) => console.error("[auto-jobs]", error));
+  tickAuto();
+  setInterval(tickAuto, 60_000);
 
   if (!env.backupEnabled) return;
   let lastBackupDay = "";

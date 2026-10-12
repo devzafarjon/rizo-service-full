@@ -17,6 +17,7 @@ import { staffAuthRouter } from "./routes/staffAuth.js";
 import { techniciansRouter } from "./routes/technicians.js";
 import { settingsRouter } from "./routes/settings.js";
 import { alertsRouter } from "./routes/alerts.js";
+import { autoJobsRouter } from "./routes/autoJobs.js";
 import { auditRouter } from "./routes/audit.js";
 import { outboundRouter } from "./routes/outbound.js";
 import { tagsRouter } from "./routes/tags.js";
@@ -67,6 +68,7 @@ export function createApp() {
   app.use("/api/staff/settings", settingsRouter);
   app.use("/api/staff/devices", staffDevicesRouter);
   app.use("/api/staff/alerts", alertsRouter);
+  app.use("/api/staff/auto-jobs", autoJobsRouter);
   app.use("/api/staff/audit", auditRouter);
   app.use("/api/staff/outbound", outboundRouter);
   app.use("/api/staff/tags", tagsRouter);

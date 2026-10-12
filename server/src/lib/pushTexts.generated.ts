@@ -25,7 +25,13 @@ export const PUSH_TEXTS = {
       "weeklyDigest": "Hafta {{from}} – {{to}}: yangi {{created}}, yakunlangan {{finished}}, ochiq {{open}}, kechikkan {{overdue}}",
       "visitScheduled": "{{id}} uchun tashrif {{date}} {{slot}} ga belgilandi. Iltimos, tasdiqlang.",
       "etaUpdate": "Texnik yo‘lda: taxminan {{minutes}} daqiqa",
-      "warrantyExpiring": "{{product}} kafolati {{until}} da tugaydi. Uzaytirish mumkin: «Mahsulotlarim» bo‘limida."
+      "warrantyExpiring": "{{product}} kafolati {{until}} da tugaydi. Uzaytirish mumkin: «Mahsulotlarim» bo‘limida.",
+      "deadlineSoon": "{{displayId}} ({{product}}): vaqt tugashiga taxminan {{hoursLeft}} soat qoldi.",
+      "deadlineLegal": "{{displayId}} ({{product}}): qonuniy ta’mirlash muddatiga taxminan {{hoursLeft}} soat qoldi.",
+      "deadlineSummary": "{{count}} ta so‘rovning muddati yaqin ({{ids}}). Texniksiz: {{unassigned}}.",
+      "dailyReport": "Kunlik hisobot {{date}}: {{created}} yangi, {{finished}} tugagan, {{open}} ochiq, {{overdue}} kechikkan, {{partsWaiting}} qism kutmoqda.",
+      "payrollStatement": "Ish haqi hisobingiz tayyor ({{from}} – {{to}}): {{jobs}} ta ish, jami {{total}} so‘m.",
+      "payrollSummary": "Ish haqi {{from}} – {{to}}: {{technicians}} texnik, jami {{total}} so‘m."
     },
     "type": {
       "installation": "O‘rnatish",
@@ -72,7 +78,13 @@ export const PUSH_TEXTS = {
       "weeklyDigest": "Неделя {{from}} – {{to}}: новых {{created}}, завершено {{finished}}, открыто {{open}}, просрочено {{overdue}}",
       "visitScheduled": "Визит по заявке {{id}} назначен на {{date}} {{slot}}. Пожалуйста, подтвердите.",
       "etaUpdate": "Мастер в пути: примерно {{minutes}} мин",
-      "warrantyExpiring": "Гарантия на {{product}} заканчивается {{until}}. Продлить можно в разделе «Мои товары»."
+      "warrantyExpiring": "Гарантия на {{product}} заканчивается {{until}}. Продлить можно в разделе «Мои товары».",
+      "deadlineSoon": "{{displayId}} ({{product}}): до конца срока примерно {{hoursLeft}} ч.",
+      "deadlineLegal": "{{displayId}} ({{product}}): до законного срока ремонта примерно {{hoursLeft}} ч.",
+      "deadlineSummary": "У {{count}} заявок скоро срок ({{ids}}). Без техника: {{unassigned}}.",
+      "dailyReport": "Дневной отчёт {{date}}: {{created}} новых, {{finished}} завершено, {{open}} открыто, {{overdue}} просрочено, {{partsWaiting}} ждут запчасть.",
+      "payrollStatement": "Расчёт вашей зарплаты готов ({{from}} – {{to}}): {{jobs}} работ, итого {{total}} сум.",
+      "payrollSummary": "Зарплата {{from}} – {{to}}: {{technicians}} техников, итого {{total}} сум."
     },
     "type": {
       "installation": "Установка",
@@ -119,7 +131,13 @@ export const PUSH_TEXTS = {
       "weeklyDigest": "Week {{from}} – {{to}}: {{created}} new, {{finished}} finished, {{open}} open, {{overdue}} overdue",
       "visitScheduled": "A visit for {{id}} is set for {{date}} {{slot}}. Please confirm it.",
       "etaUpdate": "The technician is on the way: about {{minutes}} min",
-      "warrantyExpiring": "The warranty for {{product}} ends on {{until}}. You can extend it under “My products”."
+      "warrantyExpiring": "The warranty for {{product}} ends on {{until}}. You can extend it under “My products”.",
+      "deadlineSoon": "{{displayId}} ({{product}}): about {{hoursLeft}} h left before the deadline.",
+      "deadlineLegal": "{{displayId}} ({{product}}): about {{hoursLeft}} h left before the legal repair limit.",
+      "deadlineSummary": "{{count}} job(s) are close to their deadline ({{ids}}). Without a technician: {{unassigned}}.",
+      "dailyReport": "Daily report {{date}}: {{created}} new, {{finished}} finished, {{open}} open, {{overdue}} overdue, {{partsWaiting}} waiting for parts.",
+      "payrollStatement": "Your pay statement is ready ({{from}} – {{to}}): {{jobs}} jobs, total {{total}} so‘m.",
+      "payrollSummary": "Payroll {{from}} – {{to}}: {{technicians}} technicians, total {{total}} so‘m."
     },
     "type": {
       "installation": "Installation",

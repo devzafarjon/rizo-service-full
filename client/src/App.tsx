@@ -47,6 +47,7 @@ import { TagLandingPage } from "./features/tags/TagLandingPage";
 import { CalendarPage } from "./features/management/CalendarPage";
 import { MapPage } from "./features/management/MapPage";
 import { MyEarningsPage } from "./features/management/MyEarningsPage";
+import { AutomationPage } from "./features/automation/AutomationPage";
 import { PartOrdersPage } from "./features/management/PartOrdersPage";
 import { SerialCardPage } from "./features/management/SerialCardPage";
 import { ServiceCentersPage } from "./features/management/ServiceCentersPage";
@@ -123,7 +124,8 @@ export default function App() {
           <Route element={<RoleRoute roles={["admin", "receptionist", "warehouse"]} />}>
             <Route path="part-orders" element={<PartOrdersPage />} />
           </Route>
-          <Route element={<RoleRoute roles={["admin", "receptionist", "accountant"]} />}>
+          <Route element={<RoleRoute roles={["admin", "accountant"]} />}>
+            <Route path="automation" element={<AutomationPage />} />
           </Route>
           <Route element={<RoleRoute roles={["admin", "receptionist"]} />}>
             <Route path="kanban" element={<AdminKanbanPage />} />

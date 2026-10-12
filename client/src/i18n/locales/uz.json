@@ -174,7 +174,8 @@
     "account": "Mening ma‘lumotlarim",
     "techStock": "Texnik zaxirasi",
     "checklists": "Tekshiruv ro‘yxatlari",
-    "myStock": "Mening zaxiram"
+    "myStock": "Mening zaxiram",
+    "automation": "Avtomatik vazifalar"
   },
   "staffHome": {
     "welcome": "Xush kelibsiz",
@@ -428,7 +429,13 @@
     "weeklyDigest": "Hafta {{from}} – {{to}}: yangi {{created}}, yakunlangan {{finished}}, ochiq {{open}}, kechikkan {{overdue}}",
     "visitScheduled": "{{id}} uchun tashrif {{date}} {{slot}} ga belgilandi. Iltimos, tasdiqlang.",
     "etaUpdate": "Texnik yo‘lda: taxminan {{minutes}} daqiqa",
-    "warrantyExpiring": "{{product}} kafolati {{until}} da tugaydi. Uzaytirish mumkin: «Mahsulotlarim» bo‘limida."
+    "warrantyExpiring": "{{product}} kafolati {{until}} da tugaydi. Uzaytirish mumkin: «Mahsulotlarim» bo‘limida.",
+    "deadlineSoon": "{{displayId}} ({{product}}): vaqt tugashiga taxminan {{hoursLeft}} soat qoldi.",
+    "deadlineLegal": "{{displayId}} ({{product}}): qonuniy ta’mirlash muddatiga taxminan {{hoursLeft}} soat qoldi.",
+    "deadlineSummary": "{{count}} ta so‘rovning muddati yaqin ({{ids}}). Texniksiz: {{unassigned}}.",
+    "dailyReport": "Kunlik hisobot {{date}}: {{created}} yangi, {{finished}} tugagan, {{open}} ochiq, {{overdue}} kechikkan, {{partsWaiting}} qism kutmoqda.",
+    "payrollStatement": "Ish haqi hisobingiz tayyor ({{from}} – {{to}}): {{jobs}} ta ish, jami {{total}} so‘m.",
+    "payrollSummary": "Ish haqi {{from}} – {{to}}: {{technicians}} texnik, jami {{total}} so‘m."
   },
   "notifications": {
     "title": "Bildirishnomalar",
@@ -1363,7 +1370,8 @@
       "request.visitConfirmed": "Mijoz tashrifni tasdiqladi",
       "sale.import": "Sotuv RIZO marketdan kelib tushdi",
       "stock.issue": "Texnikka ehtiyot qism berildi",
-      "stock.return": "Texnikdan ehtiyot qism qaytarildi"
+      "stock.return": "Texnikdan ehtiyot qism qaytarildi",
+      "autojob.run": "Avtomatik vazifa qo‘lda ishga tushirildi"
     }
   },
   "errors": {
@@ -2130,5 +2138,114 @@
     "denied": "Kameraga ruxsat berilmagan. Brauzer manzil satridagi kamera belgisidan ruxsat bering yoki rasmni fayldan tanlang.",
     "unavailable": "Kamera topilmadi yoki band. Rasmni fayldan tanlang.",
     "chooseFile": "Fayldan tanlash"
+  },
+  "auto": {
+    "title": "Avtomatik vazifalar",
+    "intro": "Tizim o‘zi bajaradigan ishlar: muddatni kuzatish, egasiga hisobotlar va texniklarning ish haqini hisoblash. Texnik hech narsa to‘ldirmaydi. Har bir vazifani «Hozir ishga tushir» tugmasi bilan darhol sinab ko‘rish mumkin; server uxlab qolgan bo‘lsa, o‘tkazib yuborilgan vazifa uyg‘ongach o‘zi ishga tushadi.",
+    "on": "Yoqilgan",
+    "off": "O‘chiq",
+    "enabled": "Yoqilgan",
+    "runNow": "Hozir ishga tushir",
+    "lastRun": "Oxirgi ishga tushish",
+    "never": "Hali ishga tushmagan",
+    "catchUp": "Rejadagi vaqt o‘tib ketgan: server uyg‘oq bo‘lishi bilan o‘zi ishga tushadi.",
+    "ranOk": "Bajarildi: {{result}}",
+    "trigger": {
+      "auto": "avtomatik",
+      "manual": "qo‘lda"
+    },
+    "schedule": {
+      "minutely": "Har daqiqada",
+      "daily": "Har kuni soat {{time}} da",
+      "weekly": "Har dushanba soat {{time}} da",
+      "monthly": "Har oyning 1-kuni soat {{time}} da"
+    },
+    "job": {
+      "deadline_watch": {
+        "title": "Muddatni kuzatish",
+        "body": "Ochiq so‘rovlarni tekshiradi. Vaqti tugashiga yaqin qolgan yoki qonuniy ta’mirlash muddati yaqinlashgan so‘rov haqida texnikka oldindan xabar yuboradi, adminlarga bitta umumiy xabar boradi."
+      },
+      "daily_report": {
+        "title": "Kunlik hisobot",
+        "body": "Har kuni belgilangan soatda egasiga kun natijasini yuboradi: yangi va tugagan so‘rovlar, ochiq va kechikkanlar, xavf ostidagilar, qism kutayotganlar, tushum, o‘rtacha baho va eng faol texnik."
+      },
+      "weekly_digest": {
+        "title": "Haftalik hisobot",
+        "body": "Har dushanba ertalab o‘tgan haftaning qisqa natijasini yuboradi: so‘rovlar, tushum, baho, birinchi urinishda tuzatish ulushi."
+      },
+      "payroll_statements": {
+        "title": "Ish haqi hisobi",
+        "body": "Har hafta (yoki oy) yopilganda texniklarning ish haqini o‘zi hisoblaydi: ish haqining ulushi, har ish uchun qat’iy summa, bonus va jarimalar. Har bir texnikka o‘z hisobi, egasiga umumiy xulosa boradi."
+      }
+    },
+    "result": {
+      "failed": "Xato: {{error}}",
+      "off": "O‘chirilgan",
+      "deadline": "{{atRisk}} ta xavf ostida, {{warned}} tasi uchun ogohlantirish yuborildi",
+      "daily": "{{created}} yangi, {{finished}} tugagan, {{open}} ochiq, {{overdue}} kechikkan",
+      "weekly": "{{created}} yangi, {{finished}} tugagan, {{open}} ochiq, {{overdue}} kechikkan",
+      "payroll": "{{technicians}} texnik, jami {{total}}"
+    },
+    "settings": {
+      "title": "Sozlamalar",
+      "percent": "Ogohlantirish chegarasi (%)",
+      "percentHint": "So‘rovning vaqtidan shuncha ulushi qolganda ogohlantiriladi.",
+      "legalDays": "Qonuniy muddatgacha (kun)",
+      "legalDaysHint": "Qonuniy ta’mirlash muddatiga shuncha kun qolsa ogohlantiriladi (0 — o‘chiq).",
+      "dailyHour": "Kunlik hisobot soati",
+      "dailyHourHint": "Toshkent vaqti bilan, 0–23.",
+      "payrollPeriod": "Ish haqi davri",
+      "payrollPeriodHint": "Hisob qaysi davr yopilganda tuziladi.",
+      "weekly": "Haftalik",
+      "monthly": "Oylik"
+    },
+    "atRisk": {
+      "title": "Muddati yaqin so‘rovlar",
+      "intro": "Vaqtining {{percent}}% dan kami qolgan yoki qonuniy muddatga {{days}} kundan kam qolgan ochiq so‘rovlar. Kechikkanlar bu yerda emas, ular alohida ogohlantiriladi.",
+      "emptyTitle": "Xavf ostida so‘rov yo‘q",
+      "emptyBody": "Hozircha hamma so‘rov muddat ichida.",
+      "request": "So‘rov",
+      "product": "Mahsulot",
+      "technician": "Texnik",
+      "left": "Qoldi",
+      "kind": "Muddat turi",
+      "unassigned": "Tayinlanmagan",
+      "kinds": {
+        "sla": "Holat vaqti",
+        "legal": "Qonuniy muddat"
+      }
+    },
+    "reports": {
+      "title": "Hisobotlar tarixi",
+      "intro": "Tizim o‘zi tuzgan kunlik va haftalik hisobotlar (egasiga ham yuboriladi).",
+      "dailyTitle": "Kunlik hisobot, {{date}}",
+      "weeklyTitle": "Hafta {{from}} – {{to}}",
+      "created": "Yangi",
+      "finished": "Tugagan",
+      "open": "Ochiq",
+      "overdue": "Kechikkan",
+      "atRisk": "Xavf ostida",
+      "partsWaiting": "Qism kutmoqda",
+      "collected": "Yig‘ilgan to‘lov",
+      "revenue": "Tushum",
+      "rating": "O‘rtacha baho",
+      "top": "Eng faol texnik: {{name}} ({{count}} ta ish)"
+    },
+    "statements": {
+      "title": "Ish haqi hisoblari",
+      "intro": "Tizim texniklarning ish haqini o‘zi hisoblab, davr yopilganda saqlaydi. «Oraliq» — «Hozir ishga tushir» bilan olingan oxirgi 7 kunlik hisob.",
+      "emptyTitle": "Hali hisob yo‘q",
+      "emptyBody": "Birinchi hisob dushanba kuni tuziladi yoki «Hozir ishga tushir» tugmasini bosing.",
+      "technician": "Texnik",
+      "period": "Davr",
+      "jobs": "Ishlar",
+      "interim": "oraliq"
+    },
+    "myStatements": {
+      "title": "Hisob-kitoblarim",
+      "intro": "Tizim ish haqingizni o‘zi hisoblaydi, hech narsa to‘ldirmaysiz.",
+      "empty": "Hali hisob tuzilmagan.",
+      "jobs": "{{count}} ta ish"
+    }
   }
 }
