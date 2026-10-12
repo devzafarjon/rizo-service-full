@@ -2422,7 +2422,8 @@
     "deliverToHint": "When the order arrives it is booked into this warehouse.",
     "deliverAuto": "Automatic (the job’s or the central one)",
     "servedFrom": "Warehouse",
-    "transferFrom": "from warehouse:"
+    "transferFrom": "from warehouse:",
+    "offlineFastest": "No connection: the sources could not be loaded. If you send the request, the system picks the fastest source itself."
   },
   "telegram": {
     "title": "Telegram",

@@ -2422,7 +2422,8 @@
     "deliverToHint": "Buyurtma kelganda shu omborga kirim bo‘ladi.",
     "deliverAuto": "Avtomatik (ish yoki markaziy ombor)",
     "servedFrom": "Ombor",
-    "transferFrom": "ombordan:"
+    "transferFrom": "ombordan:",
+    "offlineFastest": "Aloqa yo'q: manbalarni ko'rib bo'lmadi. So'rov yuborilsa, tizim eng tez yetib keladigan manbani o'zi tanlaydi."
   },
   "telegram": {
     "title": "Telegram",
