@@ -6,6 +6,7 @@ import { asyncHandler } from "../lib/asyncHandler.js";
 import { HttpError } from "../lib/httpError.js";
 import { parseBody } from "../lib/parse.js";
 import { prisma } from "../lib/prisma.js";
+import { warrantyStartsOn } from "../lib/settings.js";
 import { handlePrismaError } from "../lib/prismaErrors.js";
 import { paymentFor } from "../lib/assignment.js";
 import { computeWarrantyStatus, money, parseDateOnly, toDateOnly, voidedExpiry, warrantyExpiryFor } from "../lib/warranty.js";
@@ -97,7 +98,7 @@ salesRouter.post(
     const { product } = await assertCustomerAndProduct(body.customerId, body.productId);
     const saleDate = parseDateOnly(body.saleDate);
     const warrantyMonths = body.warrantyMonths ?? product.warrantyMonths;
-    const warrantyExpiry = warrantyExpiryFor({ saleDate, installationDate: null, warrantyMonths, extensionMonths: 0 }, product);
+    const warrantyExpiry = warrantyExpiryFor({ saleDate, installationDate: null, warrantyMonths }, await warrantyStartsOn());
     const serialNumber = body.serialNumber?.trim() || null;
     if (serialNumber && (await prisma.sale.findFirst({ where: { serialNumber, productId: product.id } }))) {
       throw new HttpError(409, "This serial number is already registered", "serialExists");
@@ -148,10 +149,10 @@ salesRouter.patch(
     const { product } = await assertCustomerAndProduct(customerId, productId);
     const saleDate = body.saleDate ? parseDateOnly(body.saleDate) : existing.saleDate;
     const warrantyMonths = body.warrantyMonths ?? existing.warrantyMonths;
-    // Warranty runs from installation when the product counts from installation and has been installed.
+    // Warranty runs from installation when the company setting says so and the product has been installed.
     const warrantyExpiry = existing.voidedAt
       ? voidedExpiry(saleDate)
-      : warrantyExpiryFor({ saleDate, installationDate: existing.installationDate, warrantyMonths, extensionMonths: existing.extensionMonths }, product);
+      : warrantyExpiryFor({ saleDate, installationDate: existing.installationDate, warrantyMonths }, await warrantyStartsOn());
     try {
       const sale = await prisma.sale.update({
         where: { id: existing.id },
@@ -214,24 +215,6 @@ salesRouter.delete(
 );
 
 salesRouter.post(
-  "/:id/extend",
-  asyncHandler(async (req, res) => {
-    const body = parseBody(z.object({ months: z.coerce.number().int().min(1).max(60), reason: z.string().trim().min(1, "Give a reason").max(200) }), req.body);
-    const sale = await loadSale(req.params.id);
-    if (sale.voidedAt) throw new HttpError(400, "This warranty was voided", "warrantyVoided");
-    const extensionMonths = sale.extensionMonths + body.months;
-    const warrantyExpiry = warrantyExpiryFor({ ...sale, extensionMonths }, sale.product);
-    const updated = await prisma.sale.update({
-      where: { id: sale.id },
-      data: { extensionMonths, extensionReason: body.reason, warrantyExpiry },
-      include: saleInclude,
-    });
-    await writeAudit({ actor: staffActor(req.staff), action: "sale.warranty.extend", entityType: "Sale", entityId: sale.id, oldValue: { warrantyExpiry: toDateOnly(sale.warrantyExpiry) }, newValue: { months: body.months, reason: body.reason, warrantyExpiry: toDateOnly(warrantyExpiry) } });
-    res.json({ sale: serializeSale(updated) });
-  }),
-);
-
-salesRouter.post(
   "/:id/void",
   asyncHandler(async (req, res) => {
     const body = parseBody(z.object({ reason: z.string().trim().min(1, "Give a reason").max(200) }), req.body);
@@ -250,7 +233,7 @@ salesRouter.post(
   "/:id/restore",
   asyncHandler(async (req, res) => {
     const sale = await loadSale(req.params.id);
-    const warrantyExpiry = warrantyExpiryFor(sale, sale.product);
+    const warrantyExpiry = warrantyExpiryFor(sale, await warrantyStartsOn());
     const updated = await prisma.sale.update({
       where: { id: sale.id },
       data: { voidedAt: null, voidReason: null, warrantyExpiry },
@@ -283,12 +266,12 @@ salesRouter.get(
         serialNumber: sale.serialNumber,
         saleDate: toDateOnly(sale.saleDate),
         installationDate: sale.installationDate ? toDateOnly(sale.installationDate) : null,
-        warrantyMonths: sale.warrantyMonths + sale.extensionMonths,
+        warrantyMonths: sale.warrantyMonths,
         warrantyExpiry: toDateOnly(sale.warrantyExpiry),
         warrantyStatus: computeWarrantyStatus(sale.warrantyMonths, sale.warrantyExpiry),
         voided: Boolean(sale.voidedAt),
         voidReason: sale.voidReason,
-        startsOn: sale.product.warrantyStartsOn,
+        startsOn: await warrantyStartsOn(),
         coversLabor: sale.product.warrantyCoversLabor,
         coversParts: sale.product.warrantyCoversParts,
         customer,
@@ -357,8 +340,6 @@ function serializeSale(sale: {
   serialNumber: string | null;
   source: string;
   isVerified: boolean;
-  extensionMonths: number;
-  extensionReason: string | null;
   voidedAt: Date | null;
   voidReason: string | null;
   invoiceNumber: string;
@@ -380,8 +361,6 @@ function serializeSale(sale: {
     serialNumber: sale.serialNumber,
     source: sale.source,
     isVerified: sale.isVerified,
-    extensionMonths: sale.extensionMonths,
-    extensionReason: sale.extensionReason,
     voided: Boolean(sale.voidedAt),
     voidReason: sale.voidReason,
     warrantyStatus: computeWarrantyStatus(sale.warrantyMonths, sale.warrantyExpiry),

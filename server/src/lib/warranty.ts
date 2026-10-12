@@ -1,6 +1,7 @@
 import { HttpError } from "./httpError.js";
 
 export type WarrantyStatus = "in_warranty" | "expired" | "not_applicable";
+export type WarrantyStartsOn = "sale" | "installation";
 
 export function parseDateOnly(value: string): Date {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -50,15 +51,15 @@ export function money(value: { toString(): string } | number): number {
 }
 
 /**
- * Warranty end date for a sale. It starts at installation when the product is set to count from
- * installation and has been installed, otherwise at the sale date; extensions are added on top.
+ * Warranty end date for a sale. The company setting `warranty_starts_on` decides where it starts: "sale" (the purchase date)
+ * or "installation" (the day an installation request was completed; the sale date until then).
  */
 export function warrantyExpiryFor(
-  sale: { saleDate: Date; installationDate: Date | null; warrantyMonths: number; extensionMonths: number },
-  product: { warrantyStartsOn: string },
+  sale: { saleDate: Date; installationDate: Date | null; warrantyMonths: number },
+  startsOn: WarrantyStartsOn,
 ): Date {
-  const base = product.warrantyStartsOn === "installation" && sale.installationDate ? sale.installationDate : sale.saleDate;
-  return addMonths(base, sale.warrantyMonths + sale.extensionMonths);
+  const base = startsOn === "installation" && sale.installationDate ? sale.installationDate : sale.saleDate;
+  return addMonths(base, sale.warrantyMonths);
 }
 
 /** A voided warranty is stored as already expired so every status check treats it as expired. */

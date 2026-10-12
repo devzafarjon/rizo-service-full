@@ -1,48 +1,25 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { PackagePlus, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { PackagePlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { WarrantyBadge } from "../../components/Badges";
 import { EmptyState } from "../../components/EmptyState";
-import { Modal } from "../../components/Modal";
 import { PageSkeleton } from "../../components/PageSkeleton";
-import { Spinner } from "../../components/Spinner";
-import { useToast } from "../../components/toast";
 import { useCustomerAuth } from "../auth/CustomerAuthContext";
-import { api, apiErrorMessage } from "../../lib/api";
-import { formatDate, formatMoney } from "../../lib/format";
+import { api } from "../../lib/api";
+import { formatDate } from "../../lib/format";
 import { localizedName } from "../../lib/localized";
-import type { PortalSale, WarrantyPlan } from "../../lib/types";
+import type { PortalSale } from "../../lib/types";
 
-/** The customer's products: warranty countdown, a way to book service, and paid warranty extensions. */
+/** The customer's products: warranty countdown and a way to book service. */
 export function PortalProductsPage() {
   const { t } = useTranslation();
   const { token } = useCustomerAuth();
-  const { notify } = useToast();
-  const queryClient = useQueryClient();
-  const [planFor, setPlanFor] = useState<PortalSale | null>(null);
-
   const sales = useQuery({
     queryKey: ["customer", "sales"],
     enabled: Boolean(token),
     queryFn: () => api<{ sales: PortalSale[] }>("/api/customer/sales", { token }),
   });
-  const plans = useQuery({
-    queryKey: ["customer", "plans", planFor?.id],
-    enabled: Boolean(token && planFor),
-    queryFn: () => api<{ plans: WarrantyPlan[]; requestedPlanId: string | null }>(`/api/customer/warranty-plans?saleId=${planFor!.id}`, { token }),
-  });
-  const request = useMutation({
-    mutationFn: (planId: string) => api(`/api/customer/sales/${planFor!.id}/warranty-plan`, { method: "POST", token, body: JSON.stringify({ planId }) }),
-    onSuccess: async () => {
-      setPlanFor(null);
-      notify(t("plans.requested"));
-      await queryClient.invalidateQueries({ queryKey: ["customer"] });
-    },
-    onError: (error) => notify(apiErrorMessage(error, t), "error"),
-  });
-
   if (sales.isLoading) return <PageSkeleton />;
   const rows = (sales.data?.sales ?? []).filter((row) => !row.voided);
 
@@ -88,41 +65,12 @@ export function PortalProductsPage() {
                   <Link to={`/portal/new?saleId=${sale.id}`} className="btn-rizo h-11">
                     {t("products.bookService")}
                   </Link>
-                  <button type="button" className="btn-rizo-ghost h-11" onClick={() => setPlanFor(sale)}>
-                    <ShieldCheck size={16} />
-                    {t("products.extend")}
-                  </button>
                 </div>
               </li>
             );
           })}
         </ul>
       )}
-
-      <Modal open={Boolean(planFor)} onClose={() => setPlanFor(null)} title={t("products.extendTitle")}>
-        {plans.isLoading ? (
-          <p className="text-sm text-neutral-500">{t("common.loading")}</p>
-        ) : (plans.data?.plans ?? []).length === 0 ? (
-          <p className="text-sm text-neutral-600">{t("products.noPlans")}</p>
-        ) : (
-          <div className="space-y-3">
-            <p className="text-sm text-neutral-600">{t("products.extendBody")}</p>
-            {(plans.data?.plans ?? []).map((plan) => (
-              <div key={plan.id} className="flex items-center justify-between gap-3 rounded-xl border border-neutral-200 p-3">
-                <div>
-                  <p className="font-bold">{localizedName(plan)}</p>
-                  <p className="text-sm text-neutral-500">{formatMoney(plan.price)}</p>
-                </div>
-                <button type="button" className="btn-rizo h-10" disabled={request.isPending || plans.data?.requestedPlanId != null} onClick={() => request.mutate(plan.id)}>
-                  {request.isPending ? <Spinner className="h-4 w-4" /> : null}
-                  {plans.data?.requestedPlanId === plan.id ? t("products.asked") : t("products.ask")}
-                </button>
-              </div>
-            ))}
-            <p className="text-xs text-neutral-500">{t("products.payAtService")}</p>
-          </div>
-        )}
-      </Modal>
     </div>
   );
 }

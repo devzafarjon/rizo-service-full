@@ -173,7 +173,6 @@
     "myProducts": "Mahsulotlarim",
     "account": "Mening ma‘lumotlarim",
     "techStock": "Texnik zaxirasi",
-    "warrantyPlans": "Kafolat rejalari",
     "checklists": "Tekshiruv ro‘yxatlari",
     "myStock": "Mening zaxiram"
   },
@@ -425,13 +424,11 @@
     "escalation": "{{id}} hamon kechikmoqda (daraja {{level}}, {{hours}} soat)",
     "visitBooked": "{{id}}: tashrif {{date}} {{slot}} ga belgilandi",
     "cancelledByCustomer": "{{id}} so‘rovi mijoz tomonidan bekor qilindi",
-    "warrantyPlanRequested": "{{customer}} kafolat rejasini so‘radi: {{plan}} ({{product}})",
     "deletionRequest": "{{customer}} ma‘lumotlarini o‘chirishni so‘radi",
     "weeklyDigest": "Hafta {{from}} – {{to}}: yangi {{created}}, yakunlangan {{finished}}, ochiq {{open}}, kechikkan {{overdue}}",
     "visitScheduled": "{{id}} uchun tashrif {{date}} {{slot}} ga belgilandi. Iltimos, tasdiqlang.",
     "etaUpdate": "Texnik yo‘lda: taxminan {{minutes}} daqiqa",
-    "warrantyExpiring": "{{product}} kafolati {{until}} da tugaydi. Uzaytirish mumkin: «Mahsulotlarim» bo‘limida.",
-    "warrantyExtended": "{{product}} kafolati {{until}} gacha uzaytirildi (+{{months}} oy)."
+    "warrantyExpiring": "{{product}} kafolati {{until}} da tugaydi. Uzaytirish mumkin: «Mahsulotlarim» bo‘limida."
   },
   "notifications": {
     "title": "Bildirishnomalar",
@@ -501,7 +498,6 @@
     "pickCategory": "Kamida bitta turkumni tanlang",
     "warrantyRules": "Kafolat qoidalari",
     "warrantyRulesHint": "Shu mahsulot uchun kafolat nimani qoplashi va qachondan boshlanishi.",
-    "warrantyStarts": "Kafolat boshlanishi",
     "coversLabor": "Ish haqini qoplaydi",
     "coversParts": "Ehtiyot qismlarni qoplaydi",
     "category": "Kategoriya"
@@ -595,10 +591,6 @@
     "save": "Sotuvni saqlash",
     "record": "Sotuvni yozish",
     "serialHint": "Mahsulot korpusidagi raqam (ixtiyoriy).",
-    "extend": "Kafolatni uzaytirish",
-    "extendTitle": "Kafolatni uzaytirish",
-    "extendHint": "Mijozga qo‘shimcha kafolat oylarini bering.",
-    "extendMonths": "Qo‘shimcha oylar",
     "void": "Kafolatni bekor qilish",
     "voidTitle": "Kafolatni bekor qilish",
     "voidHint": "Masalan, noto‘g‘ri foydalanish yoki muhr buzilgan bo‘lsa. Sabab yozing.",
@@ -1242,7 +1234,9 @@
     "weeklyDigest": "Haftalik hisobot",
     "weeklyDigestTip": "Har dushanba ertalab adminlarga o‘tgan hafta xulosasi yuboriladi (bildirishnoma va Telegram).",
     "sendDigest": "Hisobotni hozir yuborish",
-    "digestSent": "Hisobot yuborildi"
+    "digestSent": "Hisobot yuborildi",
+    "warrantyStarts": "Kafolat qachondan boshlanadi",
+    "warrantyStartsHint": "Butun kompaniya uchun: sotilgan sanadan yoki mahsulot o‘rnatilgan sanadan. O‘zgarish faqat yangi sotuvlarga ta’sir qiladi."
   },
   "feedback": {
     "thanks": "Fikr-mulohaza uchun rahmat",
@@ -1351,7 +1345,6 @@
       "request.status": "So‘rov holati o‘zgardi",
       "request.update": "So‘rov tahrirlandi",
       "sale.verify": "Sotuv tasdiqlandi",
-      "sale.warranty.extend": "Kafolat uzaytirildi",
       "sale.warranty.restore": "Kafolat tiklandi",
       "sale.warranty.void": "Kafolat bekor qilindi",
       "settings.update": "Sozlamalar o‘zgardi",
@@ -1369,10 +1362,8 @@
       "request.escalated": "So‘rov yuqori darajaga ko‘tarildi",
       "request.visitConfirmed": "Mijoz tashrifni tasdiqladi",
       "sale.import": "Sotuv RIZO marketdan kelib tushdi",
-      "sale.warranty.plan": "Kafolat rejasi qo‘llandi",
       "stock.issue": "Texnikka ehtiyot qism berildi",
-      "stock.return": "Texnikdan ehtiyot qism qaytarildi",
-      "warrantyPlan.cancel": "Kafolat rejasi bekor qilindi"
+      "stock.return": "Texnikdan ehtiyot qism qaytarildi"
     }
   },
   "errors": {
@@ -1488,10 +1479,6 @@
     "checklistIncomplete": "Yakunlashdan oldin majburiy tekshiruv bandlarini belgilang.",
     "checklistExists": "Bu kategoriya uchun ro‘yxat allaqachon bor.",
     "techStockInsufficient": "Texnikda bunchalik qism yo‘q ({{count}} dona).",
-    "planNotAvailable": "Bu mahsulot uchun bunday reja mavjud emas.",
-    "planAlreadyRequested": "Siz bu mahsulot uchun reja so‘ragansiz.",
-    "planHandled": "Bu reja allaqachon ko‘rib chiqilgan.",
-    "planInUse": "Reja sotilgan yoki so‘ralgan. O‘chirmasdan, faolsizlantiring.",
     "fiscalReceiptRequired": "To‘lov uchun fiskal chek raqamini kiriting.",
     "totpRequired": "Ilovadagi kodni kiriting.",
     "totpInvalid": "Kod noto‘g‘ri yoki eskirgan.",
@@ -1984,43 +1971,6 @@
     "mineEmpty": "Sizda qism yo‘q",
     "mineEmptyBody": "Kerak bo‘lsa, ombordan so‘rang."
   },
-  "plans": {
-    "title": "Kafolat rejalari",
-    "intro": "Pullik kafolat uzaytirish: mijoz so‘raydi yoki kassada sotiladi, to‘lov olinganda kafolat avtomatik uzayadi.",
-    "sell": "Kassada sotish",
-    "newPlan": "Yangi reja",
-    "editPlan": "Rejani tahrirlash",
-    "saved": "Reja saqlandi",
-    "paidDone": "To‘lov olindi, kafolat uzaytirildi",
-    "noPlans": "Hali reja yo‘q",
-    "noPlansBody": "Masalan, «+12 oy kafolat» rejasini yarating va narxini belgilang.",
-    "planName": "Reja",
-    "months": "Oylar",
-    "price": "Narxi",
-    "categories": "Kategoriyalar",
-    "active": "Faol",
-    "off": "O‘chiq",
-    "warrantyUntil": "Kafolat muddati",
-    "takePayment": "To‘lovni olish",
-    "findSale": "Xaridni toping",
-    "findSaleHint": "Hisob-faktura, seriya raqami, mijoz yoki mahsulot",
-    "confirmPayment": "To‘lovni tasdiqlash",
-    "requested": "So‘rovingiz yuborildi. Servis siz bilan bog‘lanadi.",
-    "tab": {
-      "requested": "So‘rovlar",
-      "paid": "Tarix",
-      "plans": "Rejalar"
-    },
-    "empty": {
-      "requested": "Yangi so‘rov yo‘q",
-      "paid": "Hali sotuv yo‘q"
-    },
-    "status": {
-      "requested": "So‘ralgan",
-      "paid": "To‘langan",
-      "cancelled": "Bekor qilingan"
-    }
-  },
   "products": {
     "title": "Mahsulotlarim",
     "intro": "Xarid qilgan mahsulotlaringiz, kafolat muddati va servisga yozilish.",
@@ -2030,14 +1980,7 @@
     "warrantyEnded": "Kafolat {{date}} da tugagan",
     "daysLeft": "{{count}} kun qoldi",
     "unverified": "Servis xodimlari tasdiqlaguncha kafolat taxminiy.",
-    "bookService": "Servisga yozilish",
-    "extend": "Kafolatni uzaytirish",
-    "extendTitle": "Kafolatni uzaytirish",
-    "noPlans": "Bu mahsulot uchun hozircha reja yo‘q.",
-    "extendBody": "Reja tanlang. To‘lovni servis xodimi qabul qiladi, shundan so‘ng kafolat uzayadi.",
-    "ask": "So‘rash",
-    "asked": "So‘ralgan",
-    "payAtService": "To‘lov hozir olinmaydi."
+    "bookService": "Servisga yozilish"
   },
   "account": {
     "title": "Mening ma‘lumotlarim",

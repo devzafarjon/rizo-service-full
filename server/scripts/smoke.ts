@@ -331,7 +331,8 @@ async function main() {
   assert(!techJobs.body.jobs.some((job) => job.id === cancelJob.body.request.id), "cancelled jobs leave the technician board");
   assert((await json(`/api/staff/requests/${cancelJob.body.request.id}`, { method: "PATCH", token: admin.token, body: JSON.stringify({ status: "completed" }) })).status === 400, "cancelled requests cannot jump to completed");
 
-  console.log("http: installation sets the warranty start");
+  console.log("http: installation sets the warranty start (company setting: installation)");
+  assert((await json("/api/staff/settings", { method: "PATCH", token: admin.token, body: JSON.stringify({ warrantyStartsOn: "installation" }) })).status === 200, "admin sets the warranty start to installation");
   const acSale = await json<{ sale: { id: string; installationDate: string | null; serialNumber: string | null } }>("/api/staff/sales", { method: "POST", token: admin.token, body: JSON.stringify({ customerId: dilnoza.id, productId: ac.id, quantity: 1, saleDate: "2026-09-01", pricePaid: 1000000, serialNumber: `AC-${tag}` }) });
   assert(acSale.status === 201 && acSale.body.sale.serialNumber === `AC-${tag}`, "a sale with a serial number is created (warranty months default from the product)");
   assert((await json("/api/staff/sales", { method: "POST", token: admin.token, body: JSON.stringify({ customerId: dilnoza.id, productId: ac.id, quantity: 1, saleDate: "2026-09-01", pricePaid: 1, serialNumber: `AC-${tag}` }) })).status === 409, "a serial number cannot be registered twice");
@@ -344,13 +345,13 @@ async function main() {
   assert(installDone.body.job.status === "completed", "an installation completes");
   const afterInstall = await json<{ sale: { installationDate: string | null } }>(`/api/staff/sales/${acSale.body.sale.id}`, { token: admin.token });
   assert(Boolean(afterInstall.body.sale.installationDate), "the warranty now starts from the installation date");
+  await json("/api/staff/settings", { method: "PATCH", token: admin.token, body: JSON.stringify({ warrantyStartsOn: "sale" }) });
 
-  console.log("http: serial card, warranty extension, void, verification");
+  console.log("http: serial card, void, verification");
   const serial = await json<{ sales: unknown[]; requests: unknown[] }>(`/api/staff/serials/AC-${tag}`, { token: desk.token });
   assert(serial.status === 200 && serial.body.sales.length === 1 && serial.body.requests.length >= 1, "the serial card shows the unit and its visits");
   assert((await json("/api/staff/serials/NO-SUCH-SERIAL", { token: desk.token })).status === 404, "unknown serial numbers return 404");
-  const extended = await json<{ sale: { warrantyMonths: number; extensionMonths: number } }>(`/api/staff/sales/${acSale.body.sale.id}/extend`, { method: "POST", token: admin.token, body: JSON.stringify({ months: 3, reason: "Goodwill" }) });
-  assert(extended.body.sale.extensionMonths === 3, "warranty can be extended with a reason");
+  assert((await json(`/api/staff/sales/${acSale.body.sale.id}/extend`, { method: "POST", token: admin.token, body: JSON.stringify({ months: 3, reason: "Goodwill" }) })).status === 404, "there is no warranty extension");
   const voided = await json<{ sale: { warrantyStatus: string; voided: boolean } }>(`/api/staff/sales/${acSale.body.sale.id}/void`, { method: "POST", token: admin.token, body: JSON.stringify({ reason: "Water damage" }) });
   assert(voided.body.sale.voided && voided.body.sale.warrantyStatus === "expired", "a voided warranty counts as expired");
   const restored = await json<{ sale: { warrantyStatus: string; voided: boolean } }>(`/api/staff/sales/${acSale.body.sale.id}/restore`, { method: "POST", token: admin.token });

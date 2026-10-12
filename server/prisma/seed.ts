@@ -574,14 +574,6 @@ async function main() {
       ],
     });
   }
-  if ((await prisma.warrantyPlan.count()) === 0) {
-    await prisma.warrantyPlan.createMany({
-      data: [
-        { name: "+12 months", nameUz: "+12 oy kafolat", nameRu: "+12 месяцев гарантии", nameEn: "+12 months warranty", months: 12, price: 250000, productCategories: ["Refrigerators", "Washing machines", "Air conditioners", "Televisions"] },
-        { name: "+24 months", nameUz: "+24 oy kafolat", nameRu: "+24 месяца гарантии", nameEn: "+24 months warranty", months: 24, price: 450000, productCategories: ["Refrigerators", "Washing machines", "Air conditioners", "Televisions"] },
-      ],
-    });
-  }
   if ((await prisma.serviceCenter.count({ where: { isPartner: true } })) === 0) {
     await prisma.serviceCenter.create({ data: { name: "Samarkand partner service", regionCode: "30", address: "Registan 5, Samarkand", phone: "+998 66 200 00 02", workingHours: "Mon-Sat 09:00-18:00", lat: 39.654, lng: 66.9597, isPartner: true, payoutPercent: 30, payoutFixedPerJob: 8000 } });
   }

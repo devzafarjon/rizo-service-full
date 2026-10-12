@@ -59,7 +59,6 @@ import { HelpAdminPage } from "./features/catalog/HelpAdminPage";
 import { SecurityPage } from "./features/auth/SecurityPage";
 import { MyStockPage } from "./features/management/MyStockPage";
 import { TechStockPage } from "./features/management/TechStockPage";
-import { WarrantyPlansPage } from "./features/management/WarrantyPlansPage";
 import { CentersPublicPage } from "./features/public/CentersPublicPage";
 import { TrackLookupPage } from "./features/public/TrackLookupPage";
 import { TrackPage } from "./features/public/TrackPage";
@@ -125,7 +124,6 @@ export default function App() {
             <Route path="part-orders" element={<PartOrdersPage />} />
           </Route>
           <Route element={<RoleRoute roles={["admin", "receptionist", "accountant"]} />}>
-            <Route path="warranty-plans" element={<WarrantyPlansPage />} />
           </Route>
           <Route element={<RoleRoute roles={["admin", "receptionist"]} />}>
             <Route path="kanban" element={<AdminKanbanPage />} />

@@ -15,11 +15,11 @@ Keep this file in sync with the product. After any user-visible change, re-check
 | Staff dashboard | Admin / dispatcher | `/app` |
 | Front desk | Receptionist (`receptionist` role: board, requests, customers, sales, calendar, map, part orders, kiosk — no reports, catalog costs, settings or staff) | `/app/kanban` |
 | Technician panel | Mobile or service-center technician | `/app/my-jobs` |
-| Accountant | `accountant` role: reports, payroll, debts, fiscal and partner reports, warranty plans (read-only for everything else) | `/app/reports` |
+| Accountant | `accountant` role: reports, payroll, debts, fiscal and partner reports (read-only for everything else) | `/app/reports` |
 | Warehouse manager | `warehouse` role: spare parts, part orders and the parts each technician carries | `/app/tech-stock` |
 | Customer portal | Product owner | `/portal` |
 
-Jobs can come from **RIZO market** (linked sale + warranty) or **RIZO Service** (walk-in / portal). Warranty dates are stored as UTC date-only and run from the **installation date** once the product has been installed (set when an installation request completes), otherwise from the sale date. Matching available technicians who are working today are auto-assigned (fewest open jobs first). There is no periodic or seasonal maintenance service.
+Jobs can come from **RIZO market** (linked sale + warranty) or **RIZO Service** (walk-in / portal). Warranty dates are stored as UTC date-only. Where they start is a company setting (**Settings → Service rules → "When the warranty starts"**, `warranty_starts_on`): the **sale date** (default) or the **installation date** (set when an installation request completes; the sale date until then). A change only affects new sales and sales that are edited. Matching available technicians who are working today are auto-assigned (fewest open jobs first). There is no periodic or seasonal maintenance service.
 
 ---
 
@@ -212,7 +212,7 @@ Added after comparing RIZO Service with other field-service and repair systems. 
 **Customers**
 - **Visit booking.** The customer picks a day and one of the free time windows (`visit_slots` setting) when asking for service or later on the request page. Capacity is per technician per day (`visits_per_technician_per_day`) and respects the technicians' days off. A visit can be confirmed, moved a limited number of times (`reschedule_limit`) and, until work starts, cancelled (`cancel_before_hours` cut-off). A reminder goes out the day before; the tracking link and the Telegram bot can confirm it too.
 - **Arrival estimate.** The technician says how many minutes the trip takes when tapping "on my way"; the customer sees it.
-- **My products** (`/portal/products`): warranty countdown, book service for a product, ask for a paid **warranty extension plan**. The office takes the payment and the warranty is extended automatically; a notice goes out a few weeks before a warranty ends (`warranty_expiry_notice_days`).
+- **My products** (`/portal/products`): warranty countdown, book service for a product. A notice goes out a few weeks before a warranty ends (`warranty_expiry_notice_days`). There are no paid warranty-extension plans.
 - **Help centre** (`/portal/help`, `/help`): short guides and videos per product category, written by the admin (`/app/help`).
 - **Pay online**: Payme / Click buttons on the request and tracking pages when `PAYME_MERCHANT_ID` / `CLICK_*` are set. The buttons only open the provider's page; the office still records the payment (an automatic callback needs a merchant contract).
 - **My account** (`/portal/account`): choose SMS / Telegram / both, download all data as JSON, ask for the personal data to be erased (an admin anonymizes the account; requests and payments stay for the accounts). Privacy policy and terms at `/privacy` and `/terms`.
@@ -284,7 +284,7 @@ Installation uses the short path `new → in_progress → completed` (plus pause
 - **Payments / refunds** are recorded per request (cash, card, transfer, Payme, Click, other) with a **fiscal receipt number**; `payment_status` is `not_required | pending | partial | paid`.
 - **Repeat failures** (same serial, 12 months) are flagged; a repair-warranty window (default 30 days) makes a repeat free. Duplicate open requests for the same product are blocked (`duplicateRequest`, staff can override). The **legal repair limit** (default 20 days) drives the legal-overdue KPI and report.
 - **Intake**: checklist, notes and customer signature at the counter. **Defect codes** and return reasons are managed in the catalog and drive the defect report.
-- **Warranty rules per product** (months, start from installation or sale, covers labour / parts); a sale can be extended, voided (with reason) and restored; customer-registered products stay *unverified* until verified.
+- **Warranty rules per product** (months, covers labour / parts; the start date rule is a company setting); a sale can be voided (with reason) and restored; warranties cannot be extended; customer-registered products stay *unverified* until verified.
 
 Timers are green → yellow (last quarter) → red (expired). Completion needs at least one photo, a service when the product category has any (not for replacements) and, for replacements, the new product + serial number. Cost is 0 when covered by warranty (extras are still charged), otherwise services + parts + extras.
 

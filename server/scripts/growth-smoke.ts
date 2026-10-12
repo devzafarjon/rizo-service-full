@@ -207,21 +207,16 @@ async function main() {
   const open = await api("/api/public/help?category=Refrigerators");
   assert((open.body.articles as any[]).some((row) => row.title.en === `Smoke guide ${suffix}`), "the guide is public too");
 
-  console.log("warranty plans");
-  const plans = await api(`/api/customer/warranty-plans?saleId=${saleId}`, { token: cust });
-  assert(plans.status === 200 && plans.body.plans.length > 0, "plans are offered for the product");
-  const planId = plans.body.plans[0].id as string;
-  const wanted = await post(`/api/customer/sales/${saleId}/warranty-plan`, cust, { planId });
-  assert(wanted.status === 201, "the customer asks for a plan");
-  assert((await post(`/api/customer/sales/${saleId}/warranty-plan`, cust, { planId })).status === 409, "asking twice is refused");
-  const before = (await api("/api/customer/sales", { token: cust })).body.sales.find((row: any) => row.id === saleId).warrantyExpiry as string;
-  const pending = await api("/api/staff/warranty-plans/purchases?status=requested", { token: desk });
-  const purchase = (pending.body.purchases as any[]).find((row) => row.sale.id === saleId);
-  assert(Boolean(purchase), "the request reaches the office");
-  const paid = await post(`/api/staff/warranty-plans/purchases/${purchase.id}/pay`, desk, { method: "cash", fiscalReceiptNumber: "F-1" });
-  assert(paid.status === 200 && paid.body.purchase.status === "paid", "the office takes the payment");
-  const extended = (await api("/api/customer/sales", { token: cust })).body.sales.find((row: any) => row.id === saleId).warrantyExpiry as string;
-  assert(extended > before, `the warranty is extended (${before} -> ${extended})`);
+  console.log("warranty start setting");
+  const gone = await api(`/api/customer/warranty-plans?saleId=${saleId}`, { token: cust });
+  assert(gone.status === 404, "paid warranty plans no longer exist");
+  const current = await api("/api/staff/settings", { token: admin });
+  assert(current.status === 200 && current.body.settings.warrantyStartsOn === "sale", "the warranty starts at the sale date by default");
+  const bad = await patch("/api/staff/settings", admin, { warrantyStartsOn: "someday" });
+  assert(bad.status === 400, "an unknown warranty start is refused");
+  const inst = await patch("/api/staff/settings", admin, { warrantyStartsOn: "installation" });
+  assert(inst.status === 200 && inst.body.settings.warrantyStartsOn === "installation", "admin can switch the warranty start to installation");
+  await patch("/api/staff/settings", admin, { warrantyStartsOn: "sale" });
 
   console.log("fiscal receipts and pay links");
   await patch("/api/staff/settings", admin, { requireFiscalReceipt: true });

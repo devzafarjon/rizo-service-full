@@ -44,7 +44,6 @@ export function useStaffAlerts() {
 /** Where an alert leads: its request, otherwise the screen that handles that kind of alert. */
 function alertTarget(item: StaffAlert) {
   if (item.serviceRequestId) return `/app/requests/${item.serviceRequestId}`;
-  if (item.code === "warrantyPlanRequested") return "/app/warranty-plans";
   if (item.code === "deletionRequest" && typeof item.params?.customerId === "string") return `/app/customers/${item.params.customerId}`;
   if (item.code === "weeklyDigest") return "/app?view=full";
   return "/app/catalog";

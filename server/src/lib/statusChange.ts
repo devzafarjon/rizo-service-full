@@ -9,7 +9,7 @@ import { statusPatch } from "./requestLifecycle.js";
 import { requestInclude, serializeRequest } from "./serializeRequest.js";
 import { canTransition, isDoneStatus, type StaffRoleName } from "./status.js";
 import { tashkentCalendarDate } from "./displayId.js";
-import { getSetting, repairWarrantyDays } from "./settings.js";
+import { getSetting, repairWarrantyDays, warrantyStartsOn } from "./settings.js";
 import { checklistView } from "./checklists.js";
 import { refreshPaymentStatus } from "./payments.js";
 import { addMonths, computeWarrantyStatus, parseDateOnly, warrantyExpiryFor } from "./warranty.js";
@@ -123,6 +123,7 @@ export async function changeRequestStatus(input: {
     if (input.next === "in_progress") data.completedAt = null;
   }
 
+  const startsOn = await warrantyStartsOn();
   await prisma.$transaction(async (tx) => {
     if (activePause) await tx.requestPause.update({ where: { id: activePause.id }, data: { resumedAt: now } });
     if (input.next === "paused") {
@@ -131,14 +132,14 @@ export async function changeRequestStatus(input: {
       });
     }
     await tx.serviceRequest.update({ where: { id: before.id }, data });
-    if (isDoneStatus(input.next) && before.type === "installation" && before.saleId && before.sale && before.product.warrantyStartsOn === "installation") {
-      // Warranty runs from the day the product was installed.
+    if (isDoneStatus(input.next) && before.type === "installation" && before.saleId && before.sale) {
+      // The installation day is always recorded; the warranty only moves to it when the company setting says it starts at installation.
       const installedOn = parseDateOnly(tashkentCalendarDate(now));
       await tx.sale.update({
         where: { id: before.saleId },
         data: {
           installationDate: installedOn,
-          warrantyExpiry: addMonths(installedOn, before.sale.warrantyMonths + before.sale.extensionMonths),
+          ...(startsOn === "installation" ? { warrantyExpiry: addMonths(installedOn, before.sale.warrantyMonths) } : {}),
         },
       });
     }

@@ -56,6 +56,7 @@ settingsRouter.patch(
         requireFiscalReceipt: z.boolean().optional(),
         weeklyDigest: z.boolean().optional(),
         warrantyExpiryNoticeDays: z.coerce.number().int().min(0).max(365).optional(),
+        warrantyStartsOn: z.enum(["sale", "installation"]).optional(),
       }),
       req.body,
     );
@@ -77,6 +78,7 @@ settingsRouter.patch(
       ["require_fiscal_receipt", body.requireFiscalReceipt === undefined ? undefined : body.requireFiscalReceipt ? "true" : "false"],
       ["weekly_digest", body.weeklyDigest === undefined ? undefined : body.weeklyDigest ? "true" : "false"],
       ["warranty_expiry_notice_days", body.warrantyExpiryNoticeDays],
+      ["warranty_starts_on", body.warrantyStartsOn],
     ];
     for (const [key, value] of extra) if (value !== undefined) await setSetting(key, String(value));
     const after = await getAppSettings();

@@ -17,12 +17,11 @@ import { approveEstimate, declineEstimate, estimateInclude, serializeEstimate } 
 import { advanceAfterApproval } from "./requests.js";
 import { staffActor } from "../lib/audit.js";
 import { notifyAdmins } from "../lib/notifyStaff.js";
-import { getAppSettings } from "../lib/settings.js";
+import { getAppSettings, warrantyStartsOn } from "../lib/settings.js";
 import { serializeArticle } from "../lib/helpArticles.js";
 import { env } from "../config.js";
 import { paymentLinks } from "../lib/paymentLinks.js";
 import { postCustomerMessage, submitFeedback } from "../lib/customerActions.js";
-import { plansForSale, requestPlan, serializePlan } from "../lib/warrantyPlans.js";
 import { availableSlots, cancelRequestByCustomer, confirmVisit, scheduleVisit } from "../lib/visits.js";
 import { paymentSummary } from "../lib/payments.js";
 import { tashkentCalendarDate } from "../lib/displayId.js";
@@ -151,26 +150,6 @@ customerPortalRouter.get(
         product: sale.product,
       })),
     });
-  }),
-);
-
-// Paid warranty extensions the customer can ask for, and the ones already asked for or bought.
-customerPortalRouter.get(
-  "/warranty-plans",
-  asyncHandler(async (req, res) => {
-    const saleId = String(req.query.saleId ?? "");
-    const { plans } = await plansForSale(saleId, req.customer!.sub);
-    const open = await prisma.warrantyPlanPurchase.findFirst({ where: { saleId, status: "requested" } });
-    res.json({ plans: plans.map(serializePlan), requestedPlanId: open?.planId ?? null });
-  }),
-);
-
-customerPortalRouter.post(
-  "/sales/:id/warranty-plan",
-  asyncHandler(async (req, res) => {
-    const body = parseBody(z.object({ planId: z.string().min(1) }), req.body);
-    const row = await requestPlan({ saleId: req.params.id, planId: body.planId, customerId: req.customer!.sub });
-    res.status(201).json({ purchase: { id: row.id, status: row.status, months: row.months, price: money(row.price) } });
   }),
 );
 
@@ -377,7 +356,7 @@ customerPortalRouter.post(
     if (saleDate.getTime() > Date.now()) throw new HttpError(400, "The purchase date cannot be in the future", "futureDate");
     const duplicate = await prisma.sale.findFirst({ where: { serialNumber: body.serialNumber, productId: product.id } });
     if (duplicate) throw new HttpError(409, "This serial number is already registered", "serialExists");
-    const stub = { saleDate, installationDate: null, warrantyMonths: product.warrantyMonths, extensionMonths: 0 };
+    const stub = { saleDate, installationDate: null, warrantyMonths: product.warrantyMonths };
     const sale = await prisma.sale.create({
       data: {
         customerId: req.customer!.sub,
@@ -386,7 +365,7 @@ customerPortalRouter.post(
         saleDate,
         pricePaid: body.pricePaid ?? 0,
         warrantyMonths: product.warrantyMonths,
-        warrantyExpiry: warrantyExpiryFor(stub, product),
+        warrantyExpiry: warrantyExpiryFor(stub, await warrantyStartsOn()),
         invoiceNumber: body.invoiceNumber?.trim() ? body.invoiceNumber.trim().toUpperCase() : `REG-${Date.now().toString(36).toUpperCase()}`,
         serialNumber: body.serialNumber,
         source: "registered",

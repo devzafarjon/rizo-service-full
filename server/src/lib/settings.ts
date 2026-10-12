@@ -17,6 +17,7 @@ const DEFAULTS: Record<string, string> = {
   require_fiscal_receipt: "false", // payments must carry a fiscal receipt number
   weekly_digest: "true",
   warranty_expiry_notice_days: "30",
+  warranty_starts_on: "sale", // sale | installation: where the product warranty starts counting
 };
 
 export async function getSetting(key: string) {
@@ -46,6 +47,10 @@ export const repairWarrantyDays = () => numberSetting("repair_warranty_days");
 export const repairLegalDays = () => numberSetting("repair_legal_days");
 export const estimateValidDays = () => numberSetting("estimate_valid_days");
 
+export async function warrantyStartsOn(): Promise<"sale" | "installation"> {
+  return (await getSetting("warranty_starts_on")) === "installation" ? "installation" : "sale";
+}
+
 export async function getAppSettings() {
   const rows = await prisma.appSetting.findMany();
   const map = { ...DEFAULTS };
@@ -67,6 +72,7 @@ export async function getAppSettings() {
     requireFiscalReceipt: map.require_fiscal_receipt === "true",
     weeklyDigest: map.weekly_digest !== "false",
     warrantyExpiryNoticeDays: Number(map.warranty_expiry_notice_days),
+    warrantyStartsOn: (map.warranty_starts_on === "installation" ? "installation" : "sale") as "sale" | "installation",
   };
 }
 

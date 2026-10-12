@@ -106,7 +106,7 @@ function ProductsPanel({ items, categories }: { items: Product[]; categories: st
   const [editing, setEditing] = useState<Product | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Product | null>(null);
-  const [form, setForm] = useState({ nameUz: "", nameRu: "", nameEn: "", sku: "", category: "", warrantyMonths: "12", warrantyStartsOn: "installation", warrantyCoversLabor: true, warrantyCoversParts: true });
+  const [form, setForm] = useState({ nameUz: "", nameRu: "", nameEn: "", sku: "", category: "", warrantyMonths: "12", warrantyCoversLabor: true, warrantyCoversParts: true });
 
   const save = useMutation({
     mutationFn: () => {
@@ -136,7 +136,7 @@ function ProductsPanel({ items, categories }: { items: Product[]; categories: st
 
   function start(product: Product | null) {
     setEditing(product);
-    setForm({ ...namedFields(product), sku: product?.sku ?? "", category: product?.category ?? "", warrantyMonths: String(product?.warrantyMonths ?? 12), warrantyStartsOn: product?.warrantyStartsOn ?? "installation", warrantyCoversLabor: product?.warrantyCoversLabor ?? true, warrantyCoversParts: product?.warrantyCoversParts ?? true });
+    setForm({ ...namedFields(product), sku: product?.sku ?? "", category: product?.category ?? "", warrantyMonths: String(product?.warrantyMonths ?? 12), warrantyCoversLabor: product?.warrantyCoversLabor ?? true, warrantyCoversParts: product?.warrantyCoversParts ?? true });
     setError(null);
     setOpen(true);
   }
@@ -204,12 +204,6 @@ function ProductsPanel({ items, categories }: { items: Product[]; categories: st
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <Field label={t("sales.warrantyMonths")}>
                 <input className={inputClass} type="number" min={0} max={120} value={form.warrantyMonths} onChange={(event) => setForm({ ...form, warrantyMonths: event.target.value })} />
-              </Field>
-              <Field label={t("catalog.warrantyStarts")}>
-                <select className={`${inputClass} bg-white`} value={form.warrantyStartsOn} onChange={(event) => setForm({ ...form, warrantyStartsOn: event.target.value as "installation" | "sale" })}>
-                  <option value="installation">{t("warrantyCard.startsOn.installation")}</option>
-                  <option value="sale">{t("warrantyCard.startsOn.sale")}</option>
-                </select>
               </Field>
             </div>
             <div className="mt-3 flex flex-wrap gap-4 text-sm font-semibold">

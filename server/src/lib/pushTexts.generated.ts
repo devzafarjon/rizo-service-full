@@ -21,13 +21,11 @@ export const PUSH_TEXTS = {
       "escalation": "{{id}} hamon kechikmoqda (daraja {{level}}, {{hours}} soat)",
       "visitBooked": "{{id}}: tashrif {{date}} {{slot}} ga belgilandi",
       "cancelledByCustomer": "{{id}} so‘rovi mijoz tomonidan bekor qilindi",
-      "warrantyPlanRequested": "{{customer}} kafolat rejasini so‘radi: {{plan}} ({{product}})",
       "deletionRequest": "{{customer}} ma‘lumotlarini o‘chirishni so‘radi",
       "weeklyDigest": "Hafta {{from}} – {{to}}: yangi {{created}}, yakunlangan {{finished}}, ochiq {{open}}, kechikkan {{overdue}}",
       "visitScheduled": "{{id}} uchun tashrif {{date}} {{slot}} ga belgilandi. Iltimos, tasdiqlang.",
       "etaUpdate": "Texnik yo‘lda: taxminan {{minutes}} daqiqa",
-      "warrantyExpiring": "{{product}} kafolati {{until}} da tugaydi. Uzaytirish mumkin: «Mahsulotlarim» bo‘limida.",
-      "warrantyExtended": "{{product}} kafolati {{until}} gacha uzaytirildi (+{{months}} oy)."
+      "warrantyExpiring": "{{product}} kafolati {{until}} da tugaydi. Uzaytirish mumkin: «Mahsulotlarim» bo‘limida."
     },
     "type": {
       "installation": "O‘rnatish",
@@ -70,13 +68,11 @@ export const PUSH_TEXTS = {
       "escalation": "{{id}} всё ещё просрочена (уровень {{level}}, {{hours}} ч)",
       "visitBooked": "{{id}}: визит назначен на {{date}} {{slot}}",
       "cancelledByCustomer": "Заявка {{id}} отменена клиентом",
-      "warrantyPlanRequested": "{{customer}} запросил план гарантии: {{plan}} ({{product}})",
       "deletionRequest": "{{customer}} просит удалить свои данные",
       "weeklyDigest": "Неделя {{from}} – {{to}}: новых {{created}}, завершено {{finished}}, открыто {{open}}, просрочено {{overdue}}",
       "visitScheduled": "Визит по заявке {{id}} назначен на {{date}} {{slot}}. Пожалуйста, подтвердите.",
       "etaUpdate": "Мастер в пути: примерно {{minutes}} мин",
-      "warrantyExpiring": "Гарантия на {{product}} заканчивается {{until}}. Продлить можно в разделе «Мои товары».",
-      "warrantyExtended": "Гарантия на {{product}} продлена до {{until}} (+{{months}} мес.)."
+      "warrantyExpiring": "Гарантия на {{product}} заканчивается {{until}}. Продлить можно в разделе «Мои товары»."
     },
     "type": {
       "installation": "Установка",
@@ -119,13 +115,11 @@ export const PUSH_TEXTS = {
       "escalation": "{{id}} is still overdue (level {{level}}, {{hours}} h)",
       "visitBooked": "{{id}}: visit set for {{date}} {{slot}}",
       "cancelledByCustomer": "{{id}} was cancelled by the customer",
-      "warrantyPlanRequested": "{{customer}} asked for a warranty plan: {{plan}} ({{product}})",
       "deletionRequest": "{{customer}} asked to delete their data",
       "weeklyDigest": "Week {{from}} – {{to}}: {{created}} new, {{finished}} finished, {{open}} open, {{overdue}} overdue",
       "visitScheduled": "A visit for {{id}} is set for {{date}} {{slot}}. Please confirm it.",
       "etaUpdate": "The technician is on the way: about {{minutes}} min",
-      "warrantyExpiring": "The warranty for {{product}} ends on {{until}}. You can extend it under “My products”.",
-      "warrantyExtended": "The warranty for {{product}} is extended until {{until}} (+{{months}} months)."
+      "warrantyExpiring": "The warranty for {{product}} ends on {{until}}. You can extend it under “My products”."
     },
     "type": {
       "installation": "Installation",

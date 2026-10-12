@@ -17,7 +17,6 @@ const productSchema = z.object({
   sku: z.string().trim().min(1, "SKU is required"),
   category: z.string().trim().min(1, "Category is required"),
   warrantyMonths: z.coerce.number().int().min(0).max(120).optional(),
-  warrantyStartsOn: z.enum(["installation", "sale"]).optional(),
   warrantyCoversLabor: z.boolean().optional(),
   warrantyCoversParts: z.boolean().optional(),
 }).superRefine((data, ctx) => {
@@ -34,7 +33,6 @@ const productPatchSchema = z.object({
   sku: z.string().trim().min(1, "SKU is required").optional(),
   category: z.string().trim().min(1, "Category is required").optional(),
   warrantyMonths: z.coerce.number().int().min(0).max(120).optional(),
-  warrantyStartsOn: z.enum(["installation", "sale"]).optional(),
   warrantyCoversLabor: z.boolean().optional(),
   warrantyCoversParts: z.boolean().optional(),
 });
@@ -80,7 +78,6 @@ productsRouter.post(
           sku: body.sku.toUpperCase(),
           category: body.category,
           ...(body.warrantyMonths !== undefined ? { warrantyMonths: body.warrantyMonths } : {}),
-          ...(body.warrantyStartsOn ? { warrantyStartsOn: body.warrantyStartsOn } : {}),
           ...(body.warrantyCoversLabor !== undefined ? { warrantyCoversLabor: body.warrantyCoversLabor } : {}),
           ...(body.warrantyCoversParts !== undefined ? { warrantyCoversParts: body.warrantyCoversParts } : {}),
         },
@@ -108,7 +105,6 @@ productsRouter.patch(
           ...(body.sku !== undefined ? { sku: body.sku.toUpperCase() } : {}),
           ...(body.category !== undefined ? { category: body.category } : {}),
           ...(body.warrantyMonths !== undefined ? { warrantyMonths: body.warrantyMonths } : {}),
-          ...(body.warrantyStartsOn ? { warrantyStartsOn: body.warrantyStartsOn } : {}),
           ...(body.warrantyCoversLabor !== undefined ? { warrantyCoversLabor: body.warrantyCoversLabor } : {}),
           ...(body.warrantyCoversParts !== undefined ? { warrantyCoversParts: body.warrantyCoversParts } : {}),
         },
@@ -148,7 +144,6 @@ function serializeProduct(product: {
   sku: string;
   category: string;
   warrantyMonths: number;
-  warrantyStartsOn: string;
   warrantyCoversLabor: boolean;
   warrantyCoversParts: boolean;
   createdAt: Date;
@@ -160,7 +155,6 @@ function serializeProduct(product: {
     sku: product.sku,
     category: product.category,
     warrantyMonths: product.warrantyMonths,
-    warrantyStartsOn: product.warrantyStartsOn,
     warrantyCoversLabor: product.warrantyCoversLabor,
     warrantyCoversParts: product.warrantyCoversParts,
     createdAt: product.createdAt.toISOString(),

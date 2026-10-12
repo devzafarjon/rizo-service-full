@@ -173,7 +173,6 @@
     "myProducts": "My products",
     "account": "My account",
     "techStock": "Technician stock",
-    "warrantyPlans": "Warranty plans",
     "checklists": "Checklists",
     "myStock": "My stock"
   },
@@ -425,13 +424,11 @@
     "escalation": "{{id}} is still overdue (level {{level}}, {{hours}} h)",
     "visitBooked": "{{id}}: visit set for {{date}} {{slot}}",
     "cancelledByCustomer": "{{id}} was cancelled by the customer",
-    "warrantyPlanRequested": "{{customer}} asked for a warranty plan: {{plan}} ({{product}})",
     "deletionRequest": "{{customer}} asked to delete their data",
     "weeklyDigest": "Week {{from}} – {{to}}: {{created}} new, {{finished}} finished, {{open}} open, {{overdue}} overdue",
     "visitScheduled": "A visit for {{id}} is set for {{date}} {{slot}}. Please confirm it.",
     "etaUpdate": "The technician is on the way: about {{minutes}} min",
-    "warrantyExpiring": "The warranty for {{product}} ends on {{until}}. You can extend it under “My products”.",
-    "warrantyExtended": "The warranty for {{product}} is extended until {{until}} (+{{months}} months)."
+    "warrantyExpiring": "The warranty for {{product}} ends on {{until}}. You can extend it under “My products”."
   },
   "notifications": {
     "title": "Notifications",
@@ -501,7 +498,6 @@
     "pickCategory": "Pick at least one category",
     "warrantyRules": "Warranty rules",
     "warrantyRulesHint": "What the warranty covers for this product and when it starts.",
-    "warrantyStarts": "Warranty starts",
     "coversLabor": "Covers labour",
     "coversParts": "Covers parts",
     "category": "Category"
@@ -595,10 +591,6 @@
     "save": "Save sale",
     "record": "Record sale",
     "serialHint": "The number on the body (optional).",
-    "extend": "Extend warranty",
-    "extendTitle": "Extend warranty",
-    "extendHint": "Give the customer extra months of warranty.",
-    "extendMonths": "Extra months",
     "void": "Void warranty",
     "voidTitle": "Void warranty",
     "voidHint": "For example misuse or a broken seal. Give a reason.",
@@ -1242,7 +1234,9 @@
     "weeklyDigest": "Weekly summary",
     "weeklyDigestTip": "Every Monday morning the admins get last week's summary (bell and Telegram).",
     "sendDigest": "Send the summary now",
-    "digestSent": "Summary sent"
+    "digestSent": "Summary sent",
+    "warrantyStarts": "When the warranty starts",
+    "warrantyStartsHint": "For the whole company: from the sale date or from the day the product is installed. A change only affects new sales."
   },
   "feedback": {
     "thanks": "Thanks for the feedback",
@@ -1351,7 +1345,6 @@
       "request.status": "Request status changed",
       "request.update": "Request edited",
       "sale.verify": "Sale verified",
-      "sale.warranty.extend": "Warranty extended",
       "sale.warranty.restore": "Warranty restored",
       "sale.warranty.void": "Warranty voided",
       "settings.update": "Settings updated",
@@ -1369,10 +1362,8 @@
       "request.escalated": "Request escalated",
       "request.visitConfirmed": "Customer confirmed the visit",
       "sale.import": "Sale imported from RIZO market",
-      "sale.warranty.plan": "Warranty plan applied",
       "stock.issue": "Part issued to a technician",
-      "stock.return": "Part returned by a technician",
-      "warrantyPlan.cancel": "Warranty plan cancelled"
+      "stock.return": "Part returned by a technician"
     }
   },
   "errors": {
@@ -1488,10 +1479,6 @@
     "checklistIncomplete": "Tick the required checklist items before completing.",
     "checklistExists": "A checklist for this category already exists.",
     "techStockInsufficient": "The technician does not have that many ({{count}}).",
-    "planNotAvailable": "This plan is not available for this product.",
-    "planAlreadyRequested": "You already asked for a plan for this product.",
-    "planHandled": "This plan was already handled.",
-    "planInUse": "This plan was bought or requested. Switch it off instead of deleting it.",
     "fiscalReceiptRequired": "Enter the fiscal receipt number for this payment.",
     "totpRequired": "Enter the code from your authenticator app.",
     "totpInvalid": "That code is not correct or has expired.",
@@ -1984,43 +1971,6 @@
     "mineEmpty": "You carry no parts",
     "mineEmptyBody": "Ask the warehouse if you need some."
   },
-  "plans": {
-    "title": "Warranty plans",
-    "intro": "Paid warranty extension: a customer asks for it or buys at the counter; once paid, the warranty is extended automatically.",
-    "sell": "Sell at the counter",
-    "newPlan": "New plan",
-    "editPlan": "Edit plan",
-    "saved": "Plan saved",
-    "paidDone": "Payment taken, warranty extended",
-    "noPlans": "No plans yet",
-    "noPlansBody": "For example, create a “+12 months warranty” plan and set its price.",
-    "planName": "Plan",
-    "months": "Months",
-    "price": "Price",
-    "categories": "Categories",
-    "active": "Active",
-    "off": "Off",
-    "warrantyUntil": "Warranty until",
-    "takePayment": "Take payment",
-    "findSale": "Find the purchase",
-    "findSaleHint": "Invoice, serial number, customer or product",
-    "confirmPayment": "Confirm payment",
-    "requested": "Your request was sent. The service will contact you.",
-    "tab": {
-      "requested": "Requests",
-      "paid": "History",
-      "plans": "Plans"
-    },
-    "empty": {
-      "requested": "No new requests",
-      "paid": "No sales yet"
-    },
-    "status": {
-      "requested": "Requested",
-      "paid": "Paid",
-      "cancelled": "Cancelled"
-    }
-  },
   "products": {
     "title": "My products",
     "intro": "Your purchases, warranty dates and a way to book service.",
@@ -2030,14 +1980,7 @@
     "warrantyEnded": "Warranty ended on {{date}}",
     "daysLeft": "{{count}} days left",
     "unverified": "The warranty is provisional until the service verifies it.",
-    "bookService": "Book service",
-    "extend": "Extend the warranty",
-    "extendTitle": "Extend the warranty",
-    "noPlans": "There are no plans for this product yet.",
-    "extendBody": "Choose a plan. A service employee takes the payment, then the warranty is extended.",
-    "ask": "Ask for it",
-    "asked": "Asked",
-    "payAtService": "You are not charged now."
+    "bookService": "Book service"
   },
   "account": {
     "title": "My account",

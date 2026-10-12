@@ -11,6 +11,7 @@ import { parseBody } from "../lib/parse.js";
 import { hashPassword } from "../lib/password.js";
 import { assertPhone, normalizePhone } from "../lib/phone.js";
 import { prisma } from "../lib/prisma.js";
+import { warrantyStartsOn } from "../lib/settings.js";
 import { isRegionCode, resolveRegionCode } from "../lib/regions.js";
 import { parseDateOnly, warrantyExpiryFor } from "../lib/warranty.js";
 import { rateLimit } from "../middleware/rateLimit.js";
@@ -109,7 +110,7 @@ integrationsRouter.post(
         continue;
       }
       const invoiceNumber = (body.items.length === 1 ? body.invoiceNumber : `${body.invoiceNumber}-${index + 1}`).toUpperCase();
-      const warrantyExpiry = warrantyExpiryFor({ saleDate, installationDate: null, warrantyMonths: product.warrantyMonths, extensionMonths: 0 }, product);
+      const warrantyExpiry = warrantyExpiryFor({ saleDate, installationDate: null, warrantyMonths: product.warrantyMonths }, await warrantyStartsOn());
       const sale = await prisma.sale.create({
         data: {
           customerId: customer.id,

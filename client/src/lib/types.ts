@@ -75,7 +75,6 @@ export type Product = Named & {
   sku: string;
   category: string;
   warrantyMonths: number;
-  warrantyStartsOn: "installation" | "sale";
   warrantyCoversLabor: boolean;
   warrantyCoversParts: boolean;
   createdAt: string;
@@ -116,8 +115,6 @@ export type Sale = {
   serialNumber?: string | null;
   source?: "rizo" | "registered";
   isVerified?: boolean;
-  extensionMonths?: number;
-  extensionReason?: string | null;
   voided?: boolean;
   voidReason?: string | null;
   warrantyStatus: WarrantyStatus;
@@ -768,6 +765,7 @@ export type AppSettings = {
   requireFiscalReceipt: boolean;
   weeklyDigest: boolean;
   warrantyExpiryNoticeDays: number;
+  warrantyStartsOn: "sale" | "installation";
 };
 
 // ---- growth suite -------------------------------------------------------------------------------------------------
@@ -803,21 +801,6 @@ export type HelpArticle = {
   videoUrl: string | null;
   sortOrder: number;
   isPublished: boolean;
-};
-
-export type WarrantyPlan = Named & { id: string; months: number; price: number; productCategories: string[]; isActive: boolean };
-export type WarrantyPurchase = {
-  id: string;
-  status: "requested" | "paid" | "cancelled";
-  months: number;
-  price: number;
-  paymentMethod: PaymentMethod | null;
-  fiscalReceiptNumber: string | null;
-  requestedAt: string;
-  paidAt: string | null;
-  plan: WarrantyPlan;
-  customer: { id: string; name: string; phone: string };
-  sale: { id: string; invoiceNumber: string; serialNumber: string | null; warrantyExpiry: string; warrantyStatus: WarrantyStatus; product: Named & { id: string; sku: string } };
 };
 
 export type VisitSlot = { slot: string; left: number; free: boolean };

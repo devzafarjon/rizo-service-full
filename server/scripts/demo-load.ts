@@ -430,7 +430,7 @@ async function seedProducts(admin: string) {
     ["RIZO Wash 8 kg", "DEMO-WM-8", "Washing machines", 24], ["RIZO Wash 6 kg", "DEMO-WM-6", "Washing machines", 12],
   ];
   for (const [name, sku, category, months] of extra) {
-    const res = await post("/api/staff/products", admin, { name, nameUz: name, nameRu: name, nameEn: name, sku, category, warrantyMonths: months, warrantyStartsOn: "installation" });
+    const res = await post("/api/staff/products", admin, { name, nameUz: name, nameRu: name, nameEn: name, sku, category, warrantyMonths: months });
     if (res.status === 201) bump("products");
   }
 }

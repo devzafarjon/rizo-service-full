@@ -35,7 +35,7 @@ serialsRouter.get(
         installationDate: sale.installationDate ? toDateOnly(sale.installationDate) : null,
         warrantyExpiry: toDateOnly(sale.warrantyExpiry),
         warrantyStatus: computeWarrantyStatus(sale.warrantyMonths, sale.warrantyExpiry),
-        warrantyMonths: sale.warrantyMonths + sale.extensionMonths,
+        warrantyMonths: sale.warrantyMonths,
         voided: Boolean(sale.voidedAt),
         voidReason: sale.voidReason,
         isVerified: sale.isVerified,

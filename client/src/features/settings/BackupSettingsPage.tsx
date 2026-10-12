@@ -116,6 +116,7 @@ function ServiceRulesForm() {
     escalationHoursUrgent: "24",
     lowRatingThreshold: "2",
     warrantyExpiryNoticeDays: "30",
+    warrantyStartsOn: "sale" as "sale" | "installation",
     requireFiscalReceipt: false,
     weeklyDigest: true,
   });
@@ -131,6 +132,7 @@ function ServiceRulesForm() {
       escalationHoursUrgent: String(value.escalationHoursUrgent),
       lowRatingThreshold: String(value.lowRatingThreshold),
       warrantyExpiryNoticeDays: String(value.warrantyExpiryNoticeDays),
+      warrantyStartsOn: value.warrantyStartsOn,
       requireFiscalReceipt: value.requireFiscalReceipt,
       weeklyDigest: value.weeklyDigest,
     });
@@ -149,6 +151,7 @@ function ServiceRulesForm() {
           escalationHoursUrgent: Number(form.escalationHoursUrgent),
           lowRatingThreshold: Number(form.lowRatingThreshold),
           warrantyExpiryNoticeDays: Number(form.warrantyExpiryNoticeDays),
+          warrantyStartsOn: form.warrantyStartsOn,
           requireFiscalReceipt: form.requireFiscalReceipt,
           weeklyDigest: form.weeklyDigest,
         }),
@@ -201,6 +204,12 @@ function ServiceRulesForm() {
         {num("escalationHours", t("settings.escalationHours"), t("settings.escalationHoursHint"), 240)}
         {num("escalationHoursUrgent", t("settings.escalationUrgent"), t("settings.escalationUrgentHint"), 720)}
         {num("warrantyExpiryNoticeDays", t("settings.expiryNotice"), t("settings.expiryNoticeHint"))}
+        <Field label={t("settings.warrantyStarts")} hint={t("settings.warrantyStartsHint")}>
+          <select className={`${inputClass} bg-white`} value={form.warrantyStartsOn} onChange={(event) => setForm({ ...form, warrantyStartsOn: event.target.value as "sale" | "installation" })}>
+            <option value="sale">{t("warrantyCard.startsOn.sale")}</option>
+            <option value="installation">{t("warrantyCard.startsOn.installation")}</option>
+          </select>
+        </Field>
       </div>
       {toggle("requireFiscalReceipt", t("settings.requireFiscal"), t("settings.requireFiscalTip"))}
       {toggle("weeklyDigest", t("settings.weeklyDigest"), t("settings.weeklyDigestTip"))}

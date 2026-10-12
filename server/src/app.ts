@@ -30,7 +30,6 @@ import { staffAdminRouter } from "./routes/staffAdmin.js";
 import { checklistsRouter } from "./routes/checklists.js";
 import { techStockRouter } from "./routes/techStock.js";
 import { helpArticlesRouter } from "./routes/helpArticles.js";
-import { warrantyPlansRouter } from "./routes/warrantyPlans.js";
 import { integrationsRouter } from "./routes/integrations.js";
 import { customerDevicesRouter, staffDevicesRouter } from "./routes/devices.js";
 import { ensureUploadsRoot, serveUploads } from "./lib/uploads.js";
@@ -80,7 +79,6 @@ export function createApp() {
   app.use("/api/staff/checklists", checklistsRouter);
   app.use("/api/staff/tech-stock", techStockRouter);
   app.use("/api/staff/help-articles", helpArticlesRouter);
-  app.use("/api/staff/warranty-plans", warrantyPlansRouter);
   app.use("/api/public", publicRouter);
   app.use("/api/integrations", integrationsRouter);
 

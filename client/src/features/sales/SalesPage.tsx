@@ -25,8 +25,7 @@ export function SalesPage() {
   const { t } = useTranslation();
   const { token, user } = useStaffAuth();
   const isAdmin = user?.role === "admin";
-  const [warrantyAction, setWarrantyAction] = useState<{ sale: Sale; kind: "extend" | "void" } | null>(null);
-  const [actionMonths, setActionMonths] = useState("3");
+  const [warrantyAction, setWarrantyAction] = useState<{ sale: Sale; kind: "void" } | null>(null);
   const [actionReason, setActionReason] = useState("");
   const { notify } = useToast();
   const queryClient = useQueryClient();
@@ -76,7 +75,7 @@ export function SalesPage() {
   });
 
   const warrantyMutation = useMutation({
-    mutationFn: ({ id, action, body }: { id: string; action: "extend" | "void" | "restore" | "verify"; body?: Record<string, unknown> }) =>
+    mutationFn: ({ id, action, body }: { id: string; action: "void" | "restore" | "verify"; body?: Record<string, unknown> }) =>
       api(`/api/staff/sales/${id}/${action}`, { method: "POST", token, body: body ? JSON.stringify(body) : undefined }),
     onSuccess: async () => {
       setWarrantyAction(null);
@@ -183,7 +182,6 @@ export function SalesPage() {
                   {sale.isVerified === false ? <span className="ml-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800 uppercase">{t("sales.unverified")}</span> : null}
                   <p className="mt-1 text-xs text-neutral-500">
                     {formatDate(sale.warrantyExpiry)}
-                    {sale.extensionMonths ? ` · +${sale.extensionMonths}` : ""}
                   </p>
                 </Td>
                 <Td className="text-right">
@@ -210,9 +208,6 @@ export function SalesPage() {
                         </button>
                       ) : (
                         <>
-                          <button type="button" className="mr-2 text-sm font-semibold text-neutral-600 hover:text-[#7B00E0]" onClick={() => setWarrantyAction({ sale, kind: "extend" })}>
-                            {t("sales.extend")}
-                          </button>
                           <button type="button" className="mr-2 text-sm font-semibold text-amber-700" onClick={() => setWarrantyAction({ sale, kind: "void" })}>
                             {t("sales.void")}
                           </button>
@@ -253,7 +248,7 @@ export function SalesPage() {
           await save.mutateAsync(values);
         }}
       />
-      <Modal open={Boolean(warrantyAction)} onClose={() => setWarrantyAction(null)} title={warrantyAction?.kind === "extend" ? t("sales.extendTitle") : t("sales.voidTitle")}>
+      <Modal open={Boolean(warrantyAction)} onClose={() => setWarrantyAction(null)} title={t("sales.voidTitle")}>
         {warrantyAction ? (
           <form
             className="space-y-4"
@@ -262,16 +257,11 @@ export function SalesPage() {
               warrantyMutation.mutate({
                 id: warrantyAction.sale.id,
                 action: warrantyAction.kind,
-                body: warrantyAction.kind === "extend" ? { months: Number(actionMonths), reason: actionReason } : { reason: actionReason },
+                body: { reason: actionReason },
               });
             }}
           >
-            <p className="text-sm text-neutral-600">{warrantyAction.kind === "extend" ? t("sales.extendHint") : t("sales.voidHint")}</p>
-            {warrantyAction.kind === "extend" ? (
-              <Field label={t("sales.extendMonths")}>
-                <input className={inputClass} type="number" min={1} max={60} value={actionMonths} onChange={(event) => setActionMonths(event.target.value)} required />
-              </Field>
-            ) : null}
+            <p className="text-sm text-neutral-600">{t("sales.voidHint")}</p>
             <Field label={t("sales.reason")}>
               <input className={inputClass} required maxLength={200} value={actionReason} onChange={(event) => setActionReason(event.target.value)} />
             </Field>
