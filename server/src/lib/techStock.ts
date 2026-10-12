@@ -3,23 +3,19 @@ import { HttpError } from "./httpError.js";
 import { serializeNamed } from "./named.js";
 import { prisma } from "./prisma.js";
 import { isBlockZeroStock } from "./settings.js";
+import { addStock, centralWarehouse, drainStock, homeWarehouseId, stockAt, takeStock } from "./warehouses.js";
 
 type PartIdentity = { id: string; name: string; nameUz: string; nameRu: string; nameEn: string; stockQuantity: number };
 
-/** Takes from the central (warehouse) stock; refuses when there is not enough and zero stock is blocked. */
-export async function decrementCentralStock(tx: Prisma.TransactionClient, part: PartIdentity, quantity: number) {
-  const updated = await tx.sparePart.updateMany({
-    where: { id: part.id, stockQuantity: { gte: quantity } },
-    data: { stockQuantity: { decrement: quantity } },
-  });
-  if (updated.count === 0) {
-    const latest = await tx.sparePart.findUnique({ where: { id: part.id } });
-    const count = latest?.stockQuantity ?? 0;
-    if (await isBlockZeroStock()) {
-      throw new HttpError(400, `Only ${count} ${part.name} in stock`, "stockInsufficient", { count, ...serializeNamed(part) });
-    }
-    if (count > 0) await tx.sparePart.update({ where: { id: part.id }, data: { stockQuantity: 0 } });
+/** Takes from a warehouse's stock (the central one unless given); refuses when there is not enough and zero stock is blocked. */
+export async function decrementCentralStock(tx: Prisma.TransactionClient, part: PartIdentity, quantity: number, warehouseId?: string, requestId?: string) {
+  const wh = warehouseId ?? (await centralWarehouse(tx)).id;
+  if (await takeStock(tx, wh, part.id, quantity, requestId ? { kind: "consumed", serviceRequestId: requestId } : undefined)) return;
+  const count = await stockAt(tx, wh, part.id);
+  if (await isBlockZeroStock()) {
+    throw new HttpError(400, `Only ${count} ${part.name} in stock`, "stockInsufficient", { count, ...serializeNamed(part) });
   }
+  await drainStock(tx, wh, part.id);
 }
 
 async function techQuantity(tx: Prisma.TransactionClient, technicianId: string, sparePartId: string) {
@@ -48,7 +44,8 @@ export async function consumeForJob(tx: Prisma.TransactionClient, input: { techn
     });
   }
   const rest = input.quantity - fromTech;
-  if (rest > 0) await decrementCentralStock(tx, input.part, rest);
+  // The rest comes off the shelf of the technician's own warehouse.
+  if (rest > 0) await decrementCentralStock(tx, input.part, rest, await homeWarehouseId(tx, { staffId: input.technicianId }), input.requestId);
   return { fromTech, fromCentral: rest };
 }
 
@@ -74,33 +71,32 @@ export async function releaseFromJob(tx: Prisma.TransactionClient, input: { tech
     }
   }
   const rest = input.quantity - back;
-  if (rest > 0) await tx.sparePart.update({ where: { id: input.sparePartId }, data: { stockQuantity: { increment: rest } } });
+  if (rest > 0) await addStock(tx, await homeWarehouseId(tx, { staffId: input.technicianId }), input.sparePartId, rest, { kind: "unused", serviceRequestId: input.requestId });
 }
 
 /** Warehouse to technician. */
-export async function issueToTechnician(input: { technicianId: string; sparePartId: string; quantity: number; by: { id: string; name: string }; note?: string | null }) {
+export async function issueToTechnician(input: { technicianId: string; sparePartId: string; quantity: number; by: { id: string; name: string }; note?: string | null; warehouseId?: string | null }) {
   return prisma.$transaction(async (tx) => {
     const part = await tx.sparePart.findUnique({ where: { id: input.sparePartId } });
     if (!part) throw new HttpError(400, "Spare part not found");
     const technician = await tx.staffUser.findUnique({ where: { id: input.technicianId }, select: { role: true, isActive: true } });
     if (!technician || technician.role !== "technician" || !technician.isActive) throw new HttpError(400, "Technician not found");
-    const updated = await tx.sparePart.updateMany({ where: { id: part.id, stockQuantity: { gte: input.quantity } }, data: { stockQuantity: { decrement: input.quantity } } });
-    if (updated.count === 0) {
-      throw new HttpError(400, `Only ${part.stockQuantity} ${part.name} in stock`, "stockInsufficient", { count: part.stockQuantity, ...serializeNamed(part) });
+    // From the warehouse the keeper works in, else the technician's own warehouse.
+    const warehouseId = input.warehouseId ?? (await homeWarehouseId(tx, { staffId: input.technicianId }));
+    if (!(await takeStock(tx, warehouseId, part.id, input.quantity, { kind: "issue", technicianId: input.technicianId, by: input.by, note: input.note ?? null }))) {
+      const count = await stockAt(tx, warehouseId, part.id);
+      throw new HttpError(400, `Only ${count} ${part.name} in stock`, "stockInsufficient", { count, ...serializeNamed(part) });
     }
     await tx.technicianStock.upsert({
       where: { technicianId_sparePartId: { technicianId: input.technicianId, sparePartId: part.id } },
       update: { quantity: { increment: input.quantity } },
       create: { technicianId: input.technicianId, sparePartId: part.id, quantity: input.quantity },
     });
-    await tx.stockMovement.create({
-      data: { sparePartId: part.id, technicianId: input.technicianId, kind: "issue", quantity: input.quantity, note: input.note ?? null, createdById: input.by.id, createdByName: input.by.name },
-    });
   });
 }
 
 /** Technician back to the warehouse. */
-export async function returnFromTechnician(input: { technicianId: string; sparePartId: string; quantity: number; by: { id: string; name: string }; note?: string | null }) {
+export async function returnFromTechnician(input: { technicianId: string; sparePartId: string; quantity: number; by: { id: string; name: string }; note?: string | null; warehouseId?: string | null }) {
   return prisma.$transaction(async (tx) => {
     const taken = await tx.technicianStock.updateMany({
       where: { technicianId: input.technicianId, sparePartId: input.sparePartId, quantity: { gte: input.quantity } },
@@ -110,10 +106,8 @@ export async function returnFromTechnician(input: { technicianId: string; spareP
       const carried = await techQuantity(tx, input.technicianId, input.sparePartId);
       throw new HttpError(400, `The technician only has ${carried}`, "techStockInsufficient", { count: carried });
     }
-    await tx.sparePart.update({ where: { id: input.sparePartId }, data: { stockQuantity: { increment: input.quantity } } });
-    await tx.stockMovement.create({
-      data: { sparePartId: input.sparePartId, technicianId: input.technicianId, kind: "return", quantity: input.quantity, note: input.note ?? null, createdById: input.by.id, createdByName: input.by.name },
-    });
+    const warehouseId = input.warehouseId ?? (await homeWarehouseId(tx, { staffId: input.technicianId }));
+    await addStock(tx, warehouseId, input.sparePartId, input.quantity, { kind: "return", technicianId: input.technicianId, by: input.by, note: input.note ?? null });
   });
 }
 

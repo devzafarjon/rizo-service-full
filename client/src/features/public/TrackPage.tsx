@@ -1,3 +1,5 @@
+import { PartWaitBanner } from "../portal/PartWaitBanner";
+import type { PartWait } from "../../lib/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -15,6 +17,7 @@ import { portalInputClass } from "../portal/fields";
 import { PayButtons } from "../../components/PayButtons";
 
 type Track = {
+  partWait?: PartWait | null;
   displayId: string;
   type: "installation" | "repair";
   status: RequestStatus;
@@ -111,6 +114,7 @@ export function TrackPage() {
                 <span className="text-xs text-neutral-500">{t(`type.${request.type}`)} · {t(`location.${request.locationType}`)}</span>
               </div>
               {request.status === "rejected" && request.rejectionReason ? <p className="mt-3 rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">{t("portal.rejectedBecause", { reason: request.rejectionReason })}</p> : null}
+              <PartWaitBanner wait={request.partWait} />
               {request.eta ? <p className="mt-3 rounded-xl bg-[#FFF4E5] px-4 py-3 text-sm font-bold text-[#8A4B00]">{t("visit.eta", { minutes: request.eta.minutes })}</p> : null}
               {request.visit.canConfirm ? (
                 <div className="mt-3 rounded-xl bg-amber-50 px-4 py-3">

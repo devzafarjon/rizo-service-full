@@ -6,7 +6,7 @@ import { serializeStaffAlert } from "../lib/notifyStaff.js";
 import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
 
 export const alertsRouter = Router();
-alertsRouter.use(staffAuth, requireStaffRole("admin"));
+alertsRouter.use(staffAuth, requireStaffRole("admin", "warehouse"));
 
 alertsRouter.get(
   "/",

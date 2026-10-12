@@ -16,7 +16,7 @@ import { api, apiErrorMessage } from "../../lib/api";
 import { formatMoney, SUGGESTED_CATEGORIES } from "../../lib/format";
 import { categoryLabel, localizedName, namedFields } from "../../lib/localized";
 import { DefectCodesPanel } from "./DefectCodesPanel";
-import type { CatalogService, Product, SparePart } from "../../lib/types";
+import type { CatalogService, Product, SparePart, Supplier } from "../../lib/types";
 import { segmentedGroupClass, segmentedTabClass } from "../../components/segmented";
 
 export function CatalogPage() {
@@ -351,6 +351,13 @@ function PartsPanel({ items, categories }: { items: SparePart[]; categories: str
     productCategories: [],
     stockQuantity: "0",
     lowStockThreshold: "3",
+    supplierId: "",
+    targetStock: "",
+  });
+  const suppliers = useQuery({
+    queryKey: ["staff", "suppliers"],
+    enabled: Boolean(token),
+    queryFn: () => api<{ suppliers: Supplier[] }>("/api/staff/suppliers", { token }),
   });
   const isAdmin = useStaffAuth().user?.role === "admin";
   const settings = useQuery({
@@ -376,6 +383,8 @@ function PartsPanel({ items, categories }: { items: SparePart[]; categories: str
         costPrice: Number(form.costPrice),
         stockQuantity: Number(form.stockQuantity),
         lowStockThreshold: Number(form.lowStockThreshold),
+        supplierId: form.supplierId || null,
+        targetStock: form.targetStock ? Number(form.targetStock) : null,
       });
       return editing
         ? api(`/api/staff/catalog/parts/${editing.id}`, { method: "PATCH", token, body })
@@ -409,6 +418,8 @@ function PartsPanel({ items, categories }: { items: SparePart[]; categories: str
       productCategories: item?.productCategories ?? [],
       stockQuantity: item ? String(item.stockQuantity) : "0",
       lowStockThreshold: item ? String(item.lowStockThreshold ?? 3) : "3",
+      supplierId: item?.supplierId ?? "",
+      targetStock: item?.targetStock != null ? String(item.targetStock) : "",
     });
     setError(null);
     setOpen(true);
@@ -497,6 +508,23 @@ function PartsPanel({ items, categories }: { items: SparePart[]; categories: str
         onStock={(stockQuantity) => setForm({ ...form, stockQuantity })}
         onThreshold={(lowStockThreshold) => setForm({ ...form, lowStockThreshold })}
         onSubmit={() => save.mutate()}
+        extraFields={
+          <>
+            <Field label={t("catalog.supplier")} hint={t("catalog.supplierHint")}>
+              <select className={`${inputClass} bg-white`} value={form.supplierId ?? ""} onChange={(event) => setForm({ ...form, supplierId: event.target.value })}>
+                <option value="">{t("catalog.noSupplier")}</option>
+                {(suppliers.data?.suppliers ?? []).filter((row) => row.isActive || row.id === form.supplierId).map((row) => (
+                  <option key={row.id} value={row.id}>
+                    {row.name} · {t("parts.leadDays", { count: row.leadTimeDays })}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label={t("catalog.targetStock")} hint={t("catalog.targetStockHint")}>
+              <input className={inputClass} type="number" min={0} value={form.targetStock ?? ""} onChange={(event) => setForm({ ...form, targetStock: event.target.value })} placeholder={t("catalog.targetAuto")} />
+            </Field>
+          </>
+        }
       />
       <ConfirmDialog
         open={Boolean(pendingDelete)}
@@ -568,6 +596,7 @@ function CategoryFormModal({
   onStock,
   onThreshold,
   onSubmit,
+  extraFields,
 }: {
   open: boolean;
   title: string;
@@ -582,6 +611,7 @@ function CategoryFormModal({
   onStock?: (value: string) => void;
   onThreshold?: (value: string) => void;
   onSubmit: () => void;
+  extraFields?: ReactNode;
 }) {
   const { t } = useTranslation();
   return (
@@ -619,6 +649,7 @@ function CategoryFormModal({
             <input className={inputClass} type="number" min={0} value={threshold} onChange={(event) => onThreshold(event.target.value)} required />
           </Field>
         ) : null}
+        {extraFields}
         {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
         <FormActions pending={pending || form.productCategories.length === 0} onCancel={onClose} submitLabel={t("common.save")} />
       </form>
@@ -635,6 +666,8 @@ type FormValue = {
   productCategories: string[];
   stockQuantity?: string;
   lowStockThreshold?: string;
+  supplierId?: string;
+  targetStock?: string;
 };
 
 /** Pick one or more product categories, or add a new one. */

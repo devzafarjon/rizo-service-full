@@ -4,7 +4,8 @@ import { HttpError } from "./httpError.js";
 import { serializeNamed } from "./named.js";
 import { createCustomerNotification } from "./notifyCustomer.js";
 import { notifyAdmins } from "./notifyStaff.js";
-import { createPartOrder, maybeAlertLowStock, takeFromStock } from "./partOrders.js";
+import { maybeAlertLowStock, takeFromStock } from "./partOrders.js";
+import { homeWarehouseForRequest } from "./warehouses.js";
 import { prisma } from "./prisma.js";
 import { publishRequest } from "./realtime.js";
 import { requestInclude, serializeRequest } from "./serializeRequest.js";
@@ -171,6 +172,8 @@ export async function approveEstimate(input: {
     }
     const fresh = await tx.estimate.findUniqueOrThrow({ where: { id: estimate.id }, include: estimateInclude });
     const shortages: Array<{ partId: string; quantity: number }> = [];
+    // Parts come off the shelf of the warehouse the job is served from.
+    const home = await homeWarehouseForRequest(tx, request);
     for (const line of fresh.lines.filter((item) => item.isSelected)) {
       if (line.kind === "service" && line.serviceCatalogItemId) {
         const exists = await tx.requestServiceLine.findFirst({ where: { serviceRequestId: request.id, serviceCatalogItemId: line.serviceCatalogItemId } });
@@ -180,7 +183,7 @@ export async function approveEstimate(input: {
         await tx.estimateLine.update({ where: { id: line.id }, data: { isFulfilled: true } });
       } else if (line.kind === "part" && line.sparePartId) {
         const part = await tx.sparePart.findUniqueOrThrow({ where: { id: line.sparePartId } });
-        const ok = await takeFromStock(tx, part.id, line.quantity);
+        const ok = await takeFromStock(tx, part.id, line.quantity, home, { kind: "consumed", serviceRequestId: request.id });
         if (ok) {
           await tx.requestPartLine.create({
             data: { serviceRequestId: request.id, sparePartId: part.id, quantity: line.quantity, priceAtTime: line.unitPrice, costAtTime: part.costPrice },
@@ -214,8 +217,12 @@ export async function approveEstimate(input: {
     return { approved, shortages };
   });
 
-  for (const shortage of result.shortages) {
-    await createPartOrder({ sparePartId: shortage.partId, quantity: shortage.quantity, serviceRequestId: request.id, note: "Needed for an approved estimate" });
+  // A missing part is fetched from the fastest warehouse that has it, or ordered from the supplier (cycle: loaded on demand).
+  if (result.shortages.length > 0) {
+    const { sourceMissingPart } = await import("./partSourcing.js");
+    for (const shortage of result.shortages) {
+      await sourceMissingPart({ requestId: request.id, sparePartId: shortage.partId, quantity: shortage.quantity, note: "Needed for an approved estimate", actor: { id: input.by.id, name: input.by.name, role: input.by.kind === "customer" ? "customer" : "staff" } });
+    }
   }
   for (const line of result.approved.lines) if (line.sparePartId) await maybeAlertLowStock(line.sparePartId);
 
@@ -268,12 +275,14 @@ export async function fulfilPendingParts(requestId: string) {
     orderBy: { createdAt: "desc" },
     include: estimateInclude,
   });
-  if (!estimate) return { pending: 0 };
+  if (!estimate) return { pending: 0, hadLines: false };
+  const job = await prisma.serviceRequest.findUniqueOrThrow({ where: { id: requestId }, select: { assignedTechnicianId: true, serviceCenterId: true } });
+  const home = await homeWarehouseForRequest(prisma, job);
   let pending = 0;
   for (const line of estimate.lines.filter((item) => item.kind === "part" && item.isSelected && !item.isFulfilled && item.sparePartId)) {
     const done = await prisma.$transaction(async (tx) => {
       const part = await tx.sparePart.findUniqueOrThrow({ where: { id: line.sparePartId! } });
-      if (!(await takeFromStock(tx, part.id, line.quantity))) return false;
+      if (!(await takeFromStock(tx, part.id, line.quantity, home, { kind: "consumed", serviceRequestId: requestId }))) return false;
       await tx.requestPartLine.create({
         data: { serviceRequestId: requestId, sparePartId: part.id, quantity: line.quantity, priceAtTime: line.unitPrice, costAtTime: part.costPrice },
       });
@@ -283,7 +292,7 @@ export async function fulfilPendingParts(requestId: string) {
     if (done) await maybeAlertLowStock(line.sparePartId!);
     else pending += 1;
   }
-  return { pending };
+  return { pending, hadLines: estimate.lines.some((item) => item.kind === "part" && item.isSelected && Boolean(item.sparePartId)) };
 }
 
 /** Expires estimates the customer never answered. */

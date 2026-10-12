@@ -11,7 +11,7 @@ import { useStaffAuth } from "../auth/StaffAuthContext";
 import { api, apiErrorMessage } from "../../lib/api";
 import { formatMoney, formatPhone, technicianTypeLabel } from "../../lib/format";
 import { categoryLabel } from "../../lib/localized";
-import type { ServiceCenter, StaffRole, TechnicianType } from "../../lib/types";
+import type { ServiceCenter, StaffRole, TechnicianType, Warehouse } from "../../lib/types";
 
 type Row = {
   id: string;
@@ -21,6 +21,7 @@ type Row = {
   technicianType: TechnicianType | null;
   isActive: boolean;
   serviceCenterId: string | null;
+  warehouseId?: string | null;
   payPercent: number;
   payFixedPerJob: number;
   skillCategories: string[];
@@ -38,7 +39,7 @@ export function StaffPage() {
   const { notify } = useToast();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<Row | "new" | null>(null);
-  const [form, setForm] = useState({ name: "", phone: "", password: "", role: "technician" as StaffRole, technicianType: "service_center" as TechnicianType, serviceCenterId: "", payPercent: "0", payFixedPerJob: "0", skillCategories: [] as string[], baseLat: "", baseLng: "" });
+  const [form, setForm] = useState({ name: "", phone: "", password: "", role: "technician" as StaffRole, technicianType: "service_center" as TechnicianType, serviceCenterId: "", warehouseId: "", payPercent: "0", payFixedPerJob: "0", skillCategories: [] as string[], baseLat: "", baseLng: "" });
   const [passwordFor, setPasswordFor] = useState<Row | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +53,11 @@ export function StaffPage() {
     queryKey: ["staff", "service-centers"],
     enabled: Boolean(token),
     queryFn: () => api<{ centers: ServiceCenter[] }>("/api/staff/service-centers", { token }),
+  });
+  const warehouses = useQuery({
+    queryKey: ["staff", "warehouses", "list"],
+    enabled: Boolean(token),
+    queryFn: () => api<{ warehouses: Warehouse[] }>("/api/staff/warehouses", { token }),
   });
   const categories = useQuery({
     queryKey: ["staff", "categories"],
@@ -76,6 +82,7 @@ export function StaffPage() {
         role: form.role,
         technicianType: form.role === "technician" ? form.technicianType : null,
         serviceCenterId: form.serviceCenterId || null,
+        warehouseId: form.role === "warehouse" || form.role === "technician" ? form.warehouseId || null : null,
         payPercent: Number(form.payPercent) || 0,
         payFixedPerJob: Number(form.payFixedPerJob) || 0,
         skillCategories: form.role === "technician" ? form.skillCategories : [],
@@ -113,8 +120,8 @@ export function StaffPage() {
     setError(null);
     setForm(
       row === "new"
-        ? { name: "", phone: "", password: "", role: "technician", technicianType: "service_center", serviceCenterId: "", payPercent: "0", payFixedPerJob: "0", skillCategories: [], baseLat: "", baseLng: "" }
-        : { name: row.name, phone: row.phone, password: "", role: row.role, technicianType: row.technicianType ?? "service_center", serviceCenterId: row.serviceCenterId ?? "", payPercent: String(row.payPercent), payFixedPerJob: String(row.payFixedPerJob), skillCategories: row.skillCategories ?? [], baseLat: row.baseLat == null ? "" : String(row.baseLat), baseLng: row.baseLng == null ? "" : String(row.baseLng) },
+        ? { name: "", phone: "", password: "", role: "technician", technicianType: "service_center", serviceCenterId: "", warehouseId: "", payPercent: "0", payFixedPerJob: "0", skillCategories: [], baseLat: "", baseLng: "" }
+        : { name: row.name, phone: row.phone, password: "", role: row.role, technicianType: row.technicianType ?? "service_center", serviceCenterId: row.serviceCenterId ?? "", warehouseId: row.warehouseId ?? "", payPercent: String(row.payPercent), payFixedPerJob: String(row.payFixedPerJob), skillCategories: row.skillCategories ?? [], baseLat: row.baseLat == null ? "" : String(row.baseLat), baseLng: row.baseLng == null ? "" : String(row.baseLng) },
     );
   }
   function submit(event: FormEvent) {
@@ -225,6 +232,18 @@ export function StaffPage() {
                 {(centers.data?.centers ?? []).map((center) => (
                   <option key={center.id} value={center.id}>
                     {center.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          ) : null}
+          {form.role === "warehouse" || form.role === "technician" ? (
+            <Field label={t("warehouse.assigned")} hint={form.role === "warehouse" ? t("warehouse.assignedKeeperHint") : t("warehouse.assignedTechHint")}>
+              <select className={`${inputClass} bg-white`} value={form.warehouseId} onChange={(event) => setForm({ ...form, warehouseId: event.target.value })}>
+                <option value="">{form.role === "warehouse" ? t("warehouse.allWarehouses") : t("warehouse.autoWarehouse")}</option>
+                {(warehouses.data?.warehouses ?? []).filter((row) => row.isActive).map((row) => (
+                  <option key={row.id} value={row.id}>
+                    {row.name}
                   </option>
                 ))}
               </select>

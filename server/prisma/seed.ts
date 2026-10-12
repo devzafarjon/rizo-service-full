@@ -213,6 +213,13 @@ async function main() {
     }
   }
 
+  // The central warehouse (made by the migration) holds the stock of every part that has no shelf yet.
+  const central = (await prisma.warehouse.findFirst({ where: { kind: "central" }, orderBy: { createdAt: "asc" } })) ?? (await prisma.warehouse.create({ data: { name: "Markaziy ombor", kind: "central", regionCode: "01" } }));
+  for (const part of await prisma.sparePart.findMany()) {
+    const shelf = await prisma.partStock.findUnique({ where: { warehouseId_sparePartId: { warehouseId: central.id, sparePartId: part.id } } });
+    if (!shelf) await prisma.partStock.create({ data: { warehouseId: central.id, sparePartId: part.id, quantity: part.stockQuantity } });
+  }
+
   const fridgeSaleDate = utcMonthsAgo(8);
   const tvSaleDate = utcMonthsAgo(14);
   const acSaleDate = utcMonthsAgo(3);
@@ -414,6 +421,7 @@ async function main() {
       data: { serviceRequestId: done.id, sparePartId: gasket.id, quantity: 1, priceAtTime: gasket.price, costAtTime: gasket.costPrice },
     });
     await prisma.sparePart.update({ where: { id: gasket.id }, data: { stockQuantity: { decrement: 1 } } });
+    await prisma.partStock.updateMany({ where: { sparePartId: gasket.id, warehouse: { kind: "central" } }, data: { quantity: { decrement: 1 } } });
     await prisma.requestPhoto.create({ data: { serviceRequestId: done.id, photoUrl: demoPhoto, uploadedBy: shopTech.name, staffUserId: shopTech.id } });
 
     // Picked up and rated.

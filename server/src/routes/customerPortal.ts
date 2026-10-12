@@ -25,6 +25,7 @@ import { postCustomerMessage, submitFeedback } from "../lib/customerActions.js";
 import { availableSlots, cancelRequestByCustomer, confirmVisit, scheduleVisit } from "../lib/visits.js";
 import { paymentSummary } from "../lib/payments.js";
 import { tashkentCalendarDate } from "../lib/displayId.js";
+import { customerPartWait } from "../lib/partsControl.js";
 import { parseDateOnly } from "../lib/warranty.js";
 import { customerAuth } from "../middleware/customerAuth.js";
 import { canConfirmPickup, confirmPickup } from "../lib/pickup.js";
@@ -517,6 +518,7 @@ async function serializePortalRequest(request: PortalRecord, detail = true, sett
   const paid = request.payments.filter((row) => row.kind === "payment").reduce((sum, row) => sum + money(row.amount), 0);
   const refunded = request.payments.filter((row) => row.kind === "refund").reduce((sum, row) => sum + money(row.amount), 0);
   const due = request.finalCost != null ? money(request.finalCost) : request.estimatedCost != null ? money(request.estimatedCost) : 0;
+  const partWait = request.status === "awaiting_parts" ? await customerPartWait(request.id) : null;
   return {
     id: request.id,
     displayId: request.displayId,
@@ -539,6 +541,7 @@ async function serializePortalRequest(request: PortalRecord, detail = true, sett
       canReschedule: open && farEnough && (!request.visitSlot || request.visitRescheduleCount < rules.rescheduleLimit),
       canCancel: request.status === "new" && farEnough,
     },
+    partWait,
     eta: request.etaMinutes != null && request.etaSetAt && request.enRouteAt && !isTerminalStatus(request.status) && !request.arrivedAt ? { minutes: request.etaMinutes, setAt: request.etaSetAt.toISOString() } : null,
     enRouteAt: request.enRouteAt && !isTerminalStatus(request.status) && !request.arrivedAt ? request.enRouteAt.toISOString() : null,
     dueBy: request.legalDueAt && !isTerminalStatus(request.status) ? request.legalDueAt.toISOString() : null,

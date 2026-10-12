@@ -18,6 +18,10 @@ const DEFAULTS: Record<string, string> = {
   weekly_digest: "true",
   warranty_expiry_notice_days: "30",
   warranty_starts_on: "sale", // sale | installation: where the product warranty starts counting
+  parts_safety_days: "7", // spare-part forecast keeps this many days of use on top of the supplier's delivery time
+  parts_usage_days: "30", // how far back parts use is averaged
+  parts_customer_update_days: "3", // a customer waiting for a part hears from us at least this often (0 = off)
+  transfer_ship_hours: "24", // the keeper is reminded when a warehouse request is not sent within this many hours
 };
 
 export async function getSetting(key: string) {
@@ -72,6 +76,10 @@ export async function getAppSettings() {
     requireFiscalReceipt: map.require_fiscal_receipt === "true",
     weeklyDigest: map.weekly_digest !== "false",
     warrantyExpiryNoticeDays: Number(map.warranty_expiry_notice_days),
+    partsSafetyDays: Number(map.parts_safety_days),
+    partsUsageDays: Number(map.parts_usage_days),
+    partsCustomerUpdateDays: Number(map.parts_customer_update_days),
+    transferShipHours: Number(map.transfer_ship_hours),
     warrantyStartsOn: (map.warranty_starts_on === "installation" ? "installation" : "sale") as "sale" | "installation",
   };
 }

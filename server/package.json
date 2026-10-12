@@ -19,7 +19,9 @@
     "set-password": "node --import tsx/esm scripts/set-password.ts",
     "add-demo-accounts": "node --import tsx/esm scripts/add-demo-accounts.ts",
     "demo:load": "node --import tsx/esm scripts/demo-load.ts",
-    "demo:clean": "node --import tsx/esm scripts/demo-clean.ts"
+    "demo:clean": "node --import tsx/esm scripts/demo-clean.ts",
+    "smoke:parts": "node --import tsx/esm scripts/parts-smoke.ts",
+    "smoke:warehouses": "node --import tsx/esm scripts/warehouses-smoke.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

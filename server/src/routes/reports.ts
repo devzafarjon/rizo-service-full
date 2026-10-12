@@ -1,3 +1,4 @@
+import { partsOverview } from "../lib/partsControl.js";
 import { Router } from "express";
 import type { TechnicianType } from "@prisma/client";
 import { asyncHandler } from "../lib/asyncHandler.js";
@@ -114,6 +115,7 @@ reportsRouter.get(
         debt: roundMoney(debt),
       },
       service: await computeServiceKpis(jobs),
+      parts: await partsOverview(),
       trend: trendSeries(jobs, grain),
       topProducts: [...products.values()]
         .sort((a, b) => b.count - a.count || a.product.name.localeCompare(b.product.name))

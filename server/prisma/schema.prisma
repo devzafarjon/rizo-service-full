@@ -101,6 +101,20 @@ enum PaymentKind {
   refund
 }
 
+enum WarehouseKind {
+  central
+  regional
+  branch
+}
+
+enum TransferStatus {
+  requested
+  shipped
+  received
+  rejected
+  cancelled
+}
+
 enum PartOrderStatus {
   requested
   ordered
@@ -149,60 +163,64 @@ enum NoteAuthorScope {
 }
 
 model StaffUser {
-  id              String           @id @default(cuid())
-  name            String
-  phone           String           @unique
-  passwordHash    String           @map("password_hash")
-  role            StaffRole
-  technicianType  TechnicianType?  @map("technician_type")
-  isAvailable     Boolean          @default(true) @map("is_available")
-  isActive        Boolean          @default(true) @map("is_active")
-  payPercent      Decimal          @default(0) @map("pay_percent") @db.Decimal(5, 2)
-  payFixedPerJob  Decimal          @default(0) @map("pay_fixed_per_job") @db.Decimal(12, 2)
-  serviceCenterId String?          @map("service_center_id")
-  serviceCenter   ServiceCenter?   @relation(fields: [serviceCenterId], references: [id], onDelete: SetNull)
-  payAdjustments  PayAdjustment[]
-  locale          String           @default("uz") @db.VarChar(5)
-  createdAt       DateTime         @default(now()) @map("created_at")
-  assignedRequests ServiceRequest[] @relation("AssignedTechnician")
-  notes           RequestNote[]
-  photos          RequestPhoto[]   @relation("StaffPhotoUploader")
-  schedules       TechnicianSchedule[]
-  alerts          Notification[]   @relation("StaffAlerts")
-  deviceTokens    DeviceToken[]
+  id                 String               @id @default(cuid())
+  name               String
+  phone              String               @unique
+  passwordHash       String               @map("password_hash")
+  role               StaffRole
+  technicianType     TechnicianType?      @map("technician_type")
+  isAvailable        Boolean              @default(true) @map("is_available")
+  isActive           Boolean              @default(true) @map("is_active")
+  payPercent         Decimal              @default(0) @map("pay_percent") @db.Decimal(5, 2)
+  payFixedPerJob     Decimal              @default(0) @map("pay_fixed_per_job") @db.Decimal(12, 2)
+  serviceCenterId    String?              @map("service_center_id")
+  serviceCenter      ServiceCenter?       @relation(fields: [serviceCenterId], references: [id], onDelete: SetNull)
+  payAdjustments     PayAdjustment[]
+  locale             String               @default("uz") @db.VarChar(5)
+  createdAt          DateTime             @default(now()) @map("created_at")
+  assignedRequests   ServiceRequest[]     @relation("AssignedTechnician")
+  notes              RequestNote[]
+  photos             RequestPhoto[]       @relation("StaffPhotoUploader")
+  schedules          TechnicianSchedule[]
+  alerts             Notification[]       @relation("StaffAlerts")
+  deviceTokens       DeviceToken[]
   // Product categories this technician can repair (empty = any) and a home base used to pick the nearest one.
-  skillCategories String[]         @default([]) @map("skill_categories")
-  baseLat         Float?           @map("base_lat")
-  baseLng         Float?           @map("base_lng")
-  totpSecret      String?          @map("totp_secret")
-  totpEnabled     Boolean          @default(false) @map("totp_enabled")
-  stocks          TechnicianStock[]
+  skillCategories    String[]             @default([]) @map("skill_categories")
+  baseLat            Float?               @map("base_lat")
+  baseLng            Float?               @map("base_lng")
+  totpSecret         String?              @map("totp_secret")
+  totpEnabled        Boolean              @default(false) @map("totp_enabled")
+  stocks             TechnicianStock[]
+  // The warehouse a keeper runs, or where a technician / front-desk user takes parts from (empty = worked out from the service centre).
+  warehouseId        String?              @map("warehouse_id")
+  warehouse          Warehouse?           @relation("WarehouseStaff", fields: [warehouseId], references: [id], onDelete: SetNull)
+  transfersRequested StockTransfer[]      @relation("TransferToTechnician")
 
   @@map("staff_users")
 }
 
 model Customer {
-  id           String           @id @default(cuid())
-  name         String
-  phone        String           @unique
-  passwordHash String           @map("password_hash")
-  address      String?
-  regionCode   String           @default("00") @map("region_code") @db.VarChar(2)
-  locale       String           @default("uz") @db.VarChar(5)
-  notes        String?
-  createdAt    DateTime         @default(now()) @map("created_at")
-  sales        Sale[]
-  requests     ServiceRequest[]
-  feedback     Feedback[]
-  notifications Notification[]
-  deviceTokens DeviceToken[]
-  requestNotes RequestNote[]
-  photos       RequestPhoto[]   @relation("CustomerPhotoUploader")
-  telegramChatId String?        @map("telegram_chat_id")
+  id                  String           @id @default(cuid())
+  name                String
+  phone               String           @unique
+  passwordHash        String           @map("password_hash")
+  address             String?
+  regionCode          String           @default("00") @map("region_code") @db.VarChar(2)
+  locale              String           @default("uz") @db.VarChar(5)
+  notes               String?
+  createdAt           DateTime         @default(now()) @map("created_at")
+  sales               Sale[]
+  requests            ServiceRequest[]
+  feedback            Feedback[]
+  notifications       Notification[]
+  deviceTokens        DeviceToken[]
+  requestNotes        RequestNote[]
+  photos              RequestPhoto[]   @relation("CustomerPhotoUploader")
+  telegramChatId      String?          @map("telegram_chat_id")
   // sms | telegram | both: where status messages are sent.
-  preferredChannel String       @default("both") @map("preferred_channel") @db.VarChar(10)
-  deletionRequestedAt DateTime? @map("deletion_requested_at")
-  anonymizedAt DateTime?        @map("anonymized_at")
+  preferredChannel    String           @default("both") @map("preferred_channel") @db.VarChar(10)
+  deletionRequestedAt DateTime?        @map("deletion_requested_at")
+  anonymizedAt        DateTime?        @map("anonymized_at")
 
   @@map("customers")
 }
@@ -217,48 +235,48 @@ model ProductCategory {
 }
 
 model Product {
-  id         String           @id @default(cuid())
-  name       String
-  nameUz     String           @default("") @map("name_uz")
-  nameRu     String           @default("") @map("name_ru")
-  nameEn     String           @default("") @map("name_en")
-  sku        String           @unique
-  category   String
-  warrantyMonths     Int      @default(12) @map("warranty_months")
-  warrantyCoversLabor Boolean @default(true) @map("warranty_covers_labor")
-  warrantyCoversParts Boolean @default(true) @map("warranty_covers_parts")
-  categoryRef ProductCategory @relation(fields: [category], references: [name], onUpdate: Cascade, onDelete: Restrict)
-  createdAt  DateTime         @default(now()) @map("created_at")
-  sales      Sale[]
-  requests   ServiceRequest[]
-  replacements ReplacementItem[]
+  id                  String            @id @default(cuid())
+  name                String
+  nameUz              String            @default("") @map("name_uz")
+  nameRu              String            @default("") @map("name_ru")
+  nameEn              String            @default("") @map("name_en")
+  sku                 String            @unique
+  category            String
+  warrantyMonths      Int               @default(12) @map("warranty_months")
+  warrantyCoversLabor Boolean           @default(true) @map("warranty_covers_labor")
+  warrantyCoversParts Boolean           @default(true) @map("warranty_covers_parts")
+  categoryRef         ProductCategory   @relation(fields: [category], references: [name], onUpdate: Cascade, onDelete: Restrict)
+  createdAt           DateTime          @default(now()) @map("created_at")
+  sales               Sale[]
+  requests            ServiceRequest[]
+  replacements        ReplacementItem[]
 
   @@index([category])
   @@map("products")
 }
 
 model Sale {
-  id             String           @id @default(cuid())
-  customerId     String           @map("customer_id")
-  productId      String           @map("product_id")
-  quantity       Int
-  saleDate       DateTime         @map("sale_date") @db.Date
-  pricePaid      Decimal          @map("price_paid") @db.Decimal(12, 2)
-  warrantyMonths Int              @map("warranty_months")
-  warrantyExpiry DateTime         @map("warranty_expiry") @db.Date
-  installationDate DateTime?      @map("installation_date") @db.Date
-  serialNumber   String?           @map("serial_number")
-  source         SaleSource        @default(rizo)
-  isVerified     Boolean           @default(true) @map("is_verified")
-  voidedAt       DateTime?         @map("voided_at")
-  voidReason     String?           @map("void_reason")
-  invoiceNumber  String           @unique @map("invoice_number")
+  id               String           @id @default(cuid())
+  customerId       String           @map("customer_id")
+  productId        String           @map("product_id")
+  quantity         Int
+  saleDate         DateTime         @map("sale_date") @db.Date
+  pricePaid        Decimal          @map("price_paid") @db.Decimal(12, 2)
+  warrantyMonths   Int              @map("warranty_months")
+  warrantyExpiry   DateTime         @map("warranty_expiry") @db.Date
+  installationDate DateTime?        @map("installation_date") @db.Date
+  serialNumber     String?          @map("serial_number")
+  source           SaleSource       @default(rizo)
+  isVerified       Boolean          @default(true) @map("is_verified")
+  voidedAt         DateTime?        @map("voided_at")
+  voidReason       String?          @map("void_reason")
+  invoiceNumber    String           @unique @map("invoice_number")
   // Id of the sale in the system it came from (RIZO market), so a re-sent sale is not created twice.
-  externalId     String?          @unique @map("external_id")
-  createdAt      DateTime         @default(now()) @map("created_at")
-  customer       Customer         @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  product        Product          @relation(fields: [productId], references: [id], onDelete: Restrict)
-  requests       ServiceRequest[]
+  externalId       String?          @unique @map("external_id")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  customer         Customer         @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  product          Product          @relation(fields: [productId], references: [id], onDelete: Restrict)
+  requests         ServiceRequest[]
 
   @@index([customerId])
   @@index([productId])
@@ -267,126 +285,133 @@ model Sale {
 }
 
 model ServiceCatalogItem {
-  id              String               @id @default(cuid())
-  name            String
-  nameUz          String               @default("") @map("name_uz")
-  nameRu          String               @default("") @map("name_ru")
-  nameEn          String               @default("") @map("name_en")
-  price           Decimal              @db.Decimal(12, 2)
-  productCategories String[]           @map("product_categories")
-  createdAt       DateTime             @default(now()) @map("created_at")
-  requestLines    RequestServiceLine[]
+  id                String               @id @default(cuid())
+  name              String
+  nameUz            String               @default("") @map("name_uz")
+  nameRu            String               @default("") @map("name_ru")
+  nameEn            String               @default("") @map("name_en")
+  price             Decimal              @db.Decimal(12, 2)
+  productCategories String[]             @map("product_categories")
+  createdAt         DateTime             @default(now()) @map("created_at")
+  requestLines      RequestServiceLine[]
 
   @@map("service_catalog_items")
 }
 
 model SparePart {
-  id              String            @id @default(cuid())
-  name            String
-  nameUz          String            @default("") @map("name_uz")
-  nameRu          String            @default("") @map("name_ru")
-  nameEn          String            @default("") @map("name_en")
-  price           Decimal           @db.Decimal(12, 2)
-  costPrice       Decimal           @default(0) @map("cost_price") @db.Decimal(12, 2)
-  productCategories String[]        @map("product_categories")
+  id                 String            @id @default(cuid())
+  name               String
+  nameUz             String            @default("") @map("name_uz")
+  nameRu             String            @default("") @map("name_ru")
+  nameEn             String            @default("") @map("name_en")
+  price              Decimal           @db.Decimal(12, 2)
+  costPrice          Decimal           @default(0) @map("cost_price") @db.Decimal(12, 2)
+  productCategories  String[]          @map("product_categories")
   stockQuantity      Int               @default(0) @map("stock_quantity")
   lowStockThreshold  Int               @default(3) @map("low_stock_threshold")
   lowStockNotifiedAt DateTime?         @map("low_stock_notified_at")
+  // Preferred supplier and the stock level to refill to (empty = worked out from usage and the supplier's lead time).
+  supplierId         String?           @map("supplier_id")
+  targetStock        Int?              @map("target_stock")
   createdAt          DateTime          @default(now()) @map("created_at")
+  supplier           Supplier?         @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   requestLines       RequestPartLine[]
   alerts             Notification[]
   orders             PartOrder[]
   technicianStocks   TechnicianStock[]
+  partStocks         PartStock[]
+  transfers          StockTransfer[]
 
   @@map("spare_parts")
 }
 
 model ServiceRequest {
-  id                     String            @id @default(cuid())
-  displayId              String            @unique @map("display_id")
+  id                     String                  @id @default(cuid())
+  displayId              String                  @unique @map("display_id")
   type                   ServiceType
-  source                 RequestSource     @default(rizo_service)
-  submittedByCustomer    Boolean           @default(false) @map("submitted_by_customer")
-  saleId                 String?           @map("sale_id")
-  customerId             String            @map("customer_id")
-  productId              String            @map("product_id")
-  issueDescription       String            @map("issue_description")
-  defectType             DefectType?       @map("defect_type")
-  resolutionType         ResolutionType?   @map("resolution_type")
+  source                 RequestSource           @default(rizo_service)
+  submittedByCustomer    Boolean                 @default(false) @map("submitted_by_customer")
+  saleId                 String?                 @map("sale_id")
+  customerId             String                  @map("customer_id")
+  productId              String                  @map("product_id")
+  issueDescription       String                  @map("issue_description")
+  defectType             DefectType?             @map("defect_type")
+  resolutionType         ResolutionType?         @map("resolution_type")
   decision               RequestDecision?
-  decisionNote           String?           @map("decision_note")
-  decidedAt              DateTime?         @map("decided_at")
-  rejectionReason        String?           @map("rejection_reason")
-  serialNumber           String?           @map("serial_number")
-  statusChangedAt        DateTime          @default(now()) @map("status_changed_at")
-  scheduledAt            DateTime?         @map("scheduled_at")
+  decisionNote           String?                 @map("decision_note")
+  decidedAt              DateTime?               @map("decided_at")
+  rejectionReason        String?                 @map("rejection_reason")
+  serialNumber           String?                 @map("serial_number")
+  statusChangedAt        DateTime                @default(now()) @map("status_changed_at")
+  scheduledAt            DateTime?               @map("scheduled_at")
   // Visit slot chosen by the customer ("10:00-12:00"), confirmation and reschedule counter.
-  visitSlot              String?           @map("visit_slot") @db.VarChar(11)
-  visitConfirmedAt       DateTime?         @map("visit_confirmed_at")
-  visitRescheduleCount   Int               @default(0) @map("visit_reschedule_count")
-  enRouteAt              DateTime?         @map("en_route_at")
-  etaMinutes             Int?              @map("eta_minutes")
-  etaSetAt               DateTime?         @map("eta_set_at")
-  completionChecklist    Json?             @map("completion_checklist")
-  escalationLevel        Int               @default(0) @map("escalation_level")
-  escalatedAt            DateTime?         @map("escalated_at")
-  legalDueAt             DateTime?         @map("legal_due_at")
-  trackingToken          String            @unique @default(cuid()) @map("tracking_token")
-  intakeChecklist        Json?             @map("intake_checklist")
-  intakeNotes            String?           @map("intake_notes")
-  intakeSignatureUrl     String?           @map("intake_signature_url")
-  fiscalReceiptNumber    String?           @map("fiscal_receipt_number")
-  repairWarrantyUntil    DateTime?         @map("repair_warranty_until") @db.Date
-  isRepeat               Boolean           @default(false) @map("is_repeat")
-  repeatOfId             String?           @map("repeat_of_id")
-  workedMinutes          Int?              @map("worked_minutes")
-  defectCodeId           String?           @map("defect_code_id")
-  returnReasonId         String?           @map("return_reason_id")
-  serviceCenterId        String?           @map("service_center_id")
-  defectCode             DefectCode?       @relation("RequestDefectCode", fields: [defectCodeId], references: [id], onDelete: SetNull)
-  returnReason           DefectCode?       @relation("RequestReturnReason", fields: [returnReasonId], references: [id], onDelete: SetNull)
-  serviceCenter          ServiceCenter?    @relation(fields: [serviceCenterId], references: [id], onDelete: SetNull)
+  visitSlot              String?                 @map("visit_slot") @db.VarChar(11)
+  visitConfirmedAt       DateTime?               @map("visit_confirmed_at")
+  visitRescheduleCount   Int                     @default(0) @map("visit_reschedule_count")
+  enRouteAt              DateTime?               @map("en_route_at")
+  etaMinutes             Int?                    @map("eta_minutes")
+  etaSetAt               DateTime?               @map("eta_set_at")
+  completionChecklist    Json?                   @map("completion_checklist")
+  escalationLevel        Int                     @default(0) @map("escalation_level")
+  escalatedAt            DateTime?               @map("escalated_at")
+  legalDueAt             DateTime?               @map("legal_due_at")
+  trackingToken          String                  @unique @default(cuid()) @map("tracking_token")
+  intakeChecklist        Json?                   @map("intake_checklist")
+  intakeNotes            String?                 @map("intake_notes")
+  intakeSignatureUrl     String?                 @map("intake_signature_url")
+  fiscalReceiptNumber    String?                 @map("fiscal_receipt_number")
+  repairWarrantyUntil    DateTime?               @map("repair_warranty_until") @db.Date
+  isRepeat               Boolean                 @default(false) @map("is_repeat")
+  repeatOfId             String?                 @map("repeat_of_id")
+  workedMinutes          Int?                    @map("worked_minutes")
+  defectCodeId           String?                 @map("defect_code_id")
+  returnReasonId         String?                 @map("return_reason_id")
+  serviceCenterId        String?                 @map("service_center_id")
+  defectCode             DefectCode?             @relation("RequestDefectCode", fields: [defectCodeId], references: [id], onDelete: SetNull)
+  returnReason           DefectCode?             @relation("RequestReturnReason", fields: [returnReasonId], references: [id], onDelete: SetNull)
+  serviceCenter          ServiceCenter?          @relation(fields: [serviceCenterId], references: [id], onDelete: SetNull)
   estimates              Estimate[]
   payments               Payment[]
   partOrders             PartOrder[]
-  locationType           LocationType      @map("location_type")
-  customerLocation       Json?             @map("customer_location")
-  technicianTypeRequired TechnicianType    @map("technician_type_required")
-  assignedTechnicianId   String?           @map("assigned_technician_id")
+  transfers              StockTransfer[]
+  locationType           LocationType            @map("location_type")
+  customerLocation       Json?                   @map("customer_location")
+  technicianTypeRequired TechnicianType          @map("technician_type_required")
+  assignedTechnicianId   String?                 @map("assigned_technician_id")
   status                 RequestStatus
-  priority               Priority          @default(medium)
-  warrantyStatus         WarrantyStatus    @map("warranty_status")
-  isPaidRepair           Boolean           @default(false) @map("is_paid_repair")
-  estimatedCost          Decimal?          @map("estimated_cost") @db.Decimal(12, 2)
-  finalCost              Decimal?          @map("final_cost") @db.Decimal(12, 2)
-  paymentStatus          PaymentStatus     @default(not_required) @map("payment_status")
-  customerApprovedAt     DateTime?         @map("customer_approved_at")
-  receivedAt             DateTime?         @map("received_at")
-  assignedAt             DateTime?         @map("assigned_at")
-  acceptedAt             DateTime?         @map("accepted_at")
-  arrivedAt              DateTime?         @map("arrived_at")
-  completedAt            DateTime?         @map("completed_at")
-  overdueAt              DateTime?         @map("overdue_at")
-  overdueNotifiedAt      DateTime?         @map("overdue_notified_at")
-  pickupConfirmedAt      DateTime?         @map("picked_up_at")
+  priority               Priority                @default(medium)
+  warrantyStatus         WarrantyStatus          @map("warranty_status")
+  isPaidRepair           Boolean                 @default(false) @map("is_paid_repair")
+  estimatedCost          Decimal?                @map("estimated_cost") @db.Decimal(12, 2)
+  finalCost              Decimal?                @map("final_cost") @db.Decimal(12, 2)
+  paymentStatus          PaymentStatus           @default(not_required) @map("payment_status")
+  customerApprovedAt     DateTime?               @map("customer_approved_at")
+  receivedAt             DateTime?               @map("received_at")
+  assignedAt             DateTime?               @map("assigned_at")
+  acceptedAt             DateTime?               @map("accepted_at")
+  arrivedAt              DateTime?               @map("arrived_at")
+  completedAt            DateTime?               @map("completed_at")
+  overdueAt              DateTime?               @map("overdue_at")
+  overdueNotifiedAt      DateTime?               @map("overdue_notified_at")
+  pickupConfirmedAt      DateTime?               @map("picked_up_at")
   pickupConfirmationType PickupConfirmationType? @map("pickup_confirmation_type")
-  pickupSignatureUrl     String?           @map("pickup_signature_url")
-  pickupConfirmedBy      String?           @map("pickup_confirmed_by")
-  createdAt              DateTime          @default(now()) @map("created_at")
+  pickupSignatureUrl     String?                 @map("pickup_signature_url")
+  pickupConfirmedBy      String?                 @map("pickup_confirmed_by")
+  createdAt              DateTime                @default(now()) @map("created_at")
 
-  sale                 Sale?                @relation(fields: [saleId], references: [id], onDelete: Restrict)
-  customer             Customer             @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  product              Product              @relation(fields: [productId], references: [id], onDelete: Restrict)
-  assignedTechnician   StaffUser?           @relation("AssignedTechnician", fields: [assignedTechnicianId], references: [id], onDelete: SetNull)
-  pauses               RequestPause[]
-  serviceLines         RequestServiceLine[]
-  partLines            RequestPartLine[]
-  extraExpenses        RequestExtraExpense[]
-  photos               RequestPhoto[]
-  notes                RequestNote[]
-  feedback             Feedback?
-  notifications        Notification[]
-  replacement          ReplacementItem?
+  sale               Sale?                 @relation(fields: [saleId], references: [id], onDelete: Restrict)
+  customer           Customer              @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  product            Product               @relation(fields: [productId], references: [id], onDelete: Restrict)
+  assignedTechnician StaffUser?            @relation("AssignedTechnician", fields: [assignedTechnicianId], references: [id], onDelete: SetNull)
+  pauses             RequestPause[]
+  serviceLines       RequestServiceLine[]
+  partLines          RequestPartLine[]
+  extraExpenses      RequestExtraExpense[]
+  photos             RequestPhoto[]
+  notes              RequestNote[]
+  feedback           Feedback?
+  notifications      Notification[]
+  replacement        ReplacementItem?
 
   @@index([status])
   @@index([type])
@@ -412,23 +437,24 @@ model ReplacementItem {
 }
 
 model ServiceCenter {
-  id           String           @id @default(cuid())
-  name         String
-  regionCode   String           @default("00") @map("region_code") @db.VarChar(2)
-  address      String
-  phone        String?
-  workingHours String?          @map("working_hours")
-  lat          Float?
-  lng          Float?
-  isAuthorized Boolean          @default(true) @map("is_authorized")
-  isActive     Boolean          @default(true) @map("is_active")
+  id                String           @id @default(cuid())
+  name              String
+  regionCode        String           @default("00") @map("region_code") @db.VarChar(2)
+  address           String
+  phone             String?
+  workingHours      String?          @map("working_hours")
+  lat               Float?
+  lng               Float?
+  isAuthorized      Boolean          @default(true) @map("is_authorized")
+  isActive          Boolean          @default(true) @map("is_active")
   // A partner centre is paid per finished job: a share of the labour plus a fixed amount.
-  isPartner         Boolean     @default(false) @map("is_partner")
-  payoutPercent     Decimal     @default(0) @map("payout_percent") @db.Decimal(5, 2)
-  payoutFixedPerJob Decimal     @default(0) @map("payout_fixed_per_job") @db.Decimal(12, 2)
-  createdAt    DateTime         @default(now()) @map("created_at")
-  staff        StaffUser[]
-  requests     ServiceRequest[]
+  isPartner         Boolean          @default(false) @map("is_partner")
+  payoutPercent     Decimal          @default(0) @map("payout_percent") @db.Decimal(5, 2)
+  payoutFixedPerJob Decimal          @default(0) @map("payout_fixed_per_job") @db.Decimal(12, 2)
+  createdAt         DateTime         @default(now()) @map("created_at")
+  staff             StaffUser[]
+  requests          ServiceRequest[]
+  warehouses        Warehouse[]
 
   @@map("service_centers")
 }
@@ -473,17 +499,17 @@ model EstimateLine {
 }
 
 model Payment {
-  id               String         @id @default(cuid())
-  serviceRequestId String         @map("service_request_id")
-  kind             PaymentKind    @default(payment)
-  method           PaymentMethod  @default(cash)
-  amount           Decimal        @db.Decimal(12, 2)
-  note             String?
-  fiscalReceiptNumber String?     @map("fiscal_receipt_number")
-  createdById      String?        @map("created_by_id")
-  createdByName    String?        @map("created_by_name")
-  createdAt        DateTime       @default(now()) @map("created_at")
-  serviceRequest   ServiceRequest @relation(fields: [serviceRequestId], references: [id], onDelete: Restrict)
+  id                  String         @id @default(cuid())
+  serviceRequestId    String         @map("service_request_id")
+  kind                PaymentKind    @default(payment)
+  method              PaymentMethod  @default(cash)
+  amount              Decimal        @db.Decimal(12, 2)
+  note                String?
+  fiscalReceiptNumber String?        @map("fiscal_receipt_number")
+  createdById         String?        @map("created_by_id")
+  createdByName       String?        @map("created_by_name")
+  createdAt           DateTime       @default(now()) @map("created_at")
+  serviceRequest      ServiceRequest @relation(fields: [serviceRequestId], references: [id], onDelete: Restrict)
 
   @@index([serviceRequestId])
   @@map("payments")
@@ -497,28 +523,51 @@ model PartOrder {
   supplier         String?
   note             String?
   serviceRequestId String?         @map("service_request_id")
+  supplierId       String?         @map("supplier_id")
+  // Where the goods are delivered (empty = the central warehouse).
+  warehouseId      String?         @map("warehouse_id")
   expectedAt       DateTime?       @map("expected_at") @db.Date
+  orderedAt        DateTime?       @map("ordered_at")
   receivedAt       DateTime?       @map("received_at")
+  lateNotifiedAt   DateTime?       @map("late_notified_at")
   createdById      String?         @map("created_by_id")
   createdAt        DateTime        @default(now()) @map("created_at")
   sparePart        SparePart       @relation(fields: [sparePartId], references: [id], onDelete: Restrict)
+  supplierRef      Supplier?       @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  warehouse        Warehouse?      @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
   serviceRequest   ServiceRequest? @relation(fields: [serviceRequestId], references: [id], onDelete: SetNull)
 
   @@index([status])
   @@map("part_orders")
 }
 
+// Who the spare parts are bought from. leadTimeDays is how long a delivery usually takes.
+model Supplier {
+  id           String      @id @default(cuid())
+  name         String
+  phone        String?
+  telegram     String?
+  note         String?
+  leadTimeDays Int         @default(3) @map("lead_time_days")
+  isActive     Boolean     @default(true) @map("is_active")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  parts        SparePart[]
+  orders       PartOrder[]
+
+  @@map("suppliers")
+}
+
 model DefectCode {
-  id              String         @id @default(cuid())
-  kind            DefectCodeKind @default(defect)
+  id              String           @id @default(cuid())
+  kind            DefectCodeKind   @default(defect)
   code            String
   name            String
-  nameUz          String         @default("") @map("name_uz")
-  nameRu          String         @default("") @map("name_ru")
-  nameEn          String         @default("") @map("name_en")
-  productCategory String?        @map("product_category")
-  isActive        Boolean        @default(true) @map("is_active")
-  createdAt       DateTime       @default(now()) @map("created_at")
+  nameUz          String           @default("") @map("name_uz")
+  nameRu          String           @default("") @map("name_ru")
+  nameEn          String           @default("") @map("name_en")
+  productCategory String?          @map("product_category")
+  isActive        Boolean          @default(true) @map("is_active")
+  createdAt       DateTime         @default(now()) @map("created_at")
   defectRequests  ServiceRequest[] @relation("RequestDefectCode")
   returnRequests  ServiceRequest[] @relation("RequestReturnReason")
 
@@ -527,13 +576,13 @@ model DefectCode {
 }
 
 model PayAdjustment {
-  id            String    @id @default(cuid())
-  staffUserId   String    @map("staff_user_id")
-  amount        Decimal   @db.Decimal(12, 2)
-  reason        String
-  createdById   String?   @map("created_by_id")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  staffUser     StaffUser @relation(fields: [staffUserId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  staffUserId String    @map("staff_user_id")
+  amount      Decimal   @db.Decimal(12, 2)
+  reason      String
+  createdById String?   @map("created_by_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  staffUser   StaffUser @relation(fields: [staffUserId], references: [id], onDelete: Cascade)
 
   @@index([staffUserId])
   @@map("pay_adjustments")
@@ -547,13 +596,13 @@ model DailyRequestCounter {
 }
 
 model RequestPause {
-  id                String         @id @default(cuid())
-  serviceRequestId  String         @map("service_request_id")
-  pausedAt          DateTime       @default(now()) @map("paused_at")
-  resumedAt         DateTime?      @map("resumed_at")
-  reason            String
-  customTimerHours  Decimal        @map("custom_timer_hours") @db.Decimal(8, 2)
-  serviceRequest    ServiceRequest @relation(fields: [serviceRequestId], references: [id], onDelete: Restrict)
+  id               String         @id @default(cuid())
+  serviceRequestId String         @map("service_request_id")
+  pausedAt         DateTime       @default(now()) @map("paused_at")
+  resumedAt        DateTime?      @map("resumed_at")
+  reason           String
+  customTimerHours Decimal        @map("custom_timer_hours") @db.Decimal(8, 2)
+  serviceRequest   ServiceRequest @relation(fields: [serviceRequestId], references: [id], onDelete: Restrict)
 
   @@index([serviceRequestId])
   @@map("request_pauses")
@@ -741,6 +790,8 @@ model TechnicianStock {
 model StockMovement {
   id               String   @id @default(cuid())
   sparePartId      String   @map("spare_part_id")
+  warehouseId      String?  @map("warehouse_id")
+  transferId       String?  @map("transfer_id")
   technicianId     String?  @map("technician_id")
   kind             String
   quantity         Int
@@ -806,4 +857,84 @@ model DeviceToken {
   @@index([staffUserId])
   @@index([customerId])
   @@map("device_tokens")
+}
+
+// A place parts are kept: one central warehouse for everyone, regional ones, and the stock rooms of single service centres.
+// SparePart.stockQuantity is always the total over all warehouses.
+model Warehouse {
+  id                  String          @id @default(cuid())
+  name                String
+  kind                WarehouseKind   @default(regional)
+  regionCode          String          @default("00") @map("region_code") @db.VarChar(2)
+  address             String?
+  phone               String?
+  lat                 Float?
+  lng                 Float?
+  serviceCenterId     String?         @map("service_center_id")
+  // How many days a delivery from here takes to a place in the same region / in another region.
+  leadDaysSameRegion  Int             @default(1) @map("lead_days_same_region")
+  leadDaysOtherRegion Int             @default(3) @map("lead_days_other_region")
+  note                String?
+  isActive            Boolean         @default(true) @map("is_active")
+  createdAt           DateTime        @default(now()) @map("created_at")
+  serviceCenter       ServiceCenter?  @relation(fields: [serviceCenterId], references: [id], onDelete: SetNull)
+  stocks              PartStock[]
+  staff               StaffUser[]     @relation("WarehouseStaff")
+  transfersOut        StockTransfer[] @relation("TransferFrom")
+  transfersIn         StockTransfer[] @relation("TransferTo")
+  orders              PartOrder[]
+
+  @@map("warehouses")
+}
+
+model PartStock {
+  id            String    @id @default(cuid())
+  warehouseId   String    @map("warehouse_id")
+  sparePartId   String    @map("spare_part_id")
+  quantity      Int       @default(0)
+  // Below this the keeper is told (empty: the part's own minimum for the central warehouse, none elsewhere).
+  minQuantity   Int?      @map("min_quantity")
+  lowNotifiedAt DateTime? @map("low_notified_at")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
+  warehouse     Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  sparePart     SparePart @relation(fields: [sparePartId], references: [id], onDelete: Restrict)
+
+  @@unique([warehouseId, sparePartId])
+  @@index([sparePartId])
+  @@map("part_stocks")
+}
+
+// Parts moving between warehouses, or from a warehouse to a technician's van. requested -> shipped -> received.
+model StockTransfer {
+  id               String          @id @default(cuid())
+  sparePartId      String          @map("spare_part_id")
+  quantity         Int
+  fromWarehouseId  String          @map("from_warehouse_id")
+  toWarehouseId    String?         @map("to_warehouse_id")
+  toTechnicianId   String?         @map("to_technician_id")
+  serviceRequestId String?         @map("service_request_id")
+  status           TransferStatus  @default(requested)
+  etaAt            DateTime?       @map("eta_at") @db.Date
+  shippedAt        DateTime?       @map("shipped_at")
+  receivedAt       DateTime?       @map("received_at")
+  staleNotifiedAt  DateTime?       @map("stale_notified_at")
+  lateNotifiedAt   DateTime?       @map("late_notified_at")
+  note             String?
+  rejectionReason  String?         @map("rejection_reason")
+  requestedById    String?         @map("requested_by_id")
+  requestedByName  String?         @map("requested_by_name")
+  requestedByRole  String?         @map("requested_by_role")
+  shippedByName    String?         @map("shipped_by_name")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  sparePart        SparePart       @relation(fields: [sparePartId], references: [id], onDelete: Restrict)
+  fromWarehouse    Warehouse       @relation("TransferFrom", fields: [fromWarehouseId], references: [id], onDelete: Restrict)
+  toWarehouse      Warehouse?      @relation("TransferTo", fields: [toWarehouseId], references: [id], onDelete: Restrict)
+  toTechnician     StaffUser?      @relation("TransferToTechnician", fields: [toTechnicianId], references: [id], onDelete: SetNull)
+  serviceRequest   ServiceRequest? @relation(fields: [serviceRequestId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([fromWarehouseId, status])
+  @@index([toWarehouseId, status])
+  @@index([serviceRequestId])
+  @@map("stock_transfers")
 }

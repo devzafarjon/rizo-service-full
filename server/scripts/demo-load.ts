@@ -124,6 +124,7 @@ type Ctx = {
   products: Json[];
   services: Json[];
   centers: Json[];
+  parts: Json[];
 };
 
 async function uploadPhotos(token: string, jobId: string, category: string, rng: Rng, count: number) {
@@ -236,7 +237,26 @@ async function runScenario(ctx: Ctx, scenario: Scenario, c: { id: string; token:
   if (scenario === "openParts") {
     await move("in_progress");
     await diagnose();
-    ok(await patch(`/api/staff/my-jobs/${requestId}`, tech.token, { status: "awaiting_parts" }), "awaiting parts");
+    // The technician asks for a part (the job moves to Awaiting parts); the office then orders it, late, or not at all.
+    const fitting = ctx.parts.filter((part) => (part.productCategories ?? []).includes(product.category));
+    if (fitting.length === 0) {
+      ok(await patch(`/api/staff/my-jobs/${requestId}`, tech.token, { status: "awaiting_parts" }), "awaiting parts");
+      return out({ kind: "open" });
+    }
+    const part = pick(rng, fitting);
+    ok(await post(`/api/staff/my-jobs/${requestId}/part-orders`, tech.token, { sparePartId: part.id, quantity: between(rng, 1, 2), note: MARK }), "part order");
+    bump("part orders (for jobs)");
+    const order = await prisma.partOrder.findFirst({ where: { serviceRequestId: requestId }, orderBy: { createdAt: "desc" } });
+    const roll = rng();
+    if (order && roll < 0.55) {
+      const offset = between(rng, -4, 6);
+      const date = ymd(new Date(now + offset * DAY));
+      ok(await patch(`/api/staff/part-orders/${order.id}`, ctx.admin, { status: "ordered", expectedAt: date }), "part ordered");
+    } else if (order && roll < 0.8) {
+      // stays "requested": asked for, not yet placed with a supplier
+    } else if (order && roll < 0.92) {
+      ok(await patch(`/api/staff/part-orders/${order.id}`, ctx.admin, { status: "cancelled" }), "part order cancelled");
+    }
     return out({ kind: "open" });
   }
   if (scenario === "openPaused") {
@@ -421,6 +441,158 @@ async function backdate(o: Outcome, t0: Date, saleId: string, customerId: string
   await prisma.$executeRawUnsafe(`update customers set created_at = least(created_at, $2::date + interval '10 hours') where id = $1`, customerId, saleDate);
 }
 
+// ---------- suppliers and spare parts ----------
+const DEMO_SUPPLIERS = [
+  { name: "Texno Ehtiyot Qism", phone: "998712000101", telegram: "@texnoqism", leadTimeDays: 3 },
+  { name: "Muzlatkich Servis Snab", phone: "998712000102", telegram: null, leadTimeDays: 7, note: "Kompressorlar va sovutish qismlari" },
+  { name: "Maishiy Texnika Ltd", phone: "998712000103", telegram: "@maishiytexnika", leadTimeDays: 5 },
+];
+const DEMO_PARTS: Array<[string, string, string, number, number, number, number]> = [
+  // name, name (uz), category, price, cost, stock, minimum
+  ["DEMO Compressor 1/4 HP", "DEMO Kompressor 1/4 HP", "Refrigerators", 650_000, 430_000, 1, 2],
+  ["DEMO TV mainboard", "DEMO TV boshqaruv platasi", "Televisions", 380_000, 250_000, 0, 2],
+  ["DEMO Washer bearing set", "DEMO Podshipnik to‘plami", "Washing machines", 120_000, 75_000, 2, 4],
+  ["DEMO AC fan motor", "DEMO Konditsioner motori", "Air conditioners", 290_000, 190_000, 3, 3],
+];
+
+/** Three suppliers (noted DEMO-DATA), the seed parts get one each, and a few low-stock demo parts show the recommendations. */
+async function seedSuppliersAndParts(admin: string) {
+  const have = (await http<{ suppliers: Json[] }>("/api/staff/suppliers", { token: admin })).body.suppliers ?? [];
+  const suppliers: Json[] = [];
+  for (const wanted of DEMO_SUPPLIERS) {
+    let row = have.find((item) => item.name === wanted.name);
+    if (!row) {
+      const created = await post("/api/staff/suppliers", admin, { ...wanted, note: wanted.note ?? MARK });
+      if (created.status === 201) {
+        row = created.body.supplier;
+        bump("suppliers");
+      }
+    }
+    if (row) suppliers.push(row);
+  }
+  if (suppliers.length === 0) return;
+  // Mark the suppliers for the cleaner: their note starts with the marker.
+  await prisma.$executeRawUnsafe(`update suppliers set note = $1 || coalesce(' ' || nullif(note, $1), '') where name = any($2::text[]) and (note is null or note not like $1 || '%')`, MARK, DEMO_SUPPLIERS.map((item) => item.name));
+  const existing = (await http<{ parts: Json[] }>("/api/staff/catalog/parts", { token: admin })).body.parts ?? [];
+  const bySeed = (name: string) => existing.find((part) => part.name === name);
+  const link: Array<[string, number]> = [["Door gasket", 0], ["Thermostat", 1], ["Drain pump", 2], ["Inlet valve", 2], ["Capacitor", 0], ["Remote control", 0]];
+  for (const [name, index] of link) {
+    const part = bySeed(name);
+    if (part && !part.supplierId) await patch(`/api/staff/catalog/parts/${part.id}`, admin, { supplierId: suppliers[index % suppliers.length].id });
+  }
+  for (const [index, [name, nameUz, category, price, costPrice, stockQuantity, lowStockThreshold]] of DEMO_PARTS.entries()) {
+    if (existing.some((part) => part.name === name)) continue;
+    const created = await post("/api/staff/catalog/parts", admin, {
+      name, nameUz, nameRu: name, nameEn: name, price, costPrice, productCategories: [category], stockQuantity, lowStockThreshold, supplierId: suppliers[index % suppliers.length].id,
+    });
+    if (created.status === 201) bump("spare parts");
+  }
+}
+
+/** A few orders that are not for a job: one arrives late, one is on its way. */
+async function seedStockOrders(admin: string) {
+  if ((await prisma.partOrder.count({ where: { note: MARK, serviceRequestId: null } })) > 0) return;
+  const parts = (await http<{ parts: Json[] }>("/api/staff/catalog/parts", { token: admin })).body.parts ?? [];
+  const demo = parts.filter((part) => String(part.name).startsWith("DEMO "));
+  const planned: Array<[Json | undefined, number, number]> = [[demo[2], 6, -2], [demo[3], 4, 3]];
+  for (const [part, quantity, offset] of planned) {
+    if (!part) continue;
+    const created = await post("/api/staff/part-orders", admin, { sparePartId: part.id, quantity, expectedAt: ymd(new Date(now + offset * DAY)), note: MARK });
+    if (created.status === 201) {
+      await patch(`/api/staff/part-orders/${created.body.order.id}`, admin, { status: "ordered" });
+      bump("part orders (stock)");
+    }
+  }
+}
+
+
+// ---------- warehouses ----------
+// Regional warehouses and the stock rooms of two branches (all noted DEMO-DATA), a keeper for three of them, and shelves filled
+// from the parts catalogue. Idempotent: what exists is kept.
+const DEMO_WAREHOUSES: Array<{ name: string; kind: "regional" | "branch"; regionCode: string; address: string; leadDaysSameRegion: number; leadDaysOtherRegion: number; centre?: string; keeper?: [string, string]; min: number }> = [
+  { name: "Toshkent viloyati ombori", kind: "regional", regionCode: "10", address: "Toshkent viloyati, Chirchiq shahri, Sanoat ko‘chasi 3", leadDaysSameRegion: 1, leadDaysOtherRegion: 2, min: 2 },
+  { name: "Samarqand hududiy ombori", kind: "regional", regionCode: "30", address: "Samarqand shahri, Mirzo Ulug‘bek ko‘chasi 88", leadDaysSameRegion: 1, leadDaysOtherRegion: 3, keeper: ["DEMO Samarqand omborchisi", "998900100001"], min: 2 },
+  { name: "Farg‘ona vodiysi ombori", kind: "regional", regionCode: "40", address: "Farg‘ona shahri, Sanoat zonasi 5", leadDaysSameRegion: 1, leadDaysOtherRegion: 3, min: 2 },
+  { name: "Buxoro hududiy ombori", kind: "regional", regionCode: "80", address: "Buxoro shahri, Navoiy ko‘chasi 61", leadDaysSameRegion: 1, leadDaysOtherRegion: 3, min: 1 },
+  { name: "Qashqadaryo hududiy ombori", kind: "regional", regionCode: "70", address: "Qarshi shahri, Mustaqillik ko‘chasi 120", leadDaysSameRegion: 1, leadDaysOtherRegion: 3, min: 1 },
+  { name: "Xorazm hududiy ombori", kind: "regional", regionCode: "90", address: "Urganch shahri, Al-Xorazmiy ko‘chasi 90", leadDaysSameRegion: 2, leadDaysOtherRegion: 4, keeper: ["DEMO Xorazm omborchisi", "998900100002"], min: 1 },
+  { name: "Chilonzor filial ombori", kind: "branch", regionCode: "01", address: "Toshkent, Chilonzor, Bunyodkor ko‘chasi 9", leadDaysSameRegion: 0, leadDaysOtherRegion: 2, centre: "RIZO Service — Chilonzor", keeper: ["DEMO Chilonzor omborchisi", "998900100003"], min: 1 },
+  { name: "Yunusobod filial ombori", kind: "branch", regionCode: "01", address: "Toshkent, Yunusobod, Amir Temur shoh ko‘chasi 108", leadDaysSameRegion: 0, leadDaysOtherRegion: 2, centre: "RIZO Service — Yunusobod", min: 1 },
+];
+
+async function seedWarehouses(admin: string, centers: Json[], parts: Json[]) {
+  const have = (await http<{ warehouses: Json[] }>("/api/staff/warehouses", { token: admin })).body.warehouses ?? [];
+  let index = 0;
+  for (const wanted of DEMO_WAREHOUSES) {
+    let row = have.find((item) => item.name === wanted.name);
+    if (!row) {
+      const created = await post("/api/staff/warehouses", admin, {
+        name: wanted.name, kind: wanted.kind, regionCode: wanted.regionCode, address: wanted.address, phone: null, serviceCenterId: centers.find((center) => center.name === wanted.centre)?.id ?? null,
+        leadDaysSameRegion: wanted.leadDaysSameRegion, leadDaysOtherRegion: wanted.leadDaysOtherRegion, note: MARK,
+      });
+      if (created.status !== 201) continue;
+      row = created.body.warehouse;
+      bump("warehouses");
+    }
+    if (wanted.keeper && !(row.keepers ?? []).length) {
+      const created = await post("/api/staff/staff", admin, { name: wanted.keeper[0], phone: wanted.keeper[1], password: CUSTOMER_PASSWORD, role: "warehouse", warehouseId: row.id, serviceCenterId: null, payPercent: 0, payFixedPerJob: 0 });
+      if (created.status === 201) bump("warehouse keepers");
+    }
+    // Shelves: a deterministic spread (some parts missing here on purpose, so the "fastest source" picker has something to choose).
+    for (const [partIndex, part] of parts.entries()) {
+      const spread = (index * 7 + partIndex * 3) % 9;
+      const quantity = wanted.kind === "branch" ? Math.max(0, spread - 4) : spread === 0 ? 0 : spread + 1;
+      const current = await prisma.partStock.findUnique({ where: { warehouseId_sparePartId: { warehouseId: row.id, sparePartId: part.id } } });
+      if (current) continue;
+      const set = await patch(`/api/staff/warehouses/${row.id}/stock/${part.id}`, admin, { quantity, minQuantity: wanted.min, note: MARK });
+      if (set.status === 200 && quantity > 0) bump("shelf entries");
+    }
+    index += 1;
+  }
+}
+
+/** A few requests in every state, so every warehouse screen has something to show. */
+async function seedTransfers(admin: string, desk: string, mobileToken: string) {
+  if ((await prisma.stockTransfer.count({ where: { note: { startsWith: MARK } } })) > 0) return;
+  const wh = async (name: string) => prisma.warehouse.findFirst({ where: { name } });
+  const [central, tashVil, samarqand, buxoro, chilonzor, yunusobod] = await Promise.all([
+    prisma.warehouse.findFirst({ where: { kind: "central" } }),
+    wh("Toshkent viloyati ombori"), wh("Samarqand hududiy ombori"), wh("Buxoro hududiy ombori"), wh("Chilonzor filial ombori"), wh("Yunusobod filial ombori"),
+  ]);
+  if (!central || !tashVil || !samarqand || !buxoro || !chilonzor || !yunusobod) return;
+  const partAt = async (warehouseId: string, skip = 0) => (await prisma.partStock.findMany({ where: { warehouseId, quantity: { gte: 4 } }, orderBy: { sparePartId: "asc" }, take: 1, skip }))[0]?.sparePartId;
+  const make = async (token: string, from: string, to: string, part: string | undefined, quantity: number, note: string) => {
+    if (!part) return null;
+    const res = await post("/api/staff/transfers", token, { sparePartId: part, quantity, fromWarehouseId: from, toWarehouseId: to, note: `${MARK} ${note}` });
+    if (res.status !== 201) return null;
+    bump("transfers");
+    return res.body.transfer.id as string;
+  };
+  // 1. The Chilonzor branch admin asks the Tashkent-region warehouse (still waiting).
+  await make(desk, tashVil.id, chilonzor.id, await partAt(tashVil.id), 2, "filial admini so‘radi");
+  // 2. Yunusobod asks Samarqand for a part; it is sent but is late.
+  const late = await make(desk, samarqand.id, yunusobod.id, await partAt(samarqand.id, 1), 3, "kechikkan jo‘natma");
+  if (late) await post(`/api/staff/transfers/${late}/ship`, admin, { etaAt: ymd(new Date(now - 2 * DAY)) });
+  // 3. On its way, on time.
+  const onTime = await make(desk, central.id, chilonzor.id, await partAt(central.id), 2, "yo‘lda");
+  if (onTime) await post(`/api/staff/transfers/${onTime}/ship`, admin, { etaAt: ymd(new Date(now + 1 * DAY)) });
+  // 4. Received (history).
+  const done = await make(desk, central.id, yunusobod.id, await partAt(central.id, 1), 2, "qabul qilingan");
+  if (done) {
+    await post(`/api/staff/transfers/${done}/ship`, admin, {});
+    await post(`/api/staff/transfers/${done}/receive`, admin, {});
+  }
+  // 5. Refused (history).
+  const refused = await make(desk, buxoro.id, chilonzor.id, await partAt(buxoro.id), 1, "rad etilgan");
+  if (refused) await post(`/api/staff/transfers/${refused}/reject`, admin, { reason: "Hozir qolmagan, markaziy ombordan so‘rang" });
+  // 6. A technician tops up the van from the nearest warehouse.
+  const vanPart = await partAt(tashVil.id, 1);
+  if (vanPart) {
+    const res = await post("/api/staff/my-jobs/stock/requests", mobileToken, { sparePartId: vanPart, quantity: 2, fromWarehouseId: tashVil.id, note: `${MARK} mashina zaxirasi` });
+    if (res.status === 201) bump("transfers (van)");
+  }
+}
+
 // ---------- the main loop ----------
 async function seedProducts(admin: string) {
   const extra: Array<[string, string, string, number]> = [
@@ -576,6 +748,8 @@ async function main() {
 
   async function load() {
   await seedProducts(admin);
+  await seedSuppliersAndParts(admin);
+  const parts = (await http<{ parts: Json[] }>("/api/staff/catalog/parts", { token: admin })).body.parts ?? [];
   const products = (await http<{ products: Json[] }>("/api/staff/products", { token: admin })).body.products;
   const services = (await http<{ services: Json[] }>("/api/staff/catalog/services", { token: admin })).body.services;
   // Service centres across the regions (the ones that already exist are kept); a service-centre technician without a centre joins the first.
@@ -588,7 +762,8 @@ async function main() {
   centers = (await http<{ centers: Json[] }>("/api/staff/service-centers", { token: admin })).body.centers;
   if (!shop.serviceCenterId && centers[0]) ok(await patch(`/api/staff/staff/${shop.id}`, admin, { serviceCenterId: centers[0].id }), "service-centre technician joins a centre");
   if (centers.length === 0) throw new Error("There is no service centre in the system: add one (Service centres) and put the service-centre technician in it, then run again. Nothing was written yet.");
-  const ctx: Ctx = { admin, desk, mobile: { id: mobile.id, token: byId.get(mobile.id)! }, shop: { id: shop.id, token: byId.get(shop.id)! }, products, services, centers };
+  await seedWarehouses(admin, centers, parts);
+  const ctx: Ctx = { admin, desk, mobile: { id: mobile.id, token: byId.get(mobile.id)! }, shop: { id: shop.id, token: byId.get(shop.id)! }, products, services, centers, parts };
 
   let next = 0;
   let failures = 0;
@@ -605,6 +780,8 @@ async function main() {
     }
   };
   await Promise.all(Array.from({ length: 3 }, worker));
+  await seedStockOrders(admin);
+  await seedTransfers(admin, desk, byId.get(mobile.id)!);
 
   console.log("\nDone in " + Math.round((Date.now() - started) / 1000) + " s. Created:");
   for (const key of Object.keys(stats).sort()) console.log(`  ${key.padEnd(24)} ${stats[key]}`);

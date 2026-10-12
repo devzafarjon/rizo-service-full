@@ -107,6 +107,7 @@ function serializeStaff(user: {
   isAvailable: boolean;
   locale: string;
   totpEnabled?: boolean;
+  warehouseId?: string | null;
 }) {
   return {
     id: user.id,
@@ -117,6 +118,7 @@ function serializeStaff(user: {
     isAvailable: user.isAvailable,
     locale: parseLocale(user.locale),
     totpEnabled: Boolean(user.totpEnabled),
+    warehouseId: user.warehouseId ?? null,
   };
 }
 

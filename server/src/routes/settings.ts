@@ -57,6 +57,10 @@ settingsRouter.patch(
         weeklyDigest: z.boolean().optional(),
         warrantyExpiryNoticeDays: z.coerce.number().int().min(0).max(365).optional(),
         warrantyStartsOn: z.enum(["sale", "installation"]).optional(),
+        partsSafetyDays: z.coerce.number().int().min(0).max(90).optional(),
+        partsUsageDays: z.coerce.number().int().min(7).max(365).optional(),
+        partsCustomerUpdateDays: z.coerce.number().int().min(0).max(30).optional(),
+        transferShipHours: z.coerce.number().int().min(1).max(240).optional(),
       }),
       req.body,
     );
@@ -79,6 +83,10 @@ settingsRouter.patch(
       ["weekly_digest", body.weeklyDigest === undefined ? undefined : body.weeklyDigest ? "true" : "false"],
       ["warranty_expiry_notice_days", body.warrantyExpiryNoticeDays],
       ["warranty_starts_on", body.warrantyStartsOn],
+      ["parts_safety_days", body.partsSafetyDays],
+      ["parts_usage_days", body.partsUsageDays],
+      ["parts_customer_update_days", body.partsCustomerUpdateDays],
+      ["transfer_ship_hours", body.transferShipHours],
     ];
     for (const [key, value] of extra) if (value !== undefined) await setSetting(key, String(value));
     const after = await getAppSettings();

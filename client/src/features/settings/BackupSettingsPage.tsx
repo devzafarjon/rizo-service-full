@@ -119,6 +119,10 @@ function ServiceRulesForm() {
     warrantyStartsOn: "sale" as "sale" | "installation",
     requireFiscalReceipt: false,
     weeklyDigest: true,
+    partsSafetyDays: "7",
+    partsUsageDays: "30",
+    partsCustomerUpdateDays: "3",
+    transferShipHours: "24",
   });
   useEffect(() => {
     const value = settings.data?.settings;
@@ -135,6 +139,10 @@ function ServiceRulesForm() {
       warrantyStartsOn: value.warrantyStartsOn,
       requireFiscalReceipt: value.requireFiscalReceipt,
       weeklyDigest: value.weeklyDigest,
+      partsSafetyDays: String(value.partsSafetyDays),
+      partsUsageDays: String(value.partsUsageDays),
+      partsCustomerUpdateDays: String(value.partsCustomerUpdateDays),
+      transferShipHours: String(value.transferShipHours),
     });
   }, [settings.data]);
   const save = useMutation({
@@ -154,6 +162,10 @@ function ServiceRulesForm() {
           warrantyStartsOn: form.warrantyStartsOn,
           requireFiscalReceipt: form.requireFiscalReceipt,
           weeklyDigest: form.weeklyDigest,
+          partsSafetyDays: Number(form.partsSafetyDays),
+          partsUsageDays: Number(form.partsUsageDays),
+          partsCustomerUpdateDays: Number(form.partsCustomerUpdateDays),
+          transferShipHours: Number(form.transferShipHours),
         }),
       }),
     onSuccess: async () => {
@@ -167,7 +179,7 @@ function ServiceRulesForm() {
     onSuccess: () => notify(t("settings.digestSent")),
     onError: (error) => notify(apiErrorMessage(error, t), "error"),
   });
-  const num = (key: "visitsPerTechnicianPerDay" | "rescheduleLimit" | "cancelBeforeHours" | "escalationHours" | "escalationHoursUrgent" | "lowRatingThreshold" | "warrantyExpiryNoticeDays", label: string, hint: string, max = 365) => (
+  const num = (key: "visitsPerTechnicianPerDay" | "rescheduleLimit" | "cancelBeforeHours" | "escalationHours" | "escalationHoursUrgent" | "lowRatingThreshold" | "warrantyExpiryNoticeDays" | "partsSafetyDays" | "partsUsageDays" | "partsCustomerUpdateDays" | "transferShipHours", label: string, hint: string, max = 365) => (
     <Field label={label} hint={hint}>
       <input className={inputClass} type="number" min={0} max={max} value={form[key]} onChange={(event) => setForm({ ...form, [key]: event.target.value })} />
     </Field>
@@ -204,6 +216,10 @@ function ServiceRulesForm() {
         {num("escalationHours", t("settings.escalationHours"), t("settings.escalationHoursHint"), 240)}
         {num("escalationHoursUrgent", t("settings.escalationUrgent"), t("settings.escalationUrgentHint"), 720)}
         {num("warrantyExpiryNoticeDays", t("settings.expiryNotice"), t("settings.expiryNoticeHint"))}
+        {num("partsSafetyDays", t("settings.partsSafety"), t("settings.partsSafetyHint"), 90)}
+        {num("partsUsageDays", t("settings.partsUsage"), t("settings.partsUsageHint"), 365)}
+        {num("partsCustomerUpdateDays", t("settings.partsUpdate"), t("settings.partsUpdateHint"), 30)}
+        {num("transferShipHours", t("settings.transferShip"), t("settings.transferShipHint"), 720)}
         <Field label={t("settings.warrantyStarts")} hint={t("settings.warrantyStartsHint")}>
           <select className={`${inputClass} bg-white`} value={form.warrantyStartsOn} onChange={(event) => setForm({ ...form, warrantyStartsOn: event.target.value as "sale" | "installation" })}>
             <option value="sale">{t("warrantyCard.startsOn.sale")}</option>

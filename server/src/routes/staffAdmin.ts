@@ -23,6 +23,8 @@ const baseFields = {
   role: z.enum(STAFF_ROLES),
   technicianType: z.enum(["service_center", "mobile"]).nullable().optional(),
   serviceCenterId: z.string().min(1).nullable().optional(),
+  // A warehouse keeper's warehouse; for others the warehouse they take parts from (empty = by service centre).
+  warehouseId: z.string().min(1).nullable().optional(),
   payPercent: z.coerce.number().min(0).max(100).optional(),
   payFixedPerJob: z.coerce.number().min(0).optional(),
   // Technicians: the product categories they repair (empty = any) and the home base used to pick the nearest one.
@@ -40,6 +42,7 @@ function serialize(user: {
   isActive: boolean;
   isAvailable: boolean;
   serviceCenterId: string | null;
+  warehouseId: string | null;
   payPercent: { toString(): string };
   payFixedPerJob: { toString(): string };
   skillCategories: string[];
@@ -57,6 +60,7 @@ function serialize(user: {
     isActive: user.isActive,
     isAvailable: user.isAvailable,
     serviceCenterId: user.serviceCenterId,
+    warehouseId: user.warehouseId,
     payPercent: Number(user.payPercent),
     payFixedPerJob: Number(user.payFixedPerJob),
     skillCategories: user.skillCategories,
@@ -93,6 +97,7 @@ staffAdminRouter.post(
           role: body.role,
           technicianType: body.role === "technician" ? body.technicianType : null,
           serviceCenterId: body.serviceCenterId ?? null,
+          warehouseId: body.warehouseId ?? null,
           payPercent: body.payPercent ?? 0,
           payFixedPerJob: body.payFixedPerJob ?? 0,
           skillCategories: body.role === "technician" ? (body.skillCategories ?? []) : [],
@@ -129,6 +134,7 @@ staffAdminRouter.patch(
           ...(body.role ? { role: body.role } : {}),
           technicianType: nextRole === "technician" ? (body.technicianType === undefined ? existing.technicianType : body.technicianType) : null,
           ...(body.serviceCenterId !== undefined ? { serviceCenterId: body.serviceCenterId } : {}),
+          ...(body.warehouseId !== undefined ? { warehouseId: body.warehouseId } : {}),
           ...(body.payPercent !== undefined ? { payPercent: body.payPercent } : {}),
           ...(body.payFixedPerJob !== undefined ? { payFixedPerJob: body.payFixedPerJob } : {}),
           ...(body.skillCategories !== undefined ? { skillCategories: body.skillCategories } : {}),

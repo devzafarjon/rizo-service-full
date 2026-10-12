@@ -257,9 +257,9 @@ async function main() {
   assert(staffApprove.status === 200 && staffApprove.body.waitingForParts === true, "the front desk records an approval; missing stock means waiting for parts");
   const waiting = await json<{ request: { status: string } }>(`/api/staff/requests/${shortJob.body.request.id}`, { token: admin.token });
   assert(waiting.body.request.status === "awaiting_parts", "the job is Awaiting parts");
-  const orders = await json<{ orders: Array<{ id: string; status: string; request: { id: string } | null }>; suggestions: unknown[] }>("/api/staff/part-orders?status=open", { token: admin.token });
+  const orders = await json<{ orders: Array<{ id: string; status: string; request: { id: string } | null }> }>("/api/staff/part-orders?status=open", { token: admin.token });
   const order = orders.body.orders.find((row) => row.request?.id === shortJob.body.request.id);
-  assert(Boolean(order) && Array.isArray(orders.body.suggestions), "a part order was created for the shortage");
+  assert(Boolean(order), "a part order was created for the shortage");
   const received = await json(`/api/staff/part-orders/${order!.id}`, { method: "PATCH", token: admin.token, body: JSON.stringify({ status: "received" }) });
   assert(received.status === 200, "the order is received into stock");
   const resumed = await json<{ request: { status: string } }>(`/api/staff/requests/${shortJob.body.request.id}`, { token: admin.token });
@@ -411,8 +411,8 @@ async function main() {
   const payroll = await json<{ rows: Array<{ id: string; total: number }> }>("/api/staff/payroll?preset=month", { token: admin.token });
   assert(payroll.status === 200 && payroll.body.rows.length >= 2, "payroll lists every technician");
   assert((await json("/api/staff/payroll/adjustments", { method: "POST", token: admin.token, body: JSON.stringify({ staffUserId: shopTech.user?.id, amount: -5000, reason: "Smoke penalty" }) })).status === 201, "a penalty is recorded");
-  const lowSuggest = await json<{ suggestions: unknown[] }>("/api/staff/part-orders", { token: desk.token });
-  assert(Array.isArray(lowSuggest.body.suggestions), "low-stock suggestions come with the part orders");
+  const lowSuggest = await json<{ groups: unknown[] }>("/api/staff/part-orders/recommendations", { token: desk.token });
+  assert(Array.isArray(lowSuggest.body.groups), "order recommendations are available to the front desk");
   const settings = await json<{ settings: { repairLegalDays: number } }>("/api/staff/settings", { token: tech.token });
   assert(settings.body.settings.repairLegalDays === 20, "the legal repair limit defaults to 20 days");
 

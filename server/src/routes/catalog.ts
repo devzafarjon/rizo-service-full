@@ -1,3 +1,4 @@
+import { centralWarehouse, setTotalViaCentral } from "../lib/warehouses.js";
 import { Router } from "express";
 import { z } from "zod";
 import { asyncHandler } from "../lib/asyncHandler.js";
@@ -38,6 +39,8 @@ const partSchema = namedFields.extend({
   productCategories: categoriesField,
   stockQuantity: z.coerce.number().int().min(0, "Stock cannot be negative"),
   lowStockThreshold: z.coerce.number().int().min(0, "Threshold cannot be negative").optional(),
+  supplierId: z.string().optional().nullable(),
+  targetStock: z.coerce.number().int().min(0).max(100000).optional().nullable(),
 }).superRefine((data, ctx) => {
   if (!(data.name || data.nameUz || data.nameRu || data.nameEn)) {
     ctx.addIssue({ code: "custom", message: "Name is required", path: ["name"] });
@@ -53,6 +56,8 @@ const partPatchSchema = servicePatchSchema.extend({
   costPrice: z.coerce.number().nonnegative("Cost price cannot be negative").optional(),
   stockQuantity: z.coerce.number().int().min(0, "Stock cannot be negative").optional(),
   lowStockThreshold: z.coerce.number().int().min(0, "Threshold cannot be negative").optional(),
+  supplierId: z.string().optional().nullable(),
+  targetStock: z.coerce.number().int().min(0).max(100000).optional().nullable(),
 });
 
 export const catalogRouter = Router();
@@ -185,6 +190,10 @@ catalogRouter.post(
         productCategories: body.productCategories,
         stockQuantity: body.stockQuantity,
         lowStockThreshold: body.lowStockThreshold ?? 3,
+        // A new part's first stock sits in the central warehouse.
+        partStocks: body.stockQuantity > 0 ? { create: { warehouseId: (await centralWarehouse(prisma)).id, quantity: body.stockQuantity } } : undefined,
+        supplierId: body.supplierId || null,
+        targetStock: body.targetStock ?? null,
       },
       include: { _count: { select: { requestLines: true } } },
     });
@@ -207,13 +216,17 @@ catalogRouter.patch(
           ...(body.price !== undefined ? { price: body.price } : {}),
           ...(body.costPrice !== undefined ? { costPrice: body.costPrice } : {}),
           ...(body.productCategories !== undefined ? { productCategories: body.productCategories } : {}),
-          ...(body.stockQuantity !== undefined ? { stockQuantity: body.stockQuantity } : {}),
           ...(body.lowStockThreshold !== undefined ? { lowStockThreshold: body.lowStockThreshold } : {}),
+          ...(body.supplierId !== undefined ? { supplierId: body.supplierId || null } : {}),
+          ...(body.targetStock !== undefined ? { targetStock: body.targetStock } : {}),
         },
         include: { _count: { select: { requestLines: true } } },
       });
+      // The catalogue edits the part's total: the difference goes to (or comes from) the central warehouse.
+      if (body.stockQuantity !== undefined) await setTotalViaCentral(prisma, item.id, body.stockQuantity, req.staff ? { id: req.staff.sub, name: req.staff.name } : null);
       await maybeAlertLowStock(item.id);
-      res.json({ part: serializePart(item) });
+      const fresh = await prisma.sparePart.findUniqueOrThrow({ where: { id: item.id }, include: { _count: { select: { requestLines: true } } } });
+      res.json({ part: serializePart(fresh) });
     } catch (error) {
       handlePrismaError(error);
     }
@@ -270,6 +283,8 @@ function serializePart(item: {
   productCategories: string[];
   stockQuantity: number;
   lowStockThreshold: number;
+  supplierId: string | null;
+  targetStock: number | null;
   createdAt: Date;
   _count: { requestLines: number };
 }) {
@@ -278,6 +293,8 @@ function serializePart(item: {
     ...serializeNamed(item),
     price: money(item.price),
     costPrice: money(item.costPrice),
+    supplierId: item.supplierId,
+    targetStock: item.targetStock,
     productCategories: item.productCategories,
     stockQuantity: item.stockQuantity,
     lowStockThreshold: item.lowStockThreshold,

@@ -14,7 +14,9 @@ import { techColumn } from "../lib/techBoard.js";
 import { changeRequestStatus } from "../lib/statusChange.js";
 import { finishedStatusFor } from "../lib/status.js";
 import { createEstimate, estimateInclude, fulfilPendingParts, sendEstimate, serializeEstimate } from "../lib/estimates.js";
-import { createPartOrder } from "../lib/partOrders.js";
+import { sourceMissingPart } from "../lib/partSourcing.js";
+import { createTransfer, receiveTransfer, serializeTransfer, transferInclude } from "../lib/transfers.js";
+import { homeWarehouseId, rankSources } from "../lib/warehouses.js";
 import { createCustomerNotification } from "../lib/notifyCustomer.js";
 import { staffActor } from "../lib/audit.js";
 import { acceptJobPhotos, publicPhotoUrl, removeUploadedFile } from "../lib/uploads.js";
@@ -185,11 +187,93 @@ myJobsRouter.get(
   }),
 );
 
+// Where a part could come from for this technician (their own warehouse is the destination), fastest first.
+myJobsRouter.get(
+  "/part-sources",
+  asyncHandler(async (req, res) => {
+    const partId = String(req.query.partId ?? "");
+    const quantity = Math.max(1, Number(req.query.quantity ?? 1) || 1);
+    if (!partId) throw new HttpError(400, "partId is required");
+    // For a job, the warehouse that serves the job; otherwise the technician's own.
+    let toWarehouseId: string;
+    if (typeof req.query.jobId === "string" && req.query.jobId) {
+      const job = await loadOwnedJob(req.staff!.sub, req.query.jobId);
+      toWarehouseId = await homeWarehouseId(prisma, { staffId: job.assignedTechnicianId, serviceCenterId: job.serviceCenterId });
+    } else {
+      toWarehouseId = await homeWarehouseId(prisma, { staffId: req.staff!.sub });
+    }
+    const [options, warehouse, carried] = await Promise.all([
+      rankSources(prisma, { partId, quantity, toWarehouseId }),
+      prisma.warehouse.findUniqueOrThrow({ where: { id: toWarehouseId }, select: { id: true, name: true } }),
+      prisma.technicianStock.findUnique({ where: { technicianId_sparePartId: { technicianId: req.staff!.sub, sparePartId: partId } } }),
+    ]);
+    const here = await prisma.partStock.findUnique({ where: { warehouseId_sparePartId: { warehouseId: toWarehouseId, sparePartId: partId } } });
+    res.json({ destination: warehouse, atDestination: here?.quantity ?? 0, carried: carried?.quantity ?? 0, options });
+  }),
+);
+
+// Top up the van: ask a warehouse to send parts to me.
+myJobsRouter.post(
+  "/stock/requests",
+  asyncHandler(async (req, res) => {
+    const body = parseBody(z.object({ sparePartId: z.string().min(1), quantity: z.coerce.number().int().min(1).max(99), fromWarehouseId: z.string().min(1).optional().nullable(), note: z.string().trim().max(200).optional().nullable() }), req.body);
+    let from = body.fromWarehouseId ?? null;
+    if (!from) {
+      const options = await rankSources(prisma, { partId: body.sparePartId, quantity: body.quantity, toWarehouseId: await homeWarehouseId(prisma, { staffId: req.staff!.sub }) });
+      const best = options.find((option) => option.type === "warehouse" && option.enough);
+      if (!best || best.type !== "warehouse") throw new HttpError(400, "No warehouse has that many right now", "sourceNotAvailable");
+      from = best.warehouse.id;
+    }
+    const row = await createTransfer({ sparePartId: body.sparePartId, quantity: body.quantity, fromWarehouseId: from, toTechnicianId: req.staff!.sub, note: body.note ?? "Van", actor: { id: req.staff!.sub, name: req.staff!.name, role: "technician" } });
+    res.status(201).json({ transfer: serializeTransfer(await prisma.stockTransfer.findUniqueOrThrow({ where: { id: row.id }, include: transferInclude })) });
+  }),
+);
+
+// What was asked for or sent to this technician.
+myJobsRouter.get(
+  "/transfers",
+  asyncHandler(async (req, res) => {
+    const rows = await prisma.stockTransfer.findMany({
+      where: { toTechnicianId: req.staff!.sub, OR: [{ status: { in: ["requested", "shipped"] } }, { createdAt: { gt: new Date(Date.now() - 14 * 86_400_000) } }] },
+      include: transferInclude,
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+    res.json({ transfers: rows.map(serializeTransfer) });
+  }),
+);
+
+// The technician confirms the parts arrived on the van.
+myJobsRouter.post(
+  "/transfers/:id/receive",
+  asyncHandler(async (req, res) => {
+    const body = parseBody(z.object({ quantity: z.coerce.number().int().min(1).optional() }), req.body ?? {});
+    const row = await prisma.stockTransfer.findUnique({ where: { id: req.params.id } });
+    if (!row || row.toTechnicianId !== req.staff!.sub) throw new HttpError(404, "Transfer not found");
+    const result = await receiveTransfer({ id: row.id, quantity: body.quantity, actor: { id: req.staff!.sub, name: req.staff!.name, role: "technician" } });
+    res.json({ transfer: serializeTransfer(result.transfer) });
+  }),
+);
+
 // The parts this technician carries.
 myJobsRouter.get(
   "/stock",
   asyncHandler(async (req, res) => {
     res.json({ stock: await technicianStockList(req.staff!.sub) });
+  }),
+);
+
+// Parts a technician can ask a warehouse for (for the van): name search, the first 40.
+myJobsRouter.get(
+  "/parts",
+  asyncHandler(async (req, res) => {
+    const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const rows = await prisma.sparePart.findMany({
+      where: q ? { OR: [{ name: { contains: q, mode: "insensitive" } }, { nameUz: { contains: q, mode: "insensitive" } }, { nameRu: { contains: q, mode: "insensitive" } }, { nameEn: { contains: q, mode: "insensitive" } }] } : {},
+      orderBy: { name: "asc" },
+      take: 40,
+    });
+    res.json({ parts: rows.map((item) => ({ id: item.id, ...serializeNamed(item), stockQuantity: item.stockQuantity })) });
   }),
 );
 
@@ -349,17 +433,47 @@ myJobsRouter.post(
   }),
 );
 
+const partRequestBody = z.object({
+  sparePartId: z.string().min(1),
+  quantity: z.coerce.number().int().min(1).max(99),
+  note: z.string().trim().max(200).optional().nullable(),
+  // Where the part should come from: a warehouse that has it, or the supplier. Empty = the fastest way.
+  source: z.union([z.object({ type: z.literal("warehouse"), warehouseId: z.string().min(1) }), z.object({ type: z.literal("supplier") })]).optional().nullable(),
+});
+
+async function requestPartForJob(req: import("express").Request, jobId: string, body: z.infer<typeof partRequestBody>) {
+  const job = await loadOpenJob(req.staff!.sub, jobId);
+  const result = await sourceMissingPart({
+    requestId: job.id,
+    sparePartId: body.sparePartId,
+    quantity: body.quantity,
+    prefer: body.source ?? null,
+    note: body.note ?? null,
+    actor: { id: req.staff!.sub, name: req.staff!.name, role: "technician" },
+  });
+  // Waiting for the part: the job moves to Awaiting parts so the timer and the board show it.
+  if (["new", "diagnosing", "in_progress"].includes(job.status) && job.type === "repair") {
+    await changeRequestStatus({ requestId: job.id, next: "awaiting_parts", actor: { audit: staffActor(req.staff), role: "technician" } });
+  }
+  return result;
+}
+
+// The old call (supplier orders only, nothing chosen) now picks the fastest source on its own.
 myJobsRouter.post(
   "/:id/part-orders",
   asyncHandler(async (req, res) => {
-    const body = parseBody(z.object({ sparePartId: z.string().min(1), quantity: z.coerce.number().int().min(1).max(99), note: z.string().trim().max(200).optional().nullable() }), req.body);
-    const job = await loadOpenJob(req.staff!.sub, req.params.id);
-    await createPartOrder({ sparePartId: body.sparePartId, quantity: body.quantity, serviceRequestId: job.id, note: body.note, createdById: req.staff!.sub });
-    // Waiting for the part: the job moves to Awaiting parts so the timer and the board show it.
-    if (["new", "diagnosing", "in_progress"].includes(job.status) && job.type === "repair") {
-      await changeRequestStatus({ requestId: job.id, next: "awaiting_parts", actor: { audit: staffActor(req.staff), role: "technician" } });
-    }
-    res.status(201).json(await jobWorkPayload(await loadOwnedJob(req.staff!.sub, job.id)));
+    const body = parseBody(partRequestBody.omit({ source: true }), req.body);
+    await requestPartForJob(req, req.params.id, body);
+    res.status(201).json(await jobWorkPayload(await loadOwnedJob(req.staff!.sub, req.params.id)));
+  }),
+);
+
+myJobsRouter.post(
+  "/:id/part-requests",
+  asyncHandler(async (req, res) => {
+    const body = parseBody(partRequestBody, req.body);
+    const result = await requestPartForJob(req, req.params.id, body);
+    res.status(201).json({ ...(await jobWorkPayload(await loadOwnedJob(req.staff!.sub, req.params.id))), requested: result.kind });
   }),
 );
 
@@ -661,7 +775,8 @@ async function loadOpenJob(technicianId: string, id: string) {
 }
 
 async function jobWorkPayload(job: OwnedJob) {
-  const [services, parts, replacementProducts, estimates, defectCodes, partOrders, notes] = await Promise.all([
+  const home = await homeWarehouseId(prisma, { staffId: job.assignedTechnicianId, serviceCenterId: job.serviceCenterId });
+  const [services, parts, replacementProducts, estimates, defectCodes, partOrders, notes, transfers, homeStocks] = await Promise.all([
     prisma.serviceCatalogItem.findMany({
       where: { productCategories: { has: job.product.category } },
       orderBy: { name: "asc" },
@@ -680,7 +795,10 @@ async function jobWorkPayload(job: OwnedJob) {
     }),
     prisma.partOrder.findMany({ where: { serviceRequestId: job.id }, orderBy: { createdAt: "desc" }, include: { sparePart: true } }),
     prisma.requestNote.findMany({ where: { serviceRequestId: job.id }, orderBy: { createdAt: "asc" }, include: { staffUser: { select: { name: true } }, customer: { select: { name: true } } } }),
+    prisma.stockTransfer.findMany({ where: { serviceRequestId: job.id }, orderBy: { createdAt: "desc" }, include: transferInclude }),
+    prisma.partStock.findMany({ where: { warehouseId: home } }),
   ]);
+  const homeStockBy = new Map(homeStocks.map((row) => [row.sparePartId, row.quantity]));
   const [checklist, carried] = await Promise.all([checklistView(job), technicianStockList(job.assignedTechnicianId ?? "")]);
   const carriedById = new Map(carried.map((row) => [row.sparePartId, row.quantity]));
   const work = serializeJobWork(job, {
@@ -704,6 +822,7 @@ async function jobWorkPayload(job: OwnedJob) {
     checklist,
     estimates: await Promise.all(estimates.map(serializeEstimate)),
     defectCodes: defectCodes.map((row) => ({ id: row.id, code: row.code, ...serializeNamed(row) })),
+    partTransfers: transfers.map(serializeTransfer),
     partOrders: partOrders.map((row) => ({
       id: row.id,
       quantity: row.quantity,
@@ -738,6 +857,8 @@ async function jobWorkPayload(job: OwnedJob) {
         price: Number(item.price),
         productCategories: item.productCategories,
         stockQuantity: item.stockQuantity,
+        // What is on the shelf of the warehouse this job is served from.
+        homeStock: homeStockBy.get(item.id) ?? 0,
         carried: carriedById.get(item.id) ?? 0,
         lowStockThreshold: item.lowStockThreshold,
         lowStock: item.stockQuantity <= item.lowStockThreshold,

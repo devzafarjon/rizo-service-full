@@ -1,3 +1,4 @@
+import { PartWaitBanner } from "./PartWaitBanner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Link2, Truck } from "lucide-react";
 import { useState } from "react";
@@ -177,6 +178,7 @@ export function PortalRequestDetailPage() {
           {t("portal.technicianOnTheWay", { name: request.assignedTechnician?.name ?? "" })}
         </p>
       ) : null}
+      <PartWaitBanner wait={request.partWait} />
       <VisitCard request={request} onChanged={refresh} />
       <PayCard request={request} urlBase={`/api/customer/requests/${request.id}`} />
       {request.status === "rejected" && request.rejectionReason ? (

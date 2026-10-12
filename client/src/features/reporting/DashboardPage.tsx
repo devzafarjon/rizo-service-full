@@ -88,6 +88,18 @@ export function DashboardPage() {
       </div>
       <p className="mt-2 text-xs text-neutral-500">{t("dashboard.ftfHint")}</p>
 
+      {data.parts ? (
+        <>
+          <h2 className="mt-6 mb-2 text-xs font-bold tracking-wide text-neutral-500 uppercase">{t("dashboard.partsTitle")}</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Kpi to="/app/part-orders" label={t("parts.stat.waiting")} value={String(data.parts.waitingRequests)} accent="orange" />
+            <Kpi to="/app/part-orders" label={t("parts.stat.noOrder")} value={String(data.parts.noOrder)} accent={data.parts.noOrder > 0 ? "red" : "green"} />
+            <Kpi to="/app/part-orders?tab=orders" label={t("parts.stat.late")} value={String(data.parts.lateOrders)} accent={data.parts.lateOrders > 0 ? "red" : "green"} />
+            <Kpi to="/app/part-orders?tab=recommend" label={t("parts.stat.toOrder")} value={String(data.parts.toOrder)} accent={data.parts.toOrder > 0 ? "orange" : "green"} />
+          </div>
+        </>
+      ) : null}
+
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <ChartPanel title={t("dashboard.trend")}>
           <ResponsiveContainer>

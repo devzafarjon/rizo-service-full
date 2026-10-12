@@ -59,7 +59,7 @@ export function StaffShell() {
             </div>
           ) : null}
           {isOffice ? null : <div className="flex-1" />}
-          {isAdmin ? <StaffAlertBell /> : null}
+          {isAdmin || user.role === "warehouse" ? <StaffAlertBell /> : null}
           <LanguageSwitcher />
           <AccountMenu name={user.name} detail={staffUserDetail(user, t)} onLogout={onLogout}>
             <MenuLink to="/app/security" icon={ShieldCheck} label={t("security.title")} />

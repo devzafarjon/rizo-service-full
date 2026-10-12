@@ -16,9 +16,11 @@ import { useToast } from "../../components/toast";
 import { useStaffAuth } from "../auth/StaffAuthContext";
 import { withApiBase } from "../../lib/apiBase";
 import { api, apiErrorMessage, apiForm } from "../../lib/api";
-import { formatMoney, formatPhone, formatRequestId, formatStamp } from "../../lib/format";
+import { formatDate, formatMoney, formatPhone, formatRequestId, formatStamp } from "../../lib/format";
 import { categoryLabel, localizedName } from "../../lib/localized";
 import type { ChecklistItem, JobWorkPayload } from "../../lib/types";
+import { PartRequestDialog } from "../warehouses/TechnicianDialogs";
+import { TRANSFER_STATUS_STYLE } from "../warehouses/TransfersTab";
 
 function ChecklistGroup({ kind, items, checked, disabled, onChange }: { kind: "diagnosis" | "completion"; items: ChecklistItem[]; checked: string[]; disabled: boolean; onChange: (checked: string[]) => void }) {
   const { t, i18n } = useTranslation();
@@ -155,16 +157,7 @@ export function JobCompletePage() {
     onError: (error) => notify(apiErrorMessage(error, t), "error"),
   });
 
-  const orderMut = useMutation({
-    mutationFn: (body: { sparePartId: string; quantity: number }) =>
-      api<JobWorkPayload>(`/api/staff/my-jobs/${id}/part-orders`, { method: "POST", token, body: JSON.stringify(body) }),
-    onSuccess: async (data) => {
-      replaceWork(data);
-      notify(t("parts.orderSent"));
-      await queryClient.invalidateQueries({ queryKey: ["staff", "my-jobs"] });
-    },
-    onError: (error) => notify(apiErrorMessage(error, t), "error"),
-  });
+  const [requesting, setRequesting] = useState<{ id: string; name: string; nameUz?: string | null; nameRu?: string | null; nameEn?: string | null } | null>(null);
 
   const checklistMut = useMutation({
     mutationFn: (body: { kind: "diagnosis" | "completion"; checked: string[] }) => api<JobWorkPayload>(`/api/staff/my-jobs/${id}/checklist`, { method: "PUT", token, body: JSON.stringify(body) }),
@@ -226,7 +219,6 @@ export function JobCompletePage() {
     estimateMut.isPending ||
     diagnosisMut.isPending ||
     checklistMut.isPending ||
-    orderMut.isPending ||
     statusMut.isPending ||
     completeMut.isPending;
   const missingList = missing.map((code) => t(`job.gap.${code}`)).join(", ");
@@ -420,6 +412,16 @@ export function JobCompletePage() {
         <input ref={galleryRef} type="file" accept="image/*" multiple className="hidden" onChange={onFiles} />
       </Section>
 
+      <PartRequestDialog
+        jobId={id ?? ""}
+        part={requesting}
+        onClose={() => setRequesting(null)}
+        onDone={async (data) => {
+          replaceWork(data);
+          await queryClient.invalidateQueries({ queryKey: ["staff", "my-jobs"] });
+        }}
+      />
+
       <Section
         title={t("catalog.services")}
         hint={t("job.servicesHint", { category: categoryLabel(job.product.category) })}
@@ -465,7 +467,8 @@ export function JobCompletePage() {
           <div className="space-y-2">
             {catalog.parts.map((item) => {
               const line = partLines.find((entry) => entry.sparePartId === item.id);
-              const out = (item.stockQuantity ?? 0) + (item.carried ?? 0) <= 0;
+              const here = item.homeStock ?? item.stockQuantity ?? 0;
+              const out = here + (item.carried ?? 0) <= 0;
               const blocked = out && blockZero && !line;
               return (
                 <div
@@ -485,7 +488,7 @@ export function JobCompletePage() {
                     className="min-w-0 flex-1 py-3 text-left"
                   >
                     <p className="truncate font-semibold">{localizedName(item)}</p>
-                    <p className="text-xs text-neutral-500">{t("job.stockLine", { price: formatMoney(item.price), count: item.stockQuantity ?? 0 })}</p>
+                    <p className="text-xs text-neutral-500">{t("job.stockLine", { price: formatMoney(item.price), count: here })}</p>
                     {item.carried ? <p className="text-[11px] font-bold text-[#7B00E0]">{t("job.carried", { count: item.carried })}</p> : null}
                     {out ? (
                       <p className="text-[11px] font-bold text-amber-700">{blockZero ? t("job.zeroStockBlock") : t("job.zeroStockWarn")}</p>
@@ -494,7 +497,7 @@ export function JobCompletePage() {
                     ) : null}
                   </button>
                   {out && !line ? (
-                    <button type="button" disabled={done || busy} onClick={() => orderMut.mutate({ sparePartId: item.id, quantity: 1 })} className="h-10 shrink-0 rounded-xl bg-white px-3 text-xs font-extrabold text-[#7B00E0] ring-1 ring-[#7B00E0]/30 disabled:opacity-50">
+                    <button type="button" disabled={done || busy} onClick={() => setRequesting(item)} className="h-10 shrink-0 rounded-xl bg-white px-3 text-xs font-extrabold text-[#7B00E0] ring-1 ring-[#7B00E0]/30 disabled:opacity-50">
                       {t("parts.order")}
                     </button>
                   ) : null}
@@ -527,9 +530,22 @@ export function JobCompletePage() {
         )}
       </Section>
 
-      {partOrders.length > 0 ? (
+      {partOrders.length > 0 || (data.partTransfers ?? []).length > 0 ? (
         <Section title={t("parts.orders")} hint={t("parts.ordersHint")}>
           <ul className="space-y-2 text-sm">
+            {(data.partTransfers ?? []).map((transfer) => (
+              <li key={transfer.id} className="flex items-center justify-between gap-3 rounded-xl bg-neutral-50 px-4 py-3">
+                <span className="min-w-0 font-semibold">
+                  {localizedName(transfer.part)} × {transfer.quantity}
+                  <span className="block text-xs font-normal text-neutral-500">
+                    {transfer.from.name}
+                    {transfer.etaAt ? ` · ${formatDate(transfer.etaAt)}` : ""}
+                    {transfer.rejectionReason ? ` · ${transfer.rejectionReason}` : ""}
+                  </span>
+                </span>
+                <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${TRANSFER_STATUS_STYLE[transfer.status]}`}>{t(`warehouse.status.${transfer.status}`)}</span>
+              </li>
+            ))}
             {partOrders.map((order) => (
               <li key={order.id} className="flex items-center justify-between gap-3 rounded-xl bg-neutral-50 px-4 py-3">
                 <span className="font-semibold">

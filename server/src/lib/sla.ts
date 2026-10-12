@@ -7,6 +7,8 @@ import { prisma } from "./prisma.js";
 import { expireOldEstimates } from "./estimates.js";
 import { createCustomerNotification } from "./notifyCustomer.js";
 import { getAppSettings } from "./settings.js";
+import { runPartsWatch } from "./partsControl.js";
+import { runTransferWatch } from "./transfers.js";
 import { tashkentCalendarDate } from "./displayId.js";
 import type { RequestStatus } from "@prisma/client";
 
@@ -167,5 +169,7 @@ export async function runHousekeeping() {
   const expired = await expireOldEstimates();
   const reminders = await sendVisitReminders();
   const warrantyNotices = await sendWarrantyExpiryNotices();
-  return { expired, reminders, warrantyNotices };
+  const parts = await runPartsWatch();
+  const transfers = await runTransferWatch();
+  return { expired, reminders, warrantyNotices, parts, transfers };
 }

@@ -8,6 +8,7 @@ import { staffActor, writeAudit } from "../lib/audit.js";
 import { PARTS } from "../lib/roles.js";
 import { issueToTechnician, returnFromTechnician } from "../lib/techStock.js";
 import { maybeAlertLowStock } from "../lib/stockAlerts.js";
+import { staffScope } from "../lib/warehouseAccess.js";
 import { requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
 
 // The parts each technician carries. The warehouse hands parts out and takes unused ones back.
@@ -19,6 +20,8 @@ const moveSchema = z.object({
   sparePartId: z.string().min(1),
   quantity: z.coerce.number().int().positive("Quantity must be at least 1").max(999),
   note: z.string().trim().max(200).optional().nullable(),
+  // The warehouse the parts leave from / return to (default: the keeper's own, else the technician's).
+  warehouseId: z.string().min(1).optional().nullable(),
 });
 
 techStockRouter.get(
@@ -46,7 +49,8 @@ techStockRouter.get(
   asyncHandler(async (req, res) => {
     const technicianId = typeof req.query.technicianId === "string" && req.query.technicianId ? req.query.technicianId : undefined;
     const sparePartId = typeof req.query.sparePartId === "string" && req.query.sparePartId ? req.query.sparePartId : undefined;
-    const rows = await prisma.stockMovement.findMany({ where: { technicianId, sparePartId }, orderBy: { createdAt: "desc" }, take: 100 });
+    // Only what moved to or from a technician (the warehouse's own history is on the warehouse page).
+    const rows = await prisma.stockMovement.findMany({ where: { technicianId: technicianId ?? { not: null }, sparePartId, kind: { in: ["issue", "return", "used", "unused"] } }, orderBy: { createdAt: "desc" }, take: 100 });
     const parts = await prisma.sparePart.findMany({ where: { id: { in: [...new Set(rows.map((row) => row.sparePartId))] } } });
     const techs = await prisma.staffUser.findMany({ where: { id: { in: rows.map((row) => row.technicianId).filter((id): id is string => Boolean(id)) } }, select: { id: true, name: true } });
     const partById = new Map(parts.map((part) => [part.id, part]));
@@ -72,7 +76,8 @@ techStockRouter.post(
   asyncHandler(async (req, res) => {
     const body = parseBody(moveSchema, req.body);
     const staff = req.staff!;
-    await issueToTechnician({ ...body, by: { id: staff.sub, name: staff.name } });
+    const scope = await staffScope(staff);
+    await issueToTechnician({ ...body, warehouseId: body.warehouseId ?? scope.warehouseId, by: { id: staff.sub, name: staff.name } });
     await writeAudit({ actor: staffActor(staff), action: "stock.issue", entityType: "SparePart", entityId: body.sparePartId, newValue: { technicianId: body.technicianId, quantity: body.quantity } });
     await maybeAlertLowStock(body.sparePartId);
     res.status(201).json({ ok: true });
@@ -84,7 +89,8 @@ techStockRouter.post(
   asyncHandler(async (req, res) => {
     const body = parseBody(moveSchema, req.body);
     const staff = req.staff!;
-    await returnFromTechnician({ ...body, by: { id: staff.sub, name: staff.name } });
+    const scope = await staffScope(staff);
+    await returnFromTechnician({ ...body, warehouseId: body.warehouseId ?? scope.warehouseId, by: { id: staff.sub, name: staff.name } });
     await writeAudit({ actor: staffActor(staff), action: "stock.return", entityType: "SparePart", entityId: body.sparePartId, newValue: { technicianId: body.technicianId, quantity: body.quantity } });
     await maybeAlertLowStock(body.sparePartId);
     res.status(201).json({ ok: true });

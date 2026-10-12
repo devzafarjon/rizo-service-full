@@ -43,6 +43,7 @@ export type StaffUser = {
   isActive?: boolean;
   locale: AppLocale;
   totpEnabled?: boolean;
+  warehouseId?: string | null;
 };
 
 export type CustomerUser = {
@@ -98,6 +99,8 @@ export type SparePart = Named & {
   stockQuantity: number;
   lowStockThreshold: number;
   lowStock?: boolean;
+  supplierId?: string | null;
+  targetStock?: number | null;
   createdAt: string;
   usedCount: number;
 };
@@ -321,6 +324,7 @@ export type CatalogChoice = Named & {
   stockQuantity?: number;
   /** How many the technician carries (van stock). */
   carried?: number;
+  homeStock?: number;
   lowStockThreshold?: number;
   lowStock?: boolean;
 };
@@ -339,6 +343,7 @@ export type JobWorkPayload = {
   estimates: Estimate[];
   defectCodes: DefectCodeOption[];
   partOrders: Array<Named & { id: string; quantity: number; status: PartOrder["status"]; createdAt: string }>;
+  partTransfers?: StockTransfer[];
   notes: NoteRow[];
   cost: JobCost;
   canComplete: boolean;
@@ -419,6 +424,7 @@ export type PortalRequest = {
   scheduledAt: string | null;
   visit: VisitInfo;
   eta: { minutes: number; setAt: string } | null;
+  partWait?: PartWait | null;
   enRouteAt: string | null;
   dueBy: string | null;
   repairWarrantyUntil: string | null;
@@ -545,6 +551,7 @@ export type DashboardReport = {
     debt: number;
   };
   service: ServiceKpis;
+  parts?: PartsOverview;
   trend: TrendPoint[];
   topProducts: Array<Named & { id: string; sku: string; category: string; count: number }>;
   topParts: Array<Named & { id: string; quantity: number }>;
@@ -693,12 +700,91 @@ export type PartOrder = {
   quantity: number;
   status: "requested" | "ordered" | "received" | "cancelled";
   supplier: string | null;
+  supplierId?: string | null;
+  warehouse?: { id: string; name: string } | null;
+  requestedBy?: { id: string; name: string; role: string } | null;
   note: string | null;
   expectedAt: string | null;
+  late?: boolean;
+  orderedAt?: string | null;
   receivedAt: string | null;
   createdAt: string;
   part: Named & { id: string; stockQuantity: number };
   request: { id: string; displayId: string; status: RequestStatus } | null;
+};
+
+/** What a customer waiting for a spare part sees. */
+export type PartWait = { ordered: boolean; expectedAt: string | null; late: boolean };
+
+export type Supplier = {
+  id: string;
+  name: string;
+  phone: string | null;
+  telegram: string | null;
+  note: string | null;
+  leadTimeDays: number;
+  isActive: boolean;
+  partsCount: number;
+  ordersCount: number;
+};
+
+export type PartsOverview = {
+  waitingRequests: number;
+  noOrder: number;
+  lateOrders: number;
+  openOrders: number;
+  lowStock: number;
+  toOrder: number;
+};
+
+export type WaitingOrder = { id: string; kind?: "order" | "transfer"; status: "requested" | "ordered" | "shipped"; quantity: number; supplier: string | null; expectedAt: string | null; late: boolean };
+export type WaitingItem = {
+  part: Named & { id: string };
+  needed: number;
+  inStock: number;
+  homeStock?: number;
+  homeIncoming?: number;
+  ordered: number;
+  uncovered: number;
+  gap: number;
+  orders: WaitingOrder[];
+};
+export type WaitingRequest = {
+  id: string;
+  displayId: string;
+  status: RequestStatus;
+  priority: string;
+  customer: { id: string; name: string; phone: string };
+  product: Named;
+  technician: { id: string; name: string } | null;
+  homeWarehouse?: { id: string; name: string };
+  waitingSince: string;
+  waitingDays: number;
+  isOverdue: boolean;
+  noOrder: boolean;
+  expectedAt: string | null;
+  late: boolean;
+  items: WaitingItem[];
+};
+
+export type RecommendationItem = {
+  part: Named & { id: string; costPrice: number };
+  stockQuantity: number;
+  lowStockThreshold: number;
+  onOrder: number;
+  withTechnicians: number;
+  waitingRequests: number;
+  uncovered: number;
+  avgDaily: number;
+  daysCover: number | null;
+  leadDays: number;
+  target: number;
+  reasons: Array<"waiting" | "low" | "forecast">;
+  recommended: number;
+};
+export type RecommendationGroup = {
+  supplier: { id: string; name: string; phone: string | null; telegram: string | null; leadTimeDays: number } | null;
+  items: RecommendationItem[];
 };
 
 export type RequestDetailPayload = {
@@ -766,6 +852,10 @@ export type AppSettings = {
   weeklyDigest: boolean;
   warrantyExpiryNoticeDays: number;
   warrantyStartsOn: "sale" | "installation";
+  partsSafetyDays: number;
+  partsUsageDays: number;
+  partsCustomerUpdateDays: number;
+  transferShipHours: number;
 };
 
 // ---- growth suite -------------------------------------------------------------------------------------------------
@@ -837,3 +927,80 @@ export type FiscalReport = {
 };
 
 export type PayLinks = { enabled: boolean; amount: number; payme?: string; click?: string; placeholder?: boolean };
+
+// ---- warehouses ---------------------------------------------------------------------------------------------------
+
+export type WarehouseKind = "central" | "regional" | "branch";
+
+export type Warehouse = {
+  id: string;
+  name: string;
+  kind: WarehouseKind;
+  regionCode: string;
+  address: string | null;
+  phone: string | null;
+  lat: number | null;
+  lng: number | null;
+  serviceCenterId: string | null;
+  serviceCenterName: string | null;
+  leadDaysSameRegion: number;
+  leadDaysOtherRegion: number;
+  note: string | null;
+  isActive: boolean;
+  units: number;
+  parts: number;
+  toSend: number;
+  arriving: number;
+  low: number;
+  keepers: Array<{ id: string; name: string }>;
+};
+
+export type WarehouseStockItem = {
+  part: Named & { id: string };
+  quantity: number;
+  minQuantity: number | null;
+  effectiveMin: number | null;
+  low: boolean;
+  onOrder: number;
+  incoming: number;
+  requestedFromHere: number;
+};
+
+export type SourceOption =
+  | { type: "warehouse"; warehouse: { id: string; name: string; kind: WarehouseKind; regionCode: string }; available: number; enough: boolean; etaDays: number; etaDate: string; sameRegion: boolean; recommended: boolean }
+  | { type: "supplier"; supplier: { id: string; name: string } | null; etaDays: number; etaDate: string; recommended: boolean };
+
+export type RestockSuggestion = WarehouseStockItem & { recommended: number; options: SourceOption[] };
+
+export type TransferStatus = "requested" | "shipped" | "received" | "rejected" | "cancelled";
+
+export type StockTransfer = {
+  id: string;
+  status: TransferStatus;
+  quantity: number;
+  part: Named & { id: string };
+  from: { id: string; name: string; kind: WarehouseKind };
+  to: { id: string; name: string; kind: WarehouseKind } | null;
+  toTechnician: { id: string; name: string } | null;
+  request: { id: string; displayId: string; status: RequestStatus } | null;
+  etaAt: string | null;
+  late: boolean;
+  note: string | null;
+  rejectionReason: string | null;
+  requestedBy: { id: string | null; name: string | null; role: string | null };
+  shippedByName: string | null;
+  createdAt: string;
+  shippedAt: string | null;
+  receivedAt: string | null;
+};
+
+export type WarehouseMovement = {
+  id: string;
+  kind: string;
+  quantity: number;
+  part: (Named & { id: string }) | null;
+  technicianName: string | null;
+  note: string | null;
+  createdByName: string | null;
+  createdAt: string;
+};

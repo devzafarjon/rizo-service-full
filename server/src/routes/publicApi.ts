@@ -10,6 +10,7 @@ import { loadTimeline } from "../lib/timeline.js";
 import { isDoneStatus, isTerminalStatus } from "../lib/status.js";
 import { computeWarrantyStatus, money, toDateOnly } from "../lib/warranty.js";
 import { normalizeDisplayIdQuery } from "../lib/displayId.js";
+import { customerPartWait } from "../lib/partsControl.js";
 import { advanceAfterApproval } from "./requests.js";
 import { rateLimit } from "../middleware/rateLimit.js";
 import { canConfirmPickup } from "../lib/pickup.js";
@@ -51,6 +52,7 @@ async function serializeTrack(request: TrackRecord) {
   const paid = request.payments.filter((row) => row.kind === "payment").reduce((sum, row) => sum + money(row.amount), 0);
   const refunded = request.payments.filter((row) => row.kind === "refund").reduce((sum, row) => sum + money(row.amount), 0);
   const due = request.finalCost != null ? money(request.finalCost) : request.estimatedCost != null ? money(request.estimatedCost) : 0;
+  const partWait = request.status === "awaiting_parts" ? await customerPartWait(request.id) : null;
   return {
     displayId: request.displayId,
     type: request.type,
@@ -60,6 +62,7 @@ async function serializeTrack(request: TrackRecord) {
     completedAt: request.completedAt?.toISOString() ?? null,
     dueBy: request.legalDueAt && !isTerminalStatus(request.status) ? request.legalDueAt.toISOString() : null,
     scheduledAt: request.scheduledAt?.toISOString() ?? null,
+    partWait,
     visit: { slot: request.visitSlot, confirmed: Boolean(request.visitConfirmedAt), canConfirm: Boolean(request.scheduledAt) && !request.visitConfirmedAt && !isTerminalStatus(request.status) && !isDoneStatus(request.status) },
     eta: request.etaMinutes != null && request.etaSetAt && request.enRouteAt && !request.arrivedAt && !isTerminalStatus(request.status) ? { minutes: request.etaMinutes, setAt: request.etaSetAt.toISOString() } : null,
     product: { ...serializeNamed(request.product), sku: request.product.sku },

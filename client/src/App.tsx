@@ -48,6 +48,7 @@ import { CalendarPage } from "./features/management/CalendarPage";
 import { MapPage } from "./features/management/MapPage";
 import { MyEarningsPage } from "./features/management/MyEarningsPage";
 import { PartOrdersPage } from "./features/management/PartOrdersPage";
+import { WarehousesPage } from "./features/warehouses/WarehousesPage";
 import { SerialCardPage } from "./features/management/SerialCardPage";
 import { ServiceCentersPage } from "./features/management/ServiceCentersPage";
 import { StaffPage } from "./features/management/StaffPage";
@@ -91,7 +92,6 @@ export default function App() {
             <Route index element={<DashboardPage />} />
             <Route path="schedule" element={<ScheduleCalendarPage />} />
             <Route path="audit" element={<ActivityLogPage />} />
-            <Route path="alerts" element={<AlertsPage />} />
             <Route path="settings" element={<BackupSettingsPage />} />
             <Route path="staff" element={<StaffPage />} />
             <Route path="customers/duplicates" element={<CustomerDuplicatesPage />} />
@@ -119,9 +119,13 @@ export default function App() {
           <Route element={<RoleRoute roles={["admin", "warehouse"]} />}>
             <Route path="catalog" element={<CatalogPage />} />
             <Route path="tech-stock" element={<TechStockPage />} />
+            <Route path="alerts" element={<AlertsPage />} />
           </Route>
           <Route element={<RoleRoute roles={["admin", "receptionist", "warehouse"]} />}>
             <Route path="part-orders" element={<PartOrdersPage />} />
+          </Route>
+          <Route element={<RoleRoute roles={["admin", "receptionist", "warehouse", "accountant"]} />}>
+            <Route path="warehouses" element={<WarehousesPage />} />
           </Route>
           <Route element={<RoleRoute roles={["admin", "receptionist", "accountant"]} />}>
           </Route>

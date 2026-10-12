@@ -98,6 +98,7 @@ Phone + password. Staff and customers use **separate JWT scopes** — a staff to
 | Technician (service center) | `998900000004` | `tech123` |
 | Front desk (receptionist) | `998900000005` | `desk123` |
 | Customer (Dilnoza) | `998900000003` | `customer123` |
+| Warehouse keeper | `998900000007` | `ware1234` |
 
 Seed also creates extra customers (Jasur, Malika), invoices `RZ-1001` … `RZ-1004`, a catalog with cost prices, and — on an empty database — one request in every board column (an overdue New job, an on-site job in progress, a paused job, a completed in-shop job awaiting pickup, and a picked-up job with a rating). Login is rate limited (10 failed attempts per phone per 15 minutes).
 
@@ -141,6 +142,7 @@ Translation files: `client/src/i18n/locales/{uz,ru,en}.json`. Add keys there whe
 | `/app/kanban` | Dispatch board — drag-and-drop status, countdown on every card, live updates, technician load. A card opens a **slide-over** (reassign, priority, status, timeline, directions) with a link to the full page |
 | `/app/customers` | Customer list + create/edit |
 | `/app/customers/:id` | Profile, purchases, service history |
+| `/app/warehouses` | Warehouses: requests to send, parts on the way, stock, restock, history, list (admin) |
 | `/app/catalog` | Products, service items, spare parts (three names required; services and parts apply to one or more categories; parts carry a cost price) |
 | `/app/sales` | Record a sale; warranty expiry is calculated |
 | `/app/requests` | All service requests |
@@ -162,7 +164,7 @@ Translation files: `client/src/i18n/locales/{uz,ru,en}.json`. Add keys there whe
 | `/app/audit` | Activity log + SMS/Telegram send queue |
 | `/app/calendar` | Scheduled visits per technician and day (admin + receptionist) |
 | `/app/map` | Open on-site jobs on an OpenStreetMap (Leaflet) map; jobs without coordinates are listed below |
-| `/app/part-orders` | Part orders (requested → ordered → received) plus low-stock suggestions; receiving an order resumes the waiting jobs |
+| `/app/part-orders` | **Spare-part control** (admin, front desk, warehouse): jobs waiting for parts, what to order next (by supplier), orders and deliveries, suppliers. See *Spare-part control* below |
 | `/app/centers` | Service centers (address, hours, coordinates, authorised flag) |
 | `/app/staff` | Staff accounts: create, role, technician type, pay rate, activate, reset password (admin) |
 | `/app/serials/:serial` | Serial-number card: sale, warranty, every visit, repeat count |
@@ -230,12 +232,46 @@ Added after comparing RIZO Service with other field-service and repair systems. 
 - **Bulk actions** on the requests list (assign, priority, cancel); reports grouped (main / money / more).
 - **Partner service centres**: payout share + fixed amount per job, report `/app/reports/partners`.
 - **Fiscal receipts**: the number belongs to each payment; setting `require_fiscal_receipt`; report of payments without one. OFD itself is not integrated.
-- **Roles** `accountant` and `warehouse` (see the table above); the mobile apps tell them to use the website.
+- **Roles** `accountant` and `warehouse` (see the table above). The accountant works on the website (the app points there); the warehouse signs in to the staff app, which opens on the spare-part control (it has no technician-stock screen on the phone yet).
 - **RIZO market integration**: `POST /api/integrations/market/sales` with header `X-Api-Key: $MARKET_API_KEY`. Body: `externalId`, `invoiceNumber`, `saleDate`, `customer {name, phone, address?}`, `items [{sku, quantity, price, serialNumber?}]`, optional `installation {address, lat?, lng?}` (opens an installation request per item). Sending the same `externalId` again does not duplicate anything; an unknown SKU answers 422 `unknownSku`. New customers sign in with "forgot password" (SMS).
 
 Not modelled on purpose: periodic / seasonal maintenance and "service due" reminders.
 
 Checks: `npm run smoke` (core flows) and `npm run smoke:growth` (everything above; run the API with `MARKET_API_KEY=smoke-key`).
+
+---
+
+## Spare-part control
+
+Built so a part that is missing never leaves a customer or a technician in the dark. Page `/app/part-orders` (admin, front desk and warehouse; the warehouse also reads its alerts in the bell).
+
+- **Suppliers** (`/api/staff/suppliers`, admin + warehouse edit): name, phone, Telegram, delivery time in days. A spare part has a usual supplier and an optional **target stock** (empty = worked out). An order without a date gets *today + the supplier's delivery time*.
+- **Jobs waiting for parts**: every job held up by a part with what it needs, stock, what is on order (supplier, date, late flag), days waiting and a **"nothing ordered"** flag. A general stock order counts as cover for a waiting job (the gap is worked out per part: needs − stock − all open orders).
+- **What to order** (`lib/partsControl.ts`): a part is suggested when a job waits for more than is in stock and on order (`waiting`), when stock plus on-order is at or below the minimum (`low`), or when average use says it runs out before a delivery could land (`forecast`). Quantity = target + missing − stock − on order, where an empty target is `max(2 × minimum, average daily use × (delivery days + safety days))`. Grouped by supplier; the quantities can be changed, then *create orders*, *mark as ordered* (one bulk call) or *copy the text* for the supplier (uz/ru/en).
+- **Receiving**: all of an order or only what came (the rest stays on order). Stock goes up, the linked job is served first, then **every other job still waiting for that part**, oldest first. A job that now has everything continues (`in_progress`), the **customer** (`partArrived`) and the **technician** (`jobPartReady`) are told.
+- **Automatic notices** (background watch, every 10 minutes, part of housekeeping): customer when an order is placed (`partOrdered` / `partEta` with the date, again if the date changes); a late delivery, once per promised date, to admins + warehouse (`partOrderLate`) and an apology to the customer (`partLate`); a job waiting with nothing ordered for 30+ minutes (`partNoOrder`, at most once a day per job); a customer who waits hears from us at least every `parts_customer_update_days` days (`partWaiting` / `partEta`); one morning suggestion (after 09:00 Tashkent) to admins + warehouse (`reorderSuggestion`). Low-stock alerts (`lowStock`) now reach the warehouse too.
+- **Settings** (admin, Settings page): `parts_safety_days` (7), `parts_usage_days` (30), `parts_customer_update_days` (3, 0 = off).
+- **Dashboard**: the admin dashboard (website and staff app) has a *Spare parts* row: jobs waiting, nothing ordered, late orders, to order; each tile opens the matching view.
+- **The customer** sees a banner on the request (portal, public tracking page and the customer app): whether the part is ordered, the expected date, and an apology when late (`partWait` in the request payload).
+- **Mobile (RIZO Texnik)**: admin, front desk and warehouse get the same four views (More → Spare parts; the warehouse's first screen), including receiving part of an order, the supplier message to copy, and new-order sheets. Technicians and customers get the notices as push and in the bell.
+- **Demo data**: `npm run demo:load` also creates 3 suppliers, 4 low-stock `DEMO ` parts, jobs waiting for parts (some ordered, some late, some with no order) and 2 stock orders; `demo:clean` removes them again.
+- Check: `npm run smoke:parts -w server` (scratch database, API running).
+
+---
+
+## Warehouses (central, regional, branch)
+
+Spare parts live in **warehouses**, not in one pile. Page `/app/warehouses` (admin, front desk, warehouse; accountant reads). The same screens are in RIZO Texnik.
+
+- **Network**: one **central** warehouse that supplies every service centre (created by the migration; it takes over the old stock), any number of **regional** warehouses (per region; demo: Toshkent viloyati, Samarqand, Farg‘ona, Buxoro, Qashqadaryo, Xorazm) and **branch** stock rooms linked to one service centre. A warehouse has a region, address, two delivery times (`leadDaysSameRegion` / `leadDaysOtherRegion`, days) and optional keepers (`StaffUser.warehouseId`; empty = a keeper of the whole network). `SparePart.stockQuantity` is always the total of all shelves (`PartStock`).
+- **Which shelf a job takes from** (`lib/warehouses.ts`): the technician's assigned warehouse, else the stock room of their service centre, else a regional warehouse in the centre's region, else the central one. A van's stock (`TechnicianStock`) is still used first.
+- **Where is the part, and what arrives soonest** (`rankSources`, `GET /api/staff/warehouses/sources`, `GET /my-jobs/part-sources`): every warehouse that holds it (minus what is already promised) with days and date of arrival, fastest first, plus the supplier (its lead time); the best one is marked. A technician or the office can pick any of them; `POST /my-jobs/:id/part-requests` takes `source` (empty = the fastest). Short of stock on a job: `sourceMissingPart` → a **transfer** from the fastest warehouse that has enough, else a supplier order delivered to the warehouse that serves the job.
+- **Requests between warehouses** (`StockTransfer`, `lib/transfers.ts`, `/api/staff/transfers`): requested → shipped → received, or rejected / cancelled. Who can ask: a technician (van top-up or a job), the front desk (the branch admin), the warehouse itself, the system. The keeper of the source sees it, sends all or part (the rest stays a request), may promise a date, or refuses with a reason (a job-linked request moves on to the next source). The receiver confirms the quantity; less than sent sends the rest back. Receiving releases every job waiting for that part. Notices: `transferRequested`, `transferShipped`, `transferRejected`, `transferStale` (no answer after `transfer_ship_hours`, default 24), `transferLate`, `warehouseLow`.
+- **Keeper's screens**: requests to send, parts on the way in, the **stock** list (count a shelf, set a per-warehouse minimum), **restock** (everything below its minimum with the quickest source for each, one tap sends all), the **history** of every movement, and (admin) the **list** of warehouses to add, edit, link to a service centre or switch off. Technician stock (give / take back) is in the app too (More → Technician stock).
+- **Orders** (`/api/staff/part-orders`) show the warehouse they are delivered to and who asked; `receivePartOrder` puts the stock on that shelf.
+- **Settings**: `transfer_ship_hours` (24).
+- **Demo data**: `npm run demo:load` creates 8 warehouses (6 regional, 2 branch), 3 keepers, filled shelves and requests in every state (waiting, sent, late, received, refused, a van top-up); `demo:clean` removes them and puts parts in transit back.
+- Check: `npm run smoke:warehouses -w server` (scratch database, API running).
 
 ---
 
@@ -298,7 +334,8 @@ Repairs can be in shop or on site, chosen when the request is created; on-site r
 - **ServiceCenter** — branch directory (address, hours, coordinates, authorised flag)
 - **Estimate / EstimateLine** — draft → sent → approved / declined / expired; optional lines, part lines fulfilled from stock
 - **Payment** — payment or refund per request, method, fiscal receipt number
-- **PartOrder** — requested → ordered → received for missing stock, linked to the waiting job
+- **PartOrder** — requested → ordered → received for missing stock, linked to the waiting job and delivered to a warehouse
+- **Warehouse / PartStock / StockTransfer** — central, regional and branch warehouses, the quantity of each part on each shelf (with its own minimum), and requests between them (or to a technician's van)
 - **DefectCode** — defect or return-reason code (optionally per product category)
 - **PayAdjustment** — bonus / penalty used by payroll
 - **Customer** — phone login, address, region, locale
@@ -343,7 +380,8 @@ Staff routes sit under `/api/staff/…` with a staff JWT. Customer routes sit un
 | `/api/staff/reports/warranty` | Warranty vs paid |
 | `/api/staff/reports/sources` | Request source mix |
 | `/api/staff/requests/:id/…` | `decision`, `estimates` (+ `/:estimateId/send|approve|decline`), `payments`, `notes`, `pickup` |
-| `/api/staff/part-orders`, `/defect-codes`, `/service-centers`, `/serials/:serial`, `/payroll`, `/staff` | Part orders, codes, branches, serial card, payroll + adjustments, staff admin |
+| `/api/staff/warehouses` (+ `/mine`, `/sources`, `/:id/stock`, `/:id/movements`, `/:id/restock`), `/api/staff/transfers` (+ `/:id/ship|receive|reject|cancel`) | Warehouses, stock per shelf, restock suggestions, requests between warehouses |
+| `/api/staff/part-orders` (+ `/overview`, `/waiting`, `/recommendations`, `/bulk`), `/api/staff/suppliers`, `/defect-codes`, `/service-centers`, `/serials/:serial`, `/payroll`, `/staff` | Part orders, codes, branches, serial card, payroll + adjustments, staff admin |
 | `/api/staff/reports/defects`, `/outcomes`, `/debts`, `/legal` | New reports (the dashboard also returns previous-period deltas) |
 | `/api/public/track`, `/track/:token`, `/centers` | No login: tracking by token or request number + phone (rate limited), estimate approve / decline, service-center directory |
 | `/api/staff/my-jobs` | Technician jobs: move, `arrived`, `resolution` (repair / replace + serial), services, parts, extras, photos, complete, own schedule |
