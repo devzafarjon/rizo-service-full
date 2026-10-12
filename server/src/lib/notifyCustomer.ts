@@ -7,6 +7,7 @@ import { dispatchOutbound } from "./notifyDispatch.js";
 import { telegramButtonsFor } from "./telegramText.js";
 import { env } from "../config.js";
 import { pushToCustomer } from "./push.js";
+import { pushBody } from "./pushText.js";
 
 type NotificationParams = Record<string, unknown>;
 
@@ -62,6 +63,8 @@ export async function createCustomerNotification(
     await dispatchOutbound({
       target: { phone: onlyTelegram ? null : customer.phone, telegramChatId: onlySms ? null : customer.telegramChatId },
       body: message,
+      // Telegram reads like the app: in the customer's language (SMS keeps the stored English text).
+      telegramBody: pushBody({ code, params, message, locale: customer.locale }),
       code: code ?? "customer",
       entityId: serviceRequestId ?? undefined,
       telegramButtons: serviceRequestId ? telegramButtonsFor({ code, params, requestId: serviceRequestId, locale: customer.locale }) : undefined,

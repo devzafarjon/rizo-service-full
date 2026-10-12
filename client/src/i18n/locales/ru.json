@@ -1555,7 +1555,8 @@
     "sourceNotAvailable": "На выбранном складе этой запчасти не хватает.",
     "notYourWarehouse": "Этот склад вам не назначен.",
     "warehouseInUse": "На складе есть остатки, заявки или сотрудники: сначала отключите его.",
-    "centralWarehouse": "Центральный склад нельзя удалить или отключить."
+    "centralWarehouse": "Центральный склад нельзя удалить или отключить.",
+    "telegramNotConfigured": "Telegram-бот ещё не настроен."
   },
   "customerStatus": {
     "new": "Принята",
@@ -2139,8 +2140,6 @@
       "sms": "Только SMS",
       "telegram": "Только Telegram"
     },
-    "telegramLinked": "Telegram подключён.",
-    "telegramHow": "Чтобы подключить Telegram, напишите боту RIZO Service: /start и отправьте номер телефона. Пока Telegram не подключён, сообщения приходят по SMS.",
     "data": "Мои данные",
     "dataBody": "Вы можете скачать все ваши данные, которые мы храним, одним файлом.",
     "export": "Скачать мои данные",
@@ -2418,5 +2417,20 @@
     "deliverAuto": "Автоматически (по заявке или центральный)",
     "servedFrom": "Склад",
     "transferFrom": "со склада:"
+  },
+  "telegram": {
+    "title": "Telegram",
+    "connected": "Подключён",
+    "notConnected": "Не подключён",
+    "customerBody": "Через бота RIZO Service смотрите статус заявок, создавайте новые, согласовывайте смету и пишите сервису. Сообщения приходят на вашем языке.",
+    "staffBody": "Рабочие уведомления (новая работа, пришла запчасть, просрочка и другие) приходят и в Telegram. В боте можно посмотреть уведомления и свои работы.",
+    "connect": "Подключить Telegram",
+    "connectHint": "Откроется Telegram: нажмите «Start». Ссылка действует 15 минут.",
+    "opened": "Telegram открыт: нажмите «Start» в боте.",
+    "disconnect": "Отключить",
+    "disconnected": "Telegram отключён",
+    "alertsOn": "Присылать уведомления в Telegram",
+    "notSetUp": "Telegram-бот ещё не настроен. Обратитесь к администратору.",
+    "notSetUpAdmin": "Бот не настроен: задайте на сервере TELEGRAM_BOT_TOKEN (а также TELEGRAM_BOT_USERNAME, TELEGRAM_WEBHOOK_URL, TELEGRAM_WEBHOOK_SECRET), см. раздел «Telegram bot» в README."
   }
 }

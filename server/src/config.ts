@@ -36,6 +36,14 @@ export const env = {
   telegramProvider: process.env.TELEGRAM_PROVIDER ?? "console",
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN ?? "",
   telegramAdminChatId: process.env.TELEGRAM_ADMIN_CHAT_ID ?? "",
+  // The bot's @username (without @); when empty it is read from Telegram at start. Needed for the "Connect Telegram" links.
+  telegramBotUsername: (process.env.TELEGRAM_BOT_USERNAME ?? "").replace(/^@/, ""),
+  // The public address of this API (https://…): with it the bot receives updates by webhook (works on a host that sleeps);
+  // without it the bot polls (fine for development). TELEGRAM_WEBHOOK_SECRET protects the webhook address.
+  telegramWebhookUrl: (process.env.TELEGRAM_WEBHOOK_URL ?? "").replace(/\/+$/, ""),
+  telegramWebhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET ?? "",
+  // Where the customer can get the mobile app (a store page or a download page); shown in the bot's "App and site" answer.
+  appDownloadUrl: process.env.APP_DOWNLOAD_URL ?? "",
   // Online payment pages (links only; the office records the payment). Leave empty to hide the buttons.
   paymeMerchantId: process.env.PAYME_MERCHANT_ID ?? "",
   clickServiceId: process.env.CLICK_SERVICE_ID ?? "",

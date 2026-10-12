@@ -1553,7 +1553,8 @@
     "sourceNotAvailable": "The chosen warehouse does not have enough of this part.",
     "notYourWarehouse": "This warehouse is not assigned to you.",
     "warehouseInUse": "This warehouse has stock, requests or staff: switch it off instead.",
-    "centralWarehouse": "The central warehouse cannot be deleted or switched off."
+    "centralWarehouse": "The central warehouse cannot be deleted or switched off.",
+    "telegramNotConfigured": "The Telegram bot is not set up yet."
   },
   "customerStatus": {
     "new": "Received",
@@ -2137,8 +2138,6 @@
       "sms": "SMS only",
       "telegram": "Telegram only"
     },
-    "telegramLinked": "Telegram is linked.",
-    "telegramHow": "To link Telegram, write to the RIZO Service bot: /start and send your phone number. Until Telegram is linked, messages come by SMS.",
     "data": "My data",
     "dataBody": "You can download everything we hold about you as a file.",
     "export": "Download my data",
@@ -2416,5 +2415,20 @@
     "deliverAuto": "Automatic (the job’s or the central one)",
     "servedFrom": "Warehouse",
     "transferFrom": "from warehouse:"
+  },
+  "telegram": {
+    "title": "Telegram",
+    "connected": "Connected",
+    "notConnected": "Not connected",
+    "customerBody": "With the RIZO Service bot you can follow your requests, open new ones, approve estimates and write to the service. Messages come in your language.",
+    "staffBody": "Work alerts (a new job, a part arrived, an overdue job and others) also arrive in Telegram. In the bot you can look at alerts and your jobs.",
+    "connect": "Connect Telegram",
+    "connectHint": "Telegram opens: press “Start”. The link works for 15 minutes.",
+    "opened": "Telegram opened: press “Start” in the bot.",
+    "disconnect": "Disconnect",
+    "disconnected": "Telegram disconnected",
+    "alertsOn": "Send alerts to Telegram",
+    "notSetUp": "The Telegram bot is not set up yet. Ask your administrator.",
+    "notSetUpAdmin": "The bot is not set up: set TELEGRAM_BOT_TOKEN on the server (and TELEGRAM_BOT_USERNAME, TELEGRAM_WEBHOOK_URL, TELEGRAM_WEBHOOK_SECRET); see “Telegram bot” in the README."
   }
 }

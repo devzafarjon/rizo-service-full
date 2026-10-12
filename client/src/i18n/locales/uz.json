@@ -1553,7 +1553,8 @@
     "sourceNotAvailable": "Tanlangan omborda bu qism yetarli emas.",
     "notYourWarehouse": "Bu ombor sizga biriktirilmagan.",
     "warehouseInUse": "Omborda qoldiq, so‘rov yoki xodim bor: avval faolsizlantiring.",
-    "centralWarehouse": "Markaziy omborni o‘chirib yoki o‘zgartirib bo‘lmaydi."
+    "centralWarehouse": "Markaziy omborni o‘chirib yoki o‘zgartirib bo‘lmaydi.",
+    "telegramNotConfigured": "Telegram boti hali sozlanmagan."
   },
   "customerStatus": {
     "new": "Qabul qilindi",
@@ -2137,8 +2138,6 @@
       "sms": "Faqat SMS",
       "telegram": "Faqat Telegram"
     },
-    "telegramLinked": "Telegram ulangan.",
-    "telegramHow": "Telegram’ni ulash uchun RIZO Service botiga yozing: /start va telefon raqamingizni yuboring. Telegram ulanmaguncha xabarlar SMS bilan keladi.",
     "data": "Ma‘lumotlarim",
     "dataBody": "Bizda saqlanayotgan barcha ma‘lumotlaringizni fayl sifatida yuklab olishingiz mumkin.",
     "export": "Ma‘lumotlarimni yuklab olish",
@@ -2416,5 +2415,20 @@
     "deliverAuto": "Avtomatik (ish yoki markaziy ombor)",
     "servedFrom": "Ombor",
     "transferFrom": "ombordan:"
+  },
+  "telegram": {
+    "title": "Telegram",
+    "connected": "Ulangan",
+    "notConnected": "Ulanmagan",
+    "customerBody": "RIZO Service boti orqali so'rovlaringiz holatini ko'ring, yangi so'rov oching, smetani tasdiqlang va servisga yozing. Xabarlar sizning tilingizda keladi.",
+    "staffBody": "Ish xabarlari (yangi ish, ehtiyot qism keldi, kechikish va boshqalar) Telegram'ga ham keladi. Botda xabarlar va ishlaringizni ko'rishingiz mumkin.",
+    "connect": "Telegram'ni ulash",
+    "connectHint": "Telegram ochiladi: «Start» ni bosing. Havola 15 daqiqa amal qiladi.",
+    "opened": "Telegram ochildi: botda «Start» ni bosing.",
+    "disconnect": "Uzish",
+    "disconnected": "Telegram uzildi",
+    "alertsOn": "Xabarlar Telegram'ga kelsin",
+    "notSetUp": "Telegram boti hali sozlanmagan. Administratorga murojaat qiling.",
+    "notSetUpAdmin": "Bot sozlanmagan: serverda TELEGRAM_BOT_TOKEN (va TELEGRAM_BOT_USERNAME, TELEGRAM_WEBHOOK_URL, TELEGRAM_WEBHOOK_SECRET) o'rnating, README'dagi «Telegram bot» bo'limiga qarang."
   }
 }

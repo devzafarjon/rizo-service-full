@@ -1,3 +1,4 @@
+import { customerTelegramRouter, staffTelegramRouter, telegramWebhookRouter } from "./routes/telegram.js";
 import cors from "cors";
 import express from "express";
 import { env } from "./config.js";
@@ -54,6 +55,9 @@ export function createApp() {
   app.use("/api/uploads", serveUploads());
 
   app.use("/api/health", healthRouter);
+  app.use("/api/telegram", telegramWebhookRouter);
+  app.use("/api/staff/telegram", staffTelegramRouter);
+  app.use("/api/customer/telegram", customerTelegramRouter);
   app.use("/api/staff/auth", staffAuthRouter);
   app.use("/api/customer/auth", customerAuthRouter);
   app.use("/api/customer/devices", customerDevicesRouter);

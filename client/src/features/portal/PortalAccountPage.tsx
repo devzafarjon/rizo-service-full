@@ -9,6 +9,7 @@ import { api, apiErrorMessage } from "../../lib/api";
 import { withApiBase } from "../../lib/apiBase";
 import type { CustomerUser } from "../../lib/types";
 import { segmentedGroupClass, segmentedItemClass } from "../../components/segmented";
+import { TelegramConnect } from "../../components/TelegramConnect";
 
 const CHANNELS = ["both", "sms", "telegram"] as const;
 
@@ -75,8 +76,9 @@ export function PortalAccountPage() {
             </button>
           ))}
         </div>
-        <p className="mt-3 text-xs text-neutral-500">{user.telegramLinked ? t("account.telegramLinked") : t("account.telegramHow")}</p>
       </section>
+
+      <TelegramConnect scope="customer" token={token} />
 
       <section className="rounded-2xl border border-neutral-200 bg-white p-5">
         <h2 className="text-sm font-extrabold tracking-wide text-neutral-800 uppercase">{t("account.data")}</h2>

@@ -76,8 +76,11 @@ Optional notification and backup keys (see `server/.env.example`):
 | --- | --- | --- |
 | `SMS_PROVIDER` | `console` | `console` logs SMS (also password-reset texts); `eskiz` sends through eskiz.uz (`ESKIZ_EMAIL`, `ESKIZ_PASSWORD`, `ESKIZ_SENDER` default `4546`); otherwise set `SMS_HTTP_URL` (+ optional `SMS_HTTP_TOKEN`) for a generic gateway |
 | `UPLOAD_BUCKET_ENDPOINT` / `UPLOAD_BUCKET_NAME` / `UPLOAD_BUCKET_ACCESS_KEY_ID` / `UPLOAD_BUCKET_SECRET_ACCESS_KEY` | empty | S3-compatible bucket (Cloudflare R2) for photos and signatures. Files are written to disk and copied to the bucket; a file missing on disk (a free host wipes it on deploy) is read back from the bucket. Without it, files stay on disk only |
-| `TELEGRAM_PROVIDER` | `console` | `console` logs Telegram; set `TELEGRAM_BOT_TOKEN` to use Bot API |
-| `TELEGRAM_ADMIN_CHAT_ID` | empty | Admin overdue / low-stock Telegram destination |
+| `TELEGRAM_PROVIDER` | `console` | `console` logs Telegram; set `TELEGRAM_BOT_TOKEN` (from @BotFather) and a provider other than `console` (for example `live`) to use the Bot API |
+| `TELEGRAM_BOT_USERNAME` | read from Telegram | The bot's @username, used in the "Connect Telegram" links |
+| `TELEGRAM_WEBHOOK_URL` / `TELEGRAM_WEBHOOK_SECRET` | empty | The API's public address (https) and a long random secret: the bot then receives updates by webhook (wakes a sleeping host). Empty = long polling (development) |
+| `APP_DOWNLOAD_URL` | empty | Where the customer gets the mobile app; shown by the bot's "App and website" button |
+| `TELEGRAM_ADMIN_CHAT_ID` | empty | Shared admin chat for overdue / low-stock alerts |
 | `FIREBASE_SERVICE_ACCOUNT` | empty | Push notifications: the Firebase service-account JSON (on the host). `FIREBASE_SERVICE_ACCOUNT_FILE` is a file path for local work. Without either, pushes are only logged. Never commit it |
 | `BACKUP_ENABLED` | `false` | When `true`, API process runs `pg_dump` at 02:00 Asia/Tashkent |
 | `BACKUP_DIR` | `server/backups` | Where `.sql` dumps are written |
@@ -218,7 +221,7 @@ Added after comparing RIZO Service with other field-service and repair systems. 
 - **Help centre** (`/portal/help`, `/help`): short guides and videos per product category, written by the admin (`/app/help`).
 - **Pay online**: Payme / Click buttons on the request and tracking pages when `PAYME_MERCHANT_ID` / `CLICK_*` are set. The buttons only open the provider's page; the office still records the payment (an automatic callback needs a merchant contract).
 - **My account** (`/portal/account`): choose SMS / Telegram / both, download all data as JSON, ask for the personal data to be erased (an admin anonymizes the account; requests and payments stay for the accounts). Privacy policy and terms at `/privacy` and `/terms`.
-- **Telegram bot**: besides linking and `/status`, messages carry buttons to approve or decline an estimate, confirm a visit and rate a finished job; plain text or `/message <number> text` writes to the service.
+- **Telegram bot**: see "Telegram bot" below.
 
 **Technicians**
 - **Skills and distance.** Auto-assignment only picks technicians who can repair the product category (`Technician skills`), then the lowest load plus distance from their base (10 km counts like one open job).
@@ -272,6 +275,18 @@ Spare parts live in **warehouses**, not in one pile. Page `/app/warehouses` (adm
 - **Settings**: `transfer_ship_hours` (24).
 - **Demo data**: `npm run demo:load` creates 8 warehouses (6 regional, 2 branch), 3 keepers, filled shelves and requests in every state (waiting, sent, late, received, refused, a van top-up); `demo:clean` removes them and puts parts in transit back.
 - Check: `npm run smoke:warehouses -w server` (scratch database, API running).
+
+---
+
+## Telegram bot
+
+One bot for customers and staff (`server/src/lib/telegram/`: `customer.ts`, `staff.ts`, `links.ts`, `text.ts`, `index.ts`; routes in `routes/telegram.ts`). All its wording is in uz / ru / en and follows the person's language.
+
+- **Set up (once)**: in Telegram open @BotFather → `/newbot` → name and username → copy the token. On the host set `TELEGRAM_BOT_TOKEN`, `TELEGRAM_PROVIDER=live`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_URL` (the API's https address) and `TELEGRAM_WEBHOOK_SECRET` (a long random string); optional `APP_DOWNLOAD_URL`. After a deploy the bot registers its webhook and its command list by itself. Without the webhook keys it long-polls (fine locally, but a sleeping free host misses messages).
+- **Customer** — connects with the button "Share my number" (only the sender's own contact counts; a typed number is refused) or with **Connect Telegram** in the portal / the customer app (a one-time `t.me` link valid 15 minutes). The menu: **My requests** (cards with status, technician, visit, estimate, waiting-for-part state and balance, buttons to approve / decline the estimate, confirm the visit, write to the service, open the tracking page), **New request** (repair or installation → purchase → problem → at a centre or at my address (typed or a Telegram location) → confirm; created exactly like a portal request, duplicates refused), **Warranty** (purchases and warranty end), **Service centres** (by region, with the map pin), **Write to the service** (to a request; plain text works when one request is open), **Language**, **App and website**. Status messages arrive in the customer's language with the same buttons (estimate, visit, rating). `/stop` disconnects.
+- **Staff** — connect only with the one-time link (**Security → Telegram** on the website, Settings in RIZO Texnik): every alert they get in the bell and as a push also goes to their chat (with an "Open" button), with a mute switch; the bot's menu shows alerts, a technician's open jobs, or an overview (new / open / overdue / waiting for parts) for the office.
+- **API**: `GET|DELETE /api/{staff|customer}/telegram`, `POST …/link` (returns the link), `PATCH /api/staff/telegram` (`notify`), `POST /api/telegram/webhook` (the secret header is checked). Data: `telegram_chats` (language, dialogue step), `telegram_link_tokens`, `StaffUser.telegramChatId / telegramNotify`, `Customer.telegramChatId`.
+- Check: `npm run smoke:telegram -w server` (start the API with `TELEGRAM_BOT_TOKEN=smoke TELEGRAM_PROVIDER=live TELEGRAM_BOT_USERNAME=rizo_smoke_bot TELEGRAM_WEBHOOK_URL=https://example.invalid TELEGRAM_WEBHOOK_SECRET=smoke-secret`; the Telegram network is stubbed in the script).
 
 ---
 
@@ -351,6 +366,7 @@ Repairs can be in shop or on site, chosen when the request is created; on-site r
 - **TechnicianSchedule** — per-day working / off (+ optional hours); auto-assign skips off technicians
 - **AuditLog** — status, cost, role, pickup, merge
 - **OutboundMessage** — SMS / Telegram queue (`pending` / `sent` / `failed`)
+- **TelegramChat / TelegramLinkToken** — the bot's language and dialogue step per chat; one-time keys behind the "Connect Telegram" links
 - **AppSetting** — `block_zero_stock`, `repair_warranty_days`, `repair_legal_days`, `estimate_valid_days`, `pickup_storage_days`, `require_estimate_for_paid_repair`
 
 ---
@@ -401,7 +417,7 @@ Socket.io rooms: `staff` and `customer:{id}`. Events include request created/upd
 ## Integrations and what is still manual
 
 - **SMS**: console driver by default. Set `SMS_PROVIDER` / `SMS_HTTP_URL` / `SMS_HTTP_TOKEN` for a real gateway (Eskiz, Playmobile …). Creation, estimate, en-route, part-arrived and visit-reminder messages include the tracking link.
-- **Telegram bot** (`server/src/lib/telegramBot.ts`): long polling starts only when `TELEGRAM_BOT_TOKEN` is set and the provider is not `console`. Customers can look up a request by number.
+- **Telegram bot** (`server/src/lib/telegram/`): starts only when `TELEGRAM_BOT_TOKEN` is set and the provider is not `console` (see "Telegram bot").
 - **Not integrated (needs your accounts/contracts)**: Payme / Click merchant payments, fiscal receipt (OFD) devices — the app records the payment method and the fiscal receipt number but does not charge cards or print fiscal receipts; persistent photo storage on hosts with an ephemeral disk (Render free tier wipes `uploads/` on deploy).
 - Change the demo passwords (`npm run set-password -- staff <phone> <new password>`) before going live.
 

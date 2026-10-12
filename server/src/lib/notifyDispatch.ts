@@ -1,6 +1,7 @@
 import { env } from "../config.js";
 import { sendEskizSms } from "./eskiz.js";
 import { prisma } from "./prisma.js";
+import { call } from "./telegram/api.js";
 
 /** Admin alerts that also go to the admin Telegram chat. */
 const ADMIN_TELEGRAM_CODES = new Set(["overdue", "lowStock", "lowRating", "escalation", "weeklyDigest", "deletionRequest"]);
@@ -45,21 +46,9 @@ export async function sendSms(to: string, body: string) {
 export type TelegramButtons = Array<Array<{ text: string; callback_data: string }>>;
 
 async function sendTelegram(chatId: string, body: string, buttons?: TelegramButtons) {
-  if (!env.telegramBotToken) {
-    if (env.telegramProvider === "console") {
-      console.log(`[telegram:console] chat=${chatId} ${body}${buttons?.length ? ` [${buttons.flat().map((button) => button.text).join(" | ")}]` : ""}`);
-      return;
-    }
-    throw new Error("Telegram bot is not configured");
-  }
-  const res = await fetch(`https://api.telegram.org/bot${env.telegramBotToken}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text: body, ...(buttons?.length ? { reply_markup: { inline_keyboard: buttons } } : {}) }),
-  });
-  if (!res.ok) {
-    throw new Error(`Telegram returned ${res.status}`);
-  }
+  if (!env.telegramBotToken && env.telegramProvider !== "console") throw new Error("Telegram bot is not configured");
+  // `call` talks to the Bot API, or only logs while the provider is `console` (and lets a test stub the network).
+  await call("sendMessage", { chat_id: chatId, text: body, ...(buttons?.length ? { reply_markup: { inline_keyboard: buttons } } : {}) });
 }
 
 export async function dispatchOutbound(input: {
@@ -69,6 +58,8 @@ export async function dispatchOutbound(input: {
   entityId?: string;
   /** Inline buttons under the Telegram message (approve, rate, confirm). */
   telegramButtons?: TelegramButtons;
+  /** The text for Telegram when it differs from the SMS text (the customer's own language). */
+  telegramBody?: string;
 }) {
   const jobs: Array<{ channel: string; to: string; send: () => Promise<void> }> = [];
   if (input.target.phone) {
@@ -76,7 +67,7 @@ export async function dispatchOutbound(input: {
   }
   const telegramTo = input.target.telegramChatId || env.telegramAdminChatId;
   if (telegramTo && (input.target.telegramChatId || (input.code && ADMIN_TELEGRAM_CODES.has(input.code)))) {
-    jobs.push({ channel: "telegram", to: telegramTo, send: () => sendTelegram(telegramTo, input.body, input.telegramButtons) });
+    jobs.push({ channel: "telegram", to: telegramTo, send: () => sendTelegram(telegramTo, input.telegramBody ?? input.body, input.telegramButtons) });
   }
 
   for (const job of jobs) {

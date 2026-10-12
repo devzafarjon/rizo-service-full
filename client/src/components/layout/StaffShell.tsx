@@ -1,5 +1,5 @@
 import { Dialog, DialogPanel } from "@headlessui/react";
-import { CalendarDays, LogOut, Menu, QrCode, ShieldCheck, X, type LucideIcon } from "lucide-react";
+import { CalendarDays, LogOut, Menu, QrCode, Send, ShieldCheck, X, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -63,6 +63,7 @@ export function StaffShell() {
           <LanguageSwitcher />
           <AccountMenu name={user.name} detail={staffUserDetail(user, t)} onLogout={onLogout}>
             <MenuLink to="/app/security" icon={ShieldCheck} label={t("security.title")} />
+            <MenuLink to="/app/security#telegram" icon={Send} label={t("telegram.title")} />
             {onToggleAvailability ? (
               <>
                 <MenuLink to="/app/scan" icon={QrCode} label={t("nav.scan")} />

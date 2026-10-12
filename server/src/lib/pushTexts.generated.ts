@@ -59,6 +59,24 @@ export const PUSH_TEXTS = {
       "replaced": "Almashtirildi",
       "refunded": "Pul qaytarildi",
       "rejected": "Rad etildi"
+    },
+    "regions": {
+      "10": "Toshkent viloyati",
+      "20": "Sirdaryo",
+      "25": "Jizzax",
+      "30": "Samarqand",
+      "40": "Fargʻona",
+      "50": "Namangan",
+      "60": "Andijon",
+      "70": "Qashqadaryo",
+      "75": "Surxondaryo",
+      "80": "Buxoro",
+      "85": "Navoiy",
+      "90": "Xorazm",
+      "95": "Qoraqalpogʻiston",
+      "00": "Noma’lum viloyat",
+      "01": "Toshkent shahri",
+      "unknownOption": "Noma’lum / belgilanmagan (00)"
     }
   },
   "ru": {
@@ -120,6 +138,24 @@ export const PUSH_TEXTS = {
       "replaced": "Заменено",
       "refunded": "Деньги возвращены",
       "rejected": "Отклонено"
+    },
+    "regions": {
+      "10": "Ташкентская область",
+      "20": "Сырдарья",
+      "25": "Джизак",
+      "30": "Самарканд",
+      "40": "Фергана",
+      "50": "Наманган",
+      "60": "Андижан",
+      "70": "Кашкадарья",
+      "75": "Сурхандарья",
+      "80": "Бухара",
+      "85": "Навои",
+      "90": "Хорезм",
+      "95": "Каракалпакстан",
+      "00": "Неизвестный регион",
+      "01": "город Ташкент",
+      "unknownOption": "Неизвестно / не задано (00)"
     }
   },
   "en": {
@@ -181,6 +217,24 @@ export const PUSH_TEXTS = {
       "replaced": "Replaced",
       "refunded": "Refunded",
       "rejected": "Declined"
+    },
+    "regions": {
+      "10": "Tashkent region",
+      "20": "Sirdarya",
+      "25": "Jizzakh",
+      "30": "Samarkand",
+      "40": "Fergana",
+      "50": "Namangan",
+      "60": "Andijan",
+      "70": "Kashkadarya",
+      "75": "Surkhandarya",
+      "80": "Bukhara",
+      "85": "Navoi",
+      "90": "Khorezm",
+      "95": "Karakalpakstan",
+      "00": "Unknown region",
+      "01": "Tashkent city",
+      "unknownOption": "Unknown / not set (00)"
     }
   }
 } as const;

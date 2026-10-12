@@ -195,6 +195,9 @@ model StaffUser {
   warehouseId        String?              @map("warehouse_id")
   warehouse          Warehouse?           @relation("WarehouseStaff", fields: [warehouseId], references: [id], onDelete: SetNull)
   transfersRequested StockTransfer[]      @relation("TransferToTechnician")
+  // The Telegram chat linked with a one-time link from the website or the app; alerts also go there while telegram_notify is on.
+  telegramChatId     String?              @unique @map("telegram_chat_id")
+  telegramNotify     Boolean              @default(true) @map("telegram_notify")
 
   @@map("staff_users")
 }
@@ -937,4 +940,32 @@ model StockTransfer {
   @@index([toWarehouseId, status])
   @@index([serviceRequestId])
   @@map("stock_transfers")
+}
+
+/**
+ * A chat with the Telegram bot: the language chosen before the account is linked, and where a step-by-step dialogue (a new request, a message) stands.
+ */
+model TelegramChat {
+  chatId    String   @id @map("chat_id")
+  locale    String   @default("uz") @db.VarChar(5)
+  state     String?
+  data      Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("telegram_chats")
+}
+
+/**
+ * A one-time key behind the "Connect Telegram" button (a t.me link with ?start=<token>); valid for 15 minutes.
+ */
+model TelegramLinkToken {
+  token     String   @id
+  kind      String
+  subjectId String   @map("subject_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([subjectId])
+  @@map("telegram_link_tokens")
 }

@@ -172,8 +172,8 @@ async function main() {
     sent.push({ method, body });
     return { ok: true, result: {} };
   });
-  await handleUpdate({ update_id: 1, message: { chat: { id: 4242 }, contact: { phone_number: phone } } });
-  assert((await prisma.customer.findUnique({ where: { id: customerId } }))?.telegramChatId === "4242", "the bot links the chat by phone number");
+  await handleUpdate({ update_id: 1, message: { chat: { id: 4242 }, from: { id: 4242 }, contact: { phone_number: phone, user_id: 4242 } } });
+  assert((await prisma.customer.findUnique({ where: { id: customerId } }))?.telegramChatId === "4242", "the bot links the chat by the shared contact");
   await handleUpdate({ update_id: 2, callback_query: { id: "cb1", data: `rate:${requestId}:1`, message: { chat: { id: 4242 } } } });
   const feedback = await prisma.feedback.findUnique({ where: { serviceRequestId: requestId } });
   assert(feedback?.rating === 1, "a rating button records the feedback");

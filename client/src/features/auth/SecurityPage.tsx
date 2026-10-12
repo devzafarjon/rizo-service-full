@@ -8,6 +8,7 @@ import { useToast } from "../../components/toast";
 import { useStaffAuth } from "./StaffAuthContext";
 import { api, apiErrorMessage } from "../../lib/api";
 import type { StaffUser } from "../../lib/types";
+import { TelegramConnect } from "../../components/TelegramConnect";
 
 type Setup = { secret: string; otpauthUrl: string; qr: string };
 
@@ -124,6 +125,10 @@ export function SecurityPage() {
           </form>
         ) : null}
       </section>
+
+      <div className="mt-5">
+        <TelegramConnect scope="staff" token={token} isAdmin={user?.role === "admin"} />
+      </div>
     </div>
   );
 }

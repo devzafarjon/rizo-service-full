@@ -4,6 +4,7 @@ import { getMessaging, type Messaging } from "firebase-admin/messaging";
 import { env } from "../config.js";
 import { prisma } from "./prisma.js";
 import { pushBody } from "./pushText.js";
+import { telegramToStaff } from "./telegram/staff.js";
 
 type Params = Record<string, unknown> | null | undefined;
 
@@ -85,6 +86,8 @@ async function deliver(tokens: Array<{ token: string; locale: string }>, input: 
 
 /** Every notification the user has in the bell also becomes a push on each device they are signed in on. Never throws. */
 export function pushToStaff(staffUserId: string, input: PushInput) {
+  // The linked Telegram chat gets the same alert (it has its own mute switch).
+  void telegramToStaff(staffUserId, input);
   return prisma.deviceToken
     .findMany({ where: { staffUserId }, select: { token: true, locale: true } })
     .then((tokens) => deliver(tokens, input))
