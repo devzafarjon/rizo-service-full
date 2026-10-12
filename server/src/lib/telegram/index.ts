@@ -5,6 +5,7 @@ import { prisma } from "../prisma.js";
 import { botIsLive, call, send, botUsername } from "./api.js";
 import { askLanguage, chatState, customerByChat, listRequests, menuChoice, menuKeyboard, newRequestStep, plainText, sendMessageToService, setChatState, showApp, showCenters, showMenu, showRequest, showWarranty, startMessage, startNewRequest, customerButton } from "./customer.js";
 import { consumeLinkPayload, linkCustomerChat, linkStaffChat, unlinkChat } from "./links.js";
+import { checkPhoneCode, looksLikePhone, startPhoneCheck } from "./otp.js";
 import { greetStaff, setStaffNotify, showStaffAlerts, showStaffJobs, showStaffOverview, staffByChat, staffChoice } from "./staff.js";
 import { t } from "./text.js";
 
@@ -53,9 +54,9 @@ async function linkByContact(message: TgMessage) {
   const contact = message.contact!;
   if (!message.from?.id || contact.user_id !== message.from.id) return send(chatId, t("ownContactOnly", locale), contactKeyboard(locale));
   const digits = contact.phone_number.replace(/\D/g, "");
-  if (digits.length < 9) return send(chatId, t("noAccount", locale));
-  const customer = await prisma.customer.findFirst({ where: { phone: { endsWith: digits.slice(-9) }, anonymizedAt: null } });
-  if (!customer) return send(chatId, t("noAccount", locale), { reply_markup: { remove_keyboard: true } });
+  const customer = digits.length < 9 ? null : await prisma.customer.findFirst({ where: { phone: { endsWith: digits.slice(-9) }, anonymizedAt: null } });
+  // The Telegram number is often not the one on the account: then the account number can be typed and is checked by SMS.
+  if (!customer) return send(chatId, t("noAccountTryTyping", locale), { reply_markup: { remove_keyboard: true } });
   await linkCustomerChat(String(chatId), customer.id);
   await setChatState(chatId, null);
   await showMenu(chatId, customer.locale, t("linked", customer.locale, { name: customer.name.split(/\s+/)[0] }));
@@ -125,9 +126,14 @@ async function handleText(message: TgMessage) {
 
   const customer = await customerByChat(chatId);
   if (!customer) {
-    // A typed phone number is not proof of who is writing: only the shared contact (or a key from the site) links.
+    // A typed number is only a claim: it is checked with an SMS code. The shared contact (or a key from the site) links at once.
     const locale = await chatLocale(chatId);
-    return /^\+?[\d\s()-]{9,}$/.test(text) ? send(chatId, t("ownContactOnly", locale), contactKeyboard(locale)) : welcome(chatId, locale);
+    if (command === "/cancel") {
+      await setChatState(chatId, null);
+      return welcome(chatId, locale);
+    }
+    if (await checkPhoneCode(chatId, locale, text)) return;
+    return looksLikePhone(text) ? startPhoneCheck(chatId, locale, text) : welcome(chatId, locale);
   }
   const locale = customer.locale;
 

@@ -54,6 +54,10 @@ const share = async (chat: number, phone: string, userId: number, from = chat) =
 };
 const buttonFor = (prefix: string) => lastButtons().find((data) => data.startsWith(prefix));
 
+async function unlinkTest(customerId: string) {
+  await prisma.customer.update({ where: { id: customerId }, data: { telegramChatId: null } });
+}
+
 async function main() {
   const suffix = String(Date.now()).slice(-6);
   const customer = await prisma.customer.findUniqueOrThrow({ where: { phone: "998900000003" } });
@@ -71,14 +75,31 @@ async function main() {
 
   console.log("linking is safe");
   await say(CHAT, "+998 90 000 00 03");
-  assert((await prisma.customer.findUniqueOrThrow({ where: { id: customer.id } })).telegramChatId === null, "a typed phone number does not link");
+  const code1 = (await prisma.outboundMessage.findFirst({ where: { code: "telegramCode", to: "998900000003" }, orderBy: { createdAt: "desc" } }))?.body.match(/\d{6}/)?.[0] ?? "";
+  assert(code1.length === 6 && /SMS|смс|sms/i.test(lastText()), "a typed number sends a code by SMS to the account's number");
+  assert((await prisma.customer.findUniqueOrThrow({ where: { id: customer.id } })).telegramChatId === null, "a typed number alone does not link");
+  await say(CHAT, code1 === "000000" ? "111111" : "000000");
+  assert(/noto'g'ri|неверный|not right/i.test(lastText()) && (await prisma.customer.findUniqueOrThrow({ where: { id: customer.id } })).telegramChatId === null, "a wrong code does not link");
+  await say(CHAT, "123456");
+  await say(CHAT, "654321");
+  assert(/tugadi|закончились|No attempts/i.test(lastText()), "three wrong codes end the attempt");
+  await say(CHAT, "+998 90 000 00 03");
+  const code2 = (await prisma.outboundMessage.findFirst({ where: { code: "telegramCode", to: "998900000003" }, orderBy: { createdAt: "desc" } }))?.body.match(/\d{6}/)?.[0] ?? "";
+  await say(CHAT, code2);
+  assert((await prisma.customer.findUniqueOrThrow({ where: { id: customer.id } })).telegramChatId === String(CHAT), "the right code links the chat (the Telegram number may differ from the account's)");
+  await unlinkTest(customer.id);
+  await prisma.telegramChat.update({ where: { chatId: String(CHAT) }, data: { state: null } });
+  for (let i = 0; i < 3; i++) await prisma.outboundMessage.create({ data: { channel: "sms", to: "998900000003", body: "x", status: "sent", code: "telegramCode" } });
+  await say(CHAT, "+998 90 000 00 03");
+  assert(/ko'p yuborildi|слишком много|Too many/i.test(lastText()), "codes to one number are rate limited");
+  await prisma.outboundMessage.deleteMany({ where: { code: "telegramCode", to: "998900000003" } });
   await share(CHAT, "998900000003", 99999, CHAT);
   assert((await prisma.customer.findUniqueOrThrow({ where: { id: customer.id } })).telegramChatId === null, "someone else's contact does not link");
   await share(CHAT, "998900000003", CHAT, CHAT);
   assert((await prisma.customer.findUniqueOrThrow({ where: { id: customer.id } })).telegramChatId === String(CHAT), "the sender's own contact links the account");
   assert(keyboardLabels().length === 8 || keyboardLabels().length === 7, "the menu appears after linking");
   await share(8001, "998900000099", 8001);
-  assert(/not found|не найден|topilmadi/i.test(lastText()), "an unknown number gets no account");
+  assert(/not match|не найден|topilmadi/i.test(lastText()) && /SMS/i.test(lastText()), "an unknown Telegram number is told to type the account number");
 
   console.log("menu");
   await say(CHAT, "/start");

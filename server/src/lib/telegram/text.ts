@@ -8,16 +8,31 @@ const TEXT = {
   // ---- first contact ------------------------------------------------------------------------------------------------
   chooseLanguage: { uz: "Tilni tanlang · Выберите язык · Choose your language", ru: "Tilni tanlang · Выберите язык · Choose your language", en: "Tilni tanlang · Выберите язык · Choose your language" },
   welcome: {
-    uz: "RIZO Service botiga xush kelibsiz! Hisobingizni ulash uchun pastdagi tugma orqali telefon raqamingizni yuboring.",
-    ru: "Добро пожаловать в бот RIZO Service! Чтобы подключить аккаунт, отправьте свой номер телефона кнопкой ниже.",
-    en: "Welcome to the RIZO Service bot! To connect your account, share your phone number with the button below.",
+    uz: "RIZO Service botiga xush kelibsiz! Hisobingizni ulash uchun pastdagi tugma orqali raqamingizni yuboring yoki telefon raqamingizni yozing (SMS bilan kod yuboramiz).",
+    ru: "Добро пожаловать в бот RIZO Service! Чтобы подключить аккаунт, отправьте номер кнопкой ниже или напишите свой номер телефона (мы пришлём код по SMS).",
+    en: "Welcome to the RIZO Service bot! To connect your account, share your number with the button below or type your phone number (we will send a code by SMS).",
   },
   shareContact: { uz: "📱 Raqamimni yuborish", ru: "📱 Отправить мой номер", en: "📱 Share my number" },
   ownContactOnly: {
-    uz: "Xavfsizlik uchun faqat o'zingizning raqamingizni pastdagi tugma orqali yuboring.",
-    ru: "В целях безопасности отправьте только свой номер с помощью кнопки ниже.",
-    en: "For your safety, share only your own number with the button below.",
+    uz: "Faqat o'zingizning raqamingizni yuboring: tugma orqali, yoki raqamni yozing va SMS kodni kiriting.",
+    ru: "Отправьте только свой номер: кнопкой или напишите номер и введите код из SMS.",
+    en: "Share only your own number: with the button, or type the number and enter the SMS code.",
   },
+  noAccountTryTyping: {
+    uz: "Telegram raqamingiz bilan hisob topilmadi. Hisobingizdagi (RIZO'da ro'yxatdan o'tgan) telefon raqamni yozing: unga SMS bilan kod yuboramiz.",
+    ru: "Аккаунт с номером вашего Telegram не найден. Напишите номер телефона, указанный в RIZO: мы отправим на него код по SMS.",
+    en: "No account matches your Telegram number. Type the phone number registered with RIZO and we will send a code to it by SMS.",
+  },
+  otpSms: { uz: "RIZO Service: Telegram uchun kod {{code}}. Uni hech kimga bermang.", ru: "RIZO Service: код для Telegram {{code}}. Никому его не сообщайте.", en: "RIZO Service: your Telegram code is {{code}}. Do not share it with anyone." },
+  otpSent: {
+    uz: "Raqamingizga (…{{tail}}) SMS orqali 6 xonali kod yubordik. Uni shu yerga yozing (5 daqiqa amal qiladi).",
+    ru: "Мы отправили 6-значный код по SMS на ваш номер (…{{tail}}). Введите его здесь (действует 5 минут).",
+    en: "We sent a 6-digit code by SMS to your number (…{{tail}}). Type it here (valid for 5 minutes).",
+  },
+  otpWrong: { uz: "Kod noto'g'ri. Yana {{left}} ta urinish qoldi.", ru: "Неверный код. Осталось попыток: {{left}}.", en: "That code is not right. {{left}} attempt(s) left." },
+  otpTooMany: { uz: "Urinishlar tugadi. Raqamni qaytadan yozing yoki tugmadan foydalaning.", ru: "Попытки закончились. Напишите номер заново или используйте кнопку.", en: "No attempts left. Type the number again or use the button." },
+  otpExpired: { uz: "Kod eskirgan. Raqamni qaytadan yozing.", ru: "Код устарел. Напишите номер заново.", en: "The code has expired. Type the number again." },
+  otpLimit: { uz: "Bu raqamga kod juda ko'p yuborildi. Bir soatdan keyin urinib ko'ring yoki tugmadan foydalaning.", ru: "На этот номер отправлено слишком много кодов. Попробуйте через час или используйте кнопку.", en: "Too many codes were sent to this number. Try again in an hour or use the button." },
   noAccount: {
     uz: "Bu raqam bilan hisob topilmadi. Avval RIZO Service saytida ro'yxatdan o'ting yoki xizmat markaziga murojaat qiling.",
     ru: "Аккаунт с этим номером не найден. Сначала зарегистрируйтесь на сайте RIZO Service или обратитесь в сервисный центр.",
