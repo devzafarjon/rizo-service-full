@@ -68,7 +68,7 @@ npm run dev:client
 npm run dev:server
 ```
 
-`server/.env` keys: `DATABASE_URL`, `JWT_SECRET`, optional `JWT_EXPIRES_IN` (default `7d`), `PORT` (default `4000`), `CLIENT_ORIGIN` (default `http://localhost:5173`).
+`server/.env` keys: `DATABASE_URL`, `JWT_SECRET`, optional `JWT_EXPIRES_IN` (default `30d`; a session older than 12 hours is renewed by `GET /api/{staff|customer}/auth/me`, so an active person stays signed in), `PORT` (default `4000`), `CLIENT_ORIGIN` (default `http://localhost:5173`).
 
 Optional notification and backup keys (see `server/.env.example`):
 

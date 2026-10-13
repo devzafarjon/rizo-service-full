@@ -3,6 +3,8 @@
  * Needs the API running (SMOKE_API) on a scratch database with the demo seed.
  *   npm run smoke:auth -w server
  */
+import jwt from "jsonwebtoken";
+import { env } from "../src/config.js";
 import { prisma } from "../src/lib/prisma.js";
 import { hashPassword } from "../src/lib/password.js";
 import { generateTotpSecret, totpCode } from "../src/lib/totp.js";
@@ -33,6 +35,23 @@ async function main() {
   assert(portal.status === 200, "the customer token works on the portal API");
   const crossed = await fetch(`${API}/api/staff/auth/me`, { headers: { Authorization: `Bearer ${customer.body.token}` } });
   assert(crossed.status === 401 || crossed.status === 403, "a customer token does not open the staff API");
+
+  console.log("the session renews itself while the person keeps using the app");
+  const meFresh = await (await fetch(`${API}/api/staff/auth/me`, { headers: { Authorization: `Bearer ${admin.body.token}` } })).json().catch(() => ({}));
+  assert(!("token" in meFresh), "a token that was just issued is not swapped");
+  const adminClaims = jwt.decode(admin.body.token) as Record<string, any>;
+  const aged = (claims: Record<string, any>, hours: number) => jwt.sign({ sub: claims.sub, scope: claims.scope, ...(claims.role ? { role: claims.role } : {}), name: claims.name, phone: claims.phone, iat: Math.floor(Date.now() / 1000) - hours * 3600 }, env.jwtSecret, { expiresIn: "30d" });
+  const old = aged(adminClaims, 13);
+  const oldMe = await (await fetch(`${API}/api/staff/auth/me`, { headers: { Authorization: `Bearer ${old}` } })).json().catch(() => ({}));
+  assert(typeof oldMe.token === "string" && oldMe.token !== old, "a staff token older than half a day comes back with a fresh one");
+  const renewed = jwt.decode(oldMe.token) as Record<string, any>;
+  assert(Math.floor(Date.now() / 1000) - renewed.iat < 60 && renewed.exp - renewed.iat === adminClaims.exp - adminClaims.iat, "the fresh token starts now and lasts as long as a sign-in token");
+  assert((await fetch(`${API}/api/staff/auth/me`, { headers: { Authorization: `Bearer ${oldMe.token}` } })).status === 200, "the fresh token works");
+  const customerClaims = jwt.decode(customer.body.token) as Record<string, any>;
+  const oldCustomerMe = await (await fetch(`${API}/api/customer/auth/me`, { headers: { Authorization: `Bearer ${aged(customerClaims, 13)}` } })).json().catch(() => ({}));
+  assert(typeof oldCustomerMe.token === "string", "the same for a customer");
+  const expired = jwt.sign({ sub: adminClaims.sub, scope: "staff", role: "admin", name: "x", phone: "1", iat: Math.floor(Date.now() / 1000) - 40 * 86400 }, env.jwtSecret, { expiresIn: "30d" });
+  assert((await fetch(`${API}/api/staff/auth/me`, { headers: { Authorization: `Bearer ${expired}` } })).status === 401, "a session unused for longer than its lifetime is over");
 
   console.log("wrong answers say the same thing");
   const wrongPassword = await unified("998900000001", "nope-nope");

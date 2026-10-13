@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import { z } from "zod";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { HttpError } from "../lib/httpError.js";
-import { signToken } from "../lib/jwt.js";
+import { renewedToken, signToken } from "../lib/jwt.js";
 import { parseBody } from "../lib/parse.js";
 import { assertPhone, normalizePhone } from "../lib/phone.js";
 import { hashPassword, verifyPassword } from "../lib/password.js";
@@ -136,7 +136,8 @@ customerAuthRouter.get(
     if (!user) {
       throw new HttpError(401, "Account no longer exists");
     }
-    res.json({ user: serializeCustomer(user) });
+    const token = renewedToken(req.customer!, { sub: user.id, scope: "customer", name: user.name, phone: user.phone });
+    res.json({ user: serializeCustomer(user), ...(token ? { token } : {}) });
   }),
 );
 

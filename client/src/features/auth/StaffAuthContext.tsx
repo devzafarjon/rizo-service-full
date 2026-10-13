@@ -26,7 +26,9 @@ export function StaffAuthProvider({ children }: { children: ReactNode }) {
     queryKey: ["staff", "me", token],
     enabled: Boolean(token),
     queryFn: async () => {
-      const data = await api<{ user: StaffUser }>("/api/staff/auth/me", { token });
+      const data = await api<{ user: StaffUser; token?: string }>("/api/staff/auth/me", { token });
+      // A session older than half a day comes back with a fresh token: keep it for the next visit (the page keeps using the current one).
+      if (data.token) localStorage.setItem(STAFF_TOKEN_KEY, data.token);
       return data.user;
     },
     retry: false,

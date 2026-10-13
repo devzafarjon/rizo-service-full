@@ -28,7 +28,8 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     queryKey: ["customer", "me", token],
     enabled: Boolean(token),
     queryFn: async () => {
-      const data = await api<{ user: CustomerUser }>("/api/customer/auth/me", { token });
+      const data = await api<{ user: CustomerUser; token?: string }>("/api/customer/auth/me", { token });
+      if (data.token) localStorage.setItem(CUSTOMER_TOKEN_KEY, data.token);
       return data.user;
     },
     retry: false,

@@ -21,7 +21,7 @@ const clientOrigins = (process.env.CLIENT_ORIGIN ?? "http://localhost:5173")
 export const env = {
   databaseUrl: required("DATABASE_URL"),
   jwtSecret: required("JWT_SECRET"),
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "7d",
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "30d",
   port: Number(process.env.PORT ?? 4000),
   // The website address first (it is used in SMS links); more origins may follow, comma separated (for example a test build of the apps).
   clientOrigin: clientOrigins[0],

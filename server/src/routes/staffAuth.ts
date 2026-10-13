@@ -2,7 +2,7 @@ import { Router } from "express";
 import type { StaffRoleName } from "../lib/roles.js";
 import { z } from "zod";
 import { HttpError } from "../lib/httpError.js";
-import { signToken } from "../lib/jwt.js";
+import { renewedToken, signToken } from "../lib/jwt.js";
 import { isAppLocale, parseLocale } from "../lib/locale.js";
 import { assertPhone, normalizePhone } from "../lib/phone.js";
 import { verifyPassword } from "../lib/password.js";
@@ -66,7 +66,8 @@ staffAuthRouter.get("/me", staffAuth, async (req, res, next) => {
     if (!user || !user.isActive) {
       throw new HttpError(401, "Account no longer exists");
     }
-    res.json({ user: serializeStaff(user) });
+    const token = renewedToken(req.staff!, { sub: user.id, scope: "staff", role: user.role, name: user.name, phone: user.phone });
+    res.json({ user: serializeStaff(user), ...(token ? { token } : {}) });
   } catch (error) {
     next(error);
   }
