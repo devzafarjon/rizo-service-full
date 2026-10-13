@@ -659,7 +659,12 @@
     "setPriority": "Set",
     "bulkCancelConfirm": "Cancel {{count}} requests?",
     "bulkDone": "Done for {{count}} requests",
-    "bulkPartial": "{{ok}} done, {{failed}} failed (technician type or status does not allow it)"
+    "bulkPartial": "{{ok}} done, {{failed}} failed (technician type or status does not allow it)",
+    "scope": {
+      "legal": "Past the legal limit",
+      "overdue": "Overdue",
+      "unassigned": "Unassigned"
+    }
   },
   "newRequest": {
     "title": "New service request",
@@ -1041,7 +1046,9 @@
       "fiscal": "Fiscal receipts",
       "fiscalBody": "Payments taken without a fiscal receipt number.",
       "feedback": "Customer feedback",
-      "feedbackBody": "Ratings, comments and tags customers left after finished jobs. Review the low ratings first."
+      "feedbackBody": "Ratings, comments and tags customers left after finished jobs. Review the low ratings first.",
+      "service": "Service quality",
+      "serviceBody": "First-time fix, callbacks, callback cost and waiting for parts."
     },
     "source": {
       "rizo_market": "RIZO market",
@@ -2644,5 +2651,53 @@
     "overrideBody": "The technician will be able to start this job right away. The reason is saved in the activity log.",
     "overrideReason": "Reason",
     "overrideDone": "The job was moved to the front"
+  },
+  "inbox": {
+    "title": "My work",
+    "subtitle_one": "{{count}} thing waits for you",
+    "subtitle_other": "{{count}} things wait for you",
+    "allClear": "Nothing needs you right now. All clear.",
+    "rows": {
+      "legal": {
+        "title": "Jobs past the legal limit",
+        "hint": "Repairs over the legal repair time: urgent"
+      },
+      "overdue": {
+        "title": "Overdue jobs",
+        "hint": "Open requests whose status timer ran out"
+      },
+      "unassigned": {
+        "title": "Unassigned requests",
+        "hint": "A technician has to be assigned"
+      },
+      "decision": {
+        "title": "Requests waiting for a decision",
+        "hint": "After diagnosis: repair, replace or reject"
+      },
+      "partsNoOrder": {
+        "title": "Waiting for a part, no order placed",
+        "hint": "Nothing was ordered from a supplier"
+      },
+      "partsLate": {
+        "title": "Late part orders",
+        "hint": "The promised date has passed"
+      },
+      "partsToOrder": {
+        "title": "Parts suggested for ordering",
+        "hint": "Stock is running short"
+      },
+      "transfers": {
+        "title": "Warehouse requests",
+        "hint": "Waiting to be shipped or received"
+      },
+      "catalogPending": {
+        "title": "Brands and models waiting for approval",
+        "hint": "Added by a technician or the front desk"
+      },
+      "lowRatings": {
+        "title": "Requests with a low rating",
+        "hint": "Last 14 days, 1–2 stars"
+      }
+    }
   }
 }

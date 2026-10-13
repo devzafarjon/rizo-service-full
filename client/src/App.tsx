@@ -13,6 +13,7 @@ import {
   PartsReportPage,
   ProductReportPage,
   ProfitReportPage,
+  ServiceQualityReportPage,
   ReportsIndexPage,
   SourcesReportPage,
   TechnicianReportPage,
@@ -107,6 +108,7 @@ export default function App() {
             <Route path="reports/parts" element={<PartsReportPage />} />
             <Route path="reports/expenses" element={<ExpensesReportPage />} />
             <Route path="reports/profit" element={<ProfitReportPage />} />
+            <Route path="reports/service" element={<ServiceQualityReportPage />} />
             <Route path="reports/technicians" element={<TechnicianReportPage />} />
             <Route path="reports/warranty" element={<WarrantyReportPage />} />
             <Route path="reports/sources" element={<SourcesReportPage />} />

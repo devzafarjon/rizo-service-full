@@ -23,6 +23,7 @@ import { formatDurationHours, formatMoney, formatNumber } from "../../lib/format
 import { localizedName } from "../../lib/localized";
 import { defaultReportQuery, downloadCsv, reportQueryString, type ReportQuery } from "../../lib/reportQuery";
 import type {
+  DashboardReport,
   ExpensesReport,
   PartsReport,
   ProductReport,
@@ -536,4 +537,50 @@ function withRunning<T extends { total: number }>(rows: T[]) {
 
 function Summary({ label, value, accent }: { label: string; value: string; accent?: StatAccent }) {
   return <StatCard label={label} value={value} accent={accent} />;
+}
+
+/** First-time fix, callbacks and waiting for parts: the service quality that used to sit on the first screen. */
+export function ServiceQualityReportPage() {
+  const { t } = useTranslation();
+  const { token } = useStaffAuth();
+  const [query, setQuery] = useRange(true);
+  const report = useQuery({
+    queryKey: ["staff", "reports", "service", query],
+    enabled: Boolean(token),
+    queryFn: () => api<DashboardReport>(`/api/staff/reports/dashboard?${reportQueryString(query)}`, { token }),
+  });
+
+  if (report.isLoading) return <PageSkeleton />;
+  const data = report.data;
+  if (!data) return <EmptyState title={t("reports.loadFailed")} body={t("reports.loadFailedBody")} />;
+  const s = data.service;
+  const pct = (value: number | null) => (value == null ? t("common.dash") : `${value}%`);
+
+  return (
+    <ReportChrome
+      title={t("reports.nav.service")}
+      intro={t("reports.nav.serviceBody")}
+      query={query}
+      onChange={setQuery}
+      onExport={() =>
+        downloadCsv("rizo-report-service-quality.csv", [
+          [t("dashboard.ftf"), t("dashboard.callbacks"), t("dashboard.callbackCost"), t("dashboard.partsWait")],
+          [s.firstTimeFixRate ?? "", s.callbackRate ?? "", s.callbackCost, s.avgPartsWaitHours ?? ""],
+        ])
+      }
+    >
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Summary label={t("dashboard.ftf")} value={pct(s.firstTimeFixRate)} accent={s.firstTimeFixRate != null && s.firstTimeFixRate < 70 ? "red" : "green"} />
+        <Summary label={t("dashboard.callbacks")} value={pct(s.callbackRate)} accent="orange" />
+        <Summary label={t("dashboard.callbackCost")} value={formatMoney(s.callbackCost)} accent="red" />
+        <Summary label={t("dashboard.partsWait")} value={formatDurationHours(s.avgPartsWaitHours)} accent="orange" />
+      </div>
+      <p className="mt-3 max-w-3xl text-sm text-neutral-500">{t("dashboard.ftfHint")}</p>
+      <div className="mt-4 grid gap-4 sm:grid-cols-3">
+        <Summary label={t("reports.requests")} value={String(data.totals.requests)} />
+        <Summary label={t("reports.avgHours")} value={formatDurationHours(data.totals.avgResolutionHours)} accent="orange" />
+        <Summary label={t("reports.avgRating")} value={data.totals.avgRating == null ? t("common.dash") : data.totals.avgRating.toFixed(1)} accent="purple" />
+      </div>
+    </ReportChrome>
+  );
 }

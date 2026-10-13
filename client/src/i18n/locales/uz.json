@@ -659,7 +659,12 @@
     "setPriority": "O‘rnatish",
     "bulkCancelConfirm": "{{count}} ta so‘rov bekor qilinsinmi?",
     "bulkDone": "Bajarildi: {{count}} ta so‘rov",
-    "bulkPartial": "{{ok}} ta bajarildi, {{failed}} tasi bajarilmadi (tur mos emas yoki holat ruxsat bermaydi)"
+    "bulkPartial": "{{ok}} ta bajarildi, {{failed}} tasi bajarilmadi (tur mos emas yoki holat ruxsat bermaydi)",
+    "scope": {
+      "legal": "Qonuniy muddati o'tgan",
+      "overdue": "Muddati o'tgan",
+      "unassigned": "Tayinlanmagan"
+    }
   },
   "newRequest": {
     "title": "Yangi xizmat so‘rovi",
@@ -1041,7 +1046,9 @@
       "fiscal": "Fiskal chek",
       "fiscalBody": "Fiskal chek raqamisiz qabul qilingan to‘lovlar.",
       "feedback": "Mijoz fikrlari",
-      "feedbackBody": "Mijozlar tugagan ishlarga qoldirgan baho, izoh va belgilar. Past baholarni alohida ko‘rib chiqing."
+      "feedbackBody": "Mijozlar tugagan ishlarga qoldirgan baho, izoh va belgilar. Past baholarni alohida ko‘rib chiqing.",
+      "service": "Xizmat sifati",
+      "serviceBody": "Birinchi marta tuzatish, qayta murojaat, qayta ta'mir narxi va qismni kutish vaqti."
     },
     "source": {
       "rizo_market": "RIZO market",
@@ -2644,5 +2651,55 @@
     "overrideBody": "Texnik bu ishni darrov boshlay oladi. Sabab faoliyat jurnaliga yoziladi.",
     "overrideReason": "Sabab",
     "overrideDone": "Ish oldinga chiqarildi"
+  },
+  "inbox": {
+    "title": "Mening ishlarim",
+    "subtitle_one": "Sizdan {{count}} ta narsa kutilmoqda",
+    "subtitle_few": "Sizdan {{count}} ta narsa kutilmoqda",
+    "subtitle_many": "Sizdan {{count}} ta narsa kutilmoqda",
+    "subtitle_other": "Sizdan {{count}} ta narsa kutilmoqda",
+    "allClear": "Hozir sizdan hech narsa kutilmayapti. Hammasi joyida.",
+    "rows": {
+      "legal": {
+        "title": "Qonuniy muddati o'tgan ishlar",
+        "hint": "Muddatdan oshgan ta'mirlar, shoshilinch"
+      },
+      "overdue": {
+        "title": "Muddati o'tgan ishlar",
+        "hint": "Holat taymeri tugagan ochiq so'rovlar"
+      },
+      "unassigned": {
+        "title": "Tayinlanmagan so'rovlar",
+        "hint": "Texnik biriktirish kerak"
+      },
+      "decision": {
+        "title": "Qaror kutayotgan so'rovlar",
+        "hint": "Diagnostikadan keyin: ta'mir, almashtirish yoki rad etish"
+      },
+      "partsNoOrder": {
+        "title": "Qism kutilmoqda, buyurtma yo'q",
+        "hint": "Ta'minotchiga buyurtma berilmagan"
+      },
+      "partsLate": {
+        "title": "Kechikkan qism buyurtmalari",
+        "hint": "Va'da qilingan sana o'tib ketgan"
+      },
+      "partsToOrder": {
+        "title": "Buyurtma qilish tavsiya etilgan qismlar",
+        "hint": "Zaxira yetishmayapti"
+      },
+      "transfers": {
+        "title": "Omborlararo so'rovlar",
+        "hint": "Jo'natish yoki qabul qilish kutilmoqda"
+      },
+      "catalogPending": {
+        "title": "Tasdiq kutayotgan brend va modellar",
+        "hint": "Texnik yoki qabul operatori qo'shgan"
+      },
+      "lowRatings": {
+        "title": "Past baho olgan so'rovlar",
+        "hint": "Oxirgi 14 kun, 1–2 yulduz"
+      }
+    }
   }
 }

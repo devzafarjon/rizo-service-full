@@ -28,6 +28,7 @@ import { defaultReportQuery, reportQueryString } from "../../lib/reportQuery";
 import { statusLabel } from "../../lib/status";
 import type { DashboardReport } from "../../lib/types";
 import { CHART, ChartPanel, CountTooltip, MoneyTooltip, STATUS_COLORS, useChartLabels } from "./charts";
+import { AdminInbox } from "../inbox/AdminInbox";
 import { DateRangeBar } from "./DateRangeBar";
 
 export function DashboardPage() {
@@ -68,6 +69,8 @@ export function DashboardPage() {
       <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{user?.name}</h1>
       <p className="mt-2 max-w-2xl text-sm text-gray-500">{full ? t("dashboard.intro") : t("dashboard.introShort")}</p>
 
+      {user?.role === "admin" ? <AdminInbox /> : null}
+
       <div className="mt-5">
         <DateRangeBar query={query} onChange={setQuery} grain />
       </div>
@@ -78,27 +81,6 @@ export function DashboardPage() {
         <Kpi reserveFooter label={t("reports.profit")} value={formatMoney(data.totals.profit)} delta={delta(data.totals.profit, data.previous?.profit)} />
         <Kpi reserveFooter label={t("reports.avgHours")} value={formatDurationHours(data.totals.avgResolutionHours)} accent="orange" />
       </div>
-
-      <h2 className="mt-6 mb-2 text-xs font-bold tracking-wide text-neutral-500 uppercase">{t("dashboard.serviceQuality")}</h2>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label={t("dashboard.ftf")} value={data.service.firstTimeFixRate == null ? t("common.dash") : `${data.service.firstTimeFixRate}%`} accent={data.service.firstTimeFixRate != null && data.service.firstTimeFixRate < 70 ? "red" : "green"} />
-        <Kpi label={t("dashboard.callbacks")} value={data.service.callbackRate == null ? t("common.dash") : `${data.service.callbackRate}%`} accent="orange" />
-        <Kpi label={t("dashboard.callbackCost")} value={formatMoney(data.service.callbackCost)} accent="red" />
-        <Kpi label={t("dashboard.partsWait")} value={formatDurationHours(data.service.avgPartsWaitHours)} accent="orange" />
-      </div>
-      <p className="mt-2 text-xs text-neutral-500">{t("dashboard.ftfHint")}</p>
-
-      {data.parts ? (
-        <>
-          <h2 className="mt-6 mb-2 text-xs font-bold tracking-wide text-neutral-500 uppercase">{t("dashboard.partsTitle")}</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Kpi to="/app/part-orders" label={t("parts.stat.waiting")} value={String(data.parts.waitingRequests)} accent="orange" />
-            <Kpi to="/app/part-orders" label={t("parts.stat.noOrder")} value={String(data.parts.noOrder)} accent={data.parts.noOrder > 0 ? "red" : "green"} />
-            <Kpi to="/app/part-orders?tab=orders" label={t("parts.stat.late")} value={String(data.parts.lateOrders)} accent={data.parts.lateOrders > 0 ? "red" : "green"} />
-            <Kpi to="/app/part-orders?tab=recommend" label={t("parts.stat.toOrder")} value={String(data.parts.toOrder)} accent={data.parts.toOrder > 0 ? "orange" : "green"} />
-          </div>
-        </>
-      ) : null}
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <ChartPanel title={t("dashboard.trend")}>

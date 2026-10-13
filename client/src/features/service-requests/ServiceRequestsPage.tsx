@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { LocationBadge, PriorityBadge, StatusBadge, TypeBadge, WarrantyBadge } from "../../components/Badges";
 import { EmptyState } from "../../components/EmptyState";
 import { inputClass } from "../../components/Field";
@@ -34,14 +34,21 @@ export function ServiceRequestsPage() {
   const canBulk = user?.role === "admin" || user?.role === "receptionist";
   const [q, setQ] = useState("");
   const [type, setType] = useState<"" | ServiceType>("");
-  const [status, setStatus] = useState<"" | RequestStatus>("");
+  // The "My work" rows open this list with a ready filter (?status=…, ?overdue=1, ?legal=1, ?technicianId=unassigned).
+  const [urlParams, setUrlParams] = useSearchParams();
+  const urlStatus = urlParams.get("status");
+  const [status, setStatus] = useState<"" | RequestStatus>(() => (urlStatus && (ALL_STATUSES as string[]).includes(urlStatus) ? (urlStatus as RequestStatus) : ""));
+  const scope = urlParams.get("legal") === "1" ? "legal" : urlParams.get("overdue") === "1" ? "overdue" : urlParams.get("technicianId") === "unassigned" ? "unassigned" : "";
   const debounced = useDebouncedValue(q, 250);
 
   const filters = new URLSearchParams();
   if (debounced.trim()) filters.set("q", debounced.trim());
   if (type) filters.set("type", type);
   if (status) filters.set("status", status);
-  const list = usePagedList<ServiceRequest>({ queryKey: ["staff", "requests", debounced, type, status], path: "/api/staff/requests", params: filters, itemsKey: "requests", token });
+  if (scope === "legal") filters.set("legal", "1");
+  if (scope === "overdue") filters.set("overdue", "1");
+  if (scope === "unassigned") filters.set("technicianId", "unassigned");
+  const list = usePagedList<ServiceRequest>({ queryKey: ["staff", "requests", debounced, type, status, scope], path: "/api/staff/requests", params: filters, itemsKey: "requests", token });
 
   const technicians = useQuery({
     queryKey: ["staff", "technicians"],
@@ -84,6 +91,15 @@ export function ServiceRequestsPage() {
           {t("requests.new")}
         </Link>
       </div>
+      {scope ? (
+        <div className="-mt-3 mb-4">
+          <button type="button" onClick={() => setUrlParams({}, { replace: true })} className="inline-flex items-center gap-2 rounded-full bg-[#F5EBFD] px-3 py-1.5 text-sm font-bold text-[#7B00E0]">
+            {t(`requests.scope.${scope}`)}
+            <span aria-hidden="true">×</span>
+            <span className="sr-only">{t("common.close")}</span>
+          </button>
+        </div>
+      ) : null}
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row">
         <div className="relative min-w-0 flex-1">

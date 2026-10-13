@@ -305,6 +305,9 @@ The service system is not limited to RIZO products: a master (or a technician) c
 - **Queue rule**: RIZO products and jobs under warranty come first. A job for another maker goes only to a technician who lists it and waits (the technician cannot start it) while they have RIZO / warranty jobs in New, Diagnostics or In progress; paused and parts-waiting jobs do not block. An admin can move one to the front with a reason (kept in the activity log).
 - API: `/api/staff/directory/*` (brands, models, categories, pending, skills), `POST /api/staff/requests/:id/queue-override`. Tests: `npm run smoke:brands -w server`.
 
+## "My work" (admin's first screen)
+The first screen starts with a live list of what waits for the admin (overdue and past-the-legal-limit jobs, unassigned requests, requests waiting for a decision, parts without an order or with a late one, warehouse requests, brands and models to approve, low ratings). A row opens the right page, already filtered, and disappears when the matter is dealt with. Service quality moved to Reports → **Service quality**; the spare-part numbers are on the **Spare-part control** page.
+
 ## Request ID (`display_id`)
 
 Shown as `#DDMMYYRRNNNN`.

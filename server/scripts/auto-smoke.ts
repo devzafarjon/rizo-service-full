@@ -44,6 +44,16 @@ async function main() {
   assert((await post("/api/staff/auto-jobs/nothing/run", admin)).status === 404, "an unknown job is 404");
   assert((await api("/api/staff/auto-jobs/at-risk", { token: desk })).status === 200, "the front desk sees the at-risk list");
 
+  console.log("my work (the admin's inbox)");
+  const inbox = await api("/api/staff/inbox", { token: admin });
+  assert(inbox.status === 200 && Array.isArray(inbox.body.items) && typeof inbox.body.total === "number", "the admin gets the inbox");
+  assert((inbox.body.items as any[]).every((row) => row.count > 0 && ["red", "orange", "blue"].includes(row.tone) && String(row.to).startsWith("/app/")), "every row has a count, a tone and a page to open");
+  const dbUnassigned = await prisma.serviceRequest.count({ where: { assignedTechnicianId: null, status: { in: ["new", "diagnosing", "awaiting_decision", "awaiting_parts", "in_progress", "paused"] } } });
+  const rowUnassigned = (inbox.body.items as any[]).find((row) => row.key === "unassigned");
+  assert((rowUnassigned?.count ?? 0) === dbUnassigned, "the unassigned row matches the data");
+  assert(inbox.body.total === (inbox.body.items as any[]).reduce((sum, row) => sum + row.count, 0), "the total is the sum of the rows");
+  assert((await api("/api/staff/inbox", { token: desk })).status === 403 && (await api("/api/staff/inbox", { token: tech })).status === 403 && (await api("/api/staff/inbox", { token: acct })).status === 403, "only the admin has it");
+
   console.log("settings");
   assert((await patch("/api/staff/auto-jobs/settings", admin, { deadlineWarningPercent: 1 })).status === 400, "a too small warning share is rejected");
   assert((await patch("/api/staff/auto-jobs/settings", desk, { dailyReportHour: 8 })).status === 403, "only the admin changes the settings");

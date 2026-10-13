@@ -21,6 +21,7 @@ export function useStaffRealtime() {
       void queryClient.invalidateQueries({ queryKey: ["staff", "technicians"] });
       void queryClient.invalidateQueries({ queryKey: ["staff", "my-jobs"] });
       void queryClient.invalidateQueries({ queryKey: ["staff", "reports"] });
+      void queryClient.invalidateQueries({ queryKey: ["staff", "alerts", "inbox"] });
     };
 
     socket.on("request:created", refreshBoard);

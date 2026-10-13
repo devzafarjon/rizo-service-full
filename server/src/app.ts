@@ -33,6 +33,7 @@ import { serviceCentersRouter } from "./routes/serviceCenters.js";
 import { serialsRouter } from "./routes/serials.js";
 import { payrollRouter } from "./routes/payroll.js";
 import { staffAdminRouter } from "./routes/staffAdmin.js";
+import { inboxRouter } from "./routes/inbox.js";
 import { directoryRouter } from "./routes/directory.js";
 import { checklistsRouter } from "./routes/checklists.js";
 import { techStockRouter } from "./routes/techStock.js";
@@ -69,6 +70,7 @@ export function createApp() {
   app.use("/api/staff/customers", customersRouter);
   app.use("/api/staff/products", productsRouter);
   app.use("/api/staff/directory", directoryRouter);
+  app.use("/api/staff/inbox", inboxRouter);
   app.use("/api/staff/catalog", catalogRouter);
   app.use("/api/staff/sales", salesRouter);
   app.use("/api/staff/search", searchRouter);
