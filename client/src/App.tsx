@@ -59,6 +59,8 @@ import { DebtsReportPage, DefectsReportPage, FiscalReportPage, LegalReportPage, 
 import { ChecklistsPage } from "./features/catalog/ChecklistsPage";
 import { HelpAdminPage } from "./features/catalog/HelpAdminPage";
 import { SecurityPage } from "./features/auth/SecurityPage";
+import { DirectoryPage } from "./features/directory/DirectoryPage";
+import { MySkillsPage } from "./features/directory/MySkillsPage";
 import { MyStockPage } from "./features/management/MyStockPage";
 import { TechStockPage } from "./features/management/TechStockPage";
 import { CentersPublicPage } from "./features/public/CentersPublicPage";
@@ -122,6 +124,9 @@ export default function App() {
             <Route path="tech-stock" element={<TechStockPage />} />
             <Route path="alerts" element={<AlertsPage />} />
           </Route>
+          <Route element={<RoleRoute roles={["admin", "receptionist"]} />}>
+            <Route path="directory" element={<DirectoryPage />} />
+          </Route>
           <Route element={<RoleRoute roles={["admin", "receptionist", "warehouse"]} />}>
             <Route path="part-orders" element={<PartOrdersPage />} />
           </Route>
@@ -161,6 +166,7 @@ export default function App() {
             <Route path="my-schedule" element={<MySchedulePage />} />
             <Route path="my-earnings" element={<MyEarningsPage />} />
             <Route path="my-stock" element={<MyStockPage />} />
+            <Route path="my-skills" element={<MySkillsPage />} />
           </Route>
         </Route>
       </Route>

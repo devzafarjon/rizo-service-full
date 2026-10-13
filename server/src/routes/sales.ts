@@ -296,7 +296,7 @@ async function loadSale(id: string) {
 async function assertCustomerAndProduct(customerId: string, productId: string) {
   const [customer, product] = await Promise.all([
     prisma.customer.findUnique({ where: { id: customerId } }),
-    prisma.product.findUnique({ where: { id: productId } }),
+    prisma.product.findFirst({ where: { id: productId, brand: { isOwn: true } } }),
   ]);
   if (!customer) {
     throw new HttpError(400, "Customer not found");

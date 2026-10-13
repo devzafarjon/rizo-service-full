@@ -15,7 +15,7 @@ import { CalendarDays, CheckCheck, ClipboardList, GripVertical, MapPin, Navigati
 import { useMemo, useState, type HTMLAttributes, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
-import { StatusBadge, TypeBadge } from "../../components/Badges";
+import { StatusBadge, TierBadge, TypeBadge } from "../../components/Badges";
 import { Modal } from "../../components/Modal";
 import { OverflowLink, OverflowMenu } from "../../components/OverflowMenu";
 import { PauseDialog } from "../../components/PauseDialog";
@@ -424,6 +424,7 @@ function JobCard({
           <div className="mt-2 flex flex-wrap gap-1.5">
             <TypeBadge type={job.type} />
             <StatusBadge status={job.status} />
+            <TierBadge tier={job.tier} brand={job.brand} />
             {job.isRepeat ? <span className="inline-flex rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700">{t("detail.repeat")}</span> : null}
           </div>
           {job.scheduledAt ? <p className="mt-2 text-xs font-bold text-[#C56A00]">{t("tech.scheduledFor", { time: formatStamp(job.scheduledAt) })}</p> : null}
@@ -434,6 +435,10 @@ function JobCard({
         <div className="mt-3">
           <JobTimerChip timer={job.timer} now={now} />
         </div>
+      ) : null}
+
+      {job.waitingForFirstTier ? (
+        <p className="mt-2 rounded-lg bg-sky-50 px-2.5 py-2 text-xs font-bold text-sky-800">{t("directory.waitingTech")}</p>
       ) : null}
 
       {job.activePause ? (
@@ -452,7 +457,7 @@ function JobCard({
         </a>
       ) : null}
 
-      {!overlay && onEnRoute && job.locationType === "on_site" && job.column !== "completed" && !job.arrivedAt ? (
+      {!overlay && onEnRoute && !job.waitingForFirstTier && job.locationType === "on_site" && job.column !== "completed" && !job.arrivedAt ? (
         job.enRouteAt ? (
           <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-[#C56A00]">
             <Truck size={14} />
@@ -466,7 +471,7 @@ function JobCard({
         )
       ) : null}
 
-      {!overlay && onArrived && job.locationType === "on_site" && job.column !== "completed" ? (
+      {!overlay && onArrived && !job.waitingForFirstTier && job.locationType === "on_site" && job.column !== "completed" ? (
         job.arrivedAt ? (
           <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700">
             <CheckCheck size={14} />

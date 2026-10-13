@@ -2,10 +2,11 @@ import { Prisma } from "@prisma/client";
 import { computeWarrantyStatus, money, toDateOnly } from "./warranty.js";
 import { jobTimer } from "./techBoard.js";
 import { isDoneStatus, isTerminalStatus } from "./status.js";
+import { isFirstTier } from "./queue.js";
 
 export const requestInclude = Prisma.validator<Prisma.ServiceRequestInclude>()({
   customer: { select: { id: true, name: true, phone: true, address: true, regionCode: true } },
-  product: true,
+  product: { include: { brand: { select: { id: true, name: true, isOwn: true, approved: true } } } },
   assignedTechnician: { select: { id: true, name: true, technicianType: true, isAvailable: true } },
   sale: { include: { product: true } },
   pauses: { where: { resumedAt: null }, take: 1 },
@@ -78,6 +79,10 @@ export function serializeRequest(request: RequestRecord) {
     legalDueAt: request.legalDueAt?.toISOString() ?? null,
     isLegallyOverdue: Boolean(request.legalDueAt) && request.legalDueAt!.getTime() < Date.now() && !isDoneStatus(request.status) && !isTerminalStatus(request.status),
     isRepeat: request.isRepeat,
+    // 1 = RIZO product or under warranty; 2 = another maker, paid, done after the technician's first-tier jobs.
+    tier: isFirstTier({ warrantyStatus, product: request.product }) ? 1 : 2,
+    brand: request.product.brand ? { id: request.product.brand.id, name: request.product.brand.name, isOwn: request.product.brand.isOwn } : null,
+    queueOverride: request.queueOverrideAt ? { reason: request.queueOverrideReason, at: request.queueOverrideAt.toISOString(), by: request.queueOverrideBy } : null,
     repeatOfId: request.repeatOfId,
     repairWarrantyUntil: request.repairWarrantyUntil ? toDateOnly(request.repairWarrantyUntil) : null,
     fiscalReceiptNumber: request.fiscalReceiptNumber,

@@ -56,7 +56,7 @@ export async function applyDecision(input: {
     case "replace": {
       await prisma.serviceRequest.update({ where: { id: request.id }, data: { ...common, resolutionType: "replace" } });
       if (input.replacement) {
-        const product = await prisma.product.findUnique({ where: { id: input.replacement.productId } });
+        const product = await prisma.product.findFirst({ where: { id: input.replacement.productId, brand: { isOwn: true } } });
         if (!product) throw new HttpError(400, "Replacement product not found");
         await prisma.replacementItem.upsert({
           where: { serviceRequestId: request.id },

@@ -176,7 +176,9 @@
     "checklists": "Checklists",
     "myStock": "My stock",
     "warehouses": "Warehouses",
-    "automation": "Automatic tasks"
+    "automation": "Automatic tasks",
+    "directory": "Brands and models",
+    "mySkills": "I repair"
   },
   "staffHome": {
     "welcome": "Welcome back",
@@ -451,7 +453,10 @@
     "deadlineSummary": "{{count}} job(s) are close to their deadline ({{ids}}). Without a technician: {{unassigned}}.",
     "dailyReport": "Daily report {{date}}: {{created}} new, {{finished}} finished, {{open}} open, {{overdue}} overdue, {{partsWaiting}} waiting for parts.",
     "payrollStatement": "Your pay statement is ready ({{from}} – {{to}}): {{jobs}} jobs, total {{total}} so‘m.",
-    "payrollSummary": "Payroll {{from}} – {{to}}: {{technicians}} technicians, total {{total}} so‘m."
+    "payrollSummary": "Payroll {{from}} – {{to}}: {{technicians}} technicians, total {{total}} so‘m.",
+    "catalogPendingBrand": "{{by}} added the brand \"{{name}}\". Approve it so it can be used.",
+    "catalogPendingModel": "{{by}} added the model \"{{name}}\". Approve it so it can be used.",
+    "queueOverride": "{{displayId}} ({{product}}) was moved to the front by an admin: {{reason}}"
   },
   "notifications": {
     "title": "Notifications",
@@ -723,7 +728,13 @@
     "openExisting": "Open existing request",
     "createAnyway": "Create anyway",
     "repeatFound": "Repeat failure detected ({{id}})",
-    "repeatFree": "Repeat failure ({{id}}) — the repair is free"
+    "repeatFree": "Repeat failure ({{id}}) — the repair is free",
+    "device": {
+      "rizo": "RIZO product",
+      "rizoHint": "Sold by RIZO or under its warranty",
+      "other": "Another maker",
+      "otherHint": "Paid repair, no RIZO warranty"
+    }
   },
   "detail": {
     "job": "Job",
@@ -1422,7 +1433,16 @@
       "warehouse.update": "Warehouse changed",
       "warehouse.delete": "Warehouse deleted",
       "warehouse.stock": "Warehouse stock changed",
-      "autojob.run": "Automatic task run by hand"
+      "autojob.run": "Automatic task run by hand",
+      "directory.brand.add": "Brand added",
+      "directory.model.add": "Model added",
+      "directory.brand.rename": "Brand renamed",
+      "directory.model.update": "Model changed",
+      "directory.approve": "Brand or model approved",
+      "directory.delete": "Brand or model deleted",
+      "directory.merge": "Brands or models merged",
+      "directory.skills": "\"I repair\" list changed",
+      "request.queueOverride": "Job moved to the front"
     }
   },
   "errors": {
@@ -1562,7 +1582,20 @@
     "notYourWarehouse": "This warehouse is not assigned to you.",
     "warehouseInUse": "This warehouse has stock, requests or staff: switch it off instead.",
     "centralWarehouse": "The central warehouse cannot be deleted or switched off.",
-    "telegramNotConfigured": "The Telegram bot is not set up yet."
+    "telegramNotConfigured": "The Telegram bot is not set up yet.",
+    "similarBrand": "A similar brand already exists",
+    "similarModel": "A similar model already exists",
+    "modelNotApproved": "This model is waiting for an admin to approve it",
+    "waitingForWarranty": "Finish the RIZO and warranty jobs first ({{count}} left)",
+    "brandInUse": "This brand has requests; merge it into another brand instead",
+    "modelInUse": "This model has requests; merge it into another model instead",
+    "ownBrand": "The company's own brand cannot be changed this way",
+    "ownBrandModel": "RIZO products are managed in the catalogue",
+    "unknownCategory": "Choose an existing category",
+    "brandNameRequired": "Enter the brand name",
+    "modelNameRequired": "Enter the model",
+    "mergeSame": "Choose a different entry",
+    "alreadyFirstTier": "This job is already first in line"
   },
   "customerStatus": {
     "new": "Received",
@@ -2548,5 +2581,69 @@
       "empty": "No statement yet.",
       "jobs": "{{count}} job(s)"
     }
+  },
+  "directory": {
+    "title": "Brands and models",
+    "intro": "Makes and models of devices by other makers. RIZO products are managed in the catalogue. Devices of other makers are repaired for a fee and have no RIZO warranty.",
+    "addDevice": "Add a device",
+    "addHint": "An admin has to approve what you add before it can be used for requests.",
+    "addHintAdmin": "As an admin your entry is approved at once.",
+    "brand": "Brand",
+    "brandPlaceholder": "For example Samsung",
+    "category": "Category",
+    "chooseCategory": "Choose a category",
+    "model": "Model",
+    "modelPlaceholder": "For example WW70T4020",
+    "chooseBrand": "Choose a brand",
+    "chooseModel": "Choose a model",
+    "similarBrand": "A similar brand already exists:",
+    "similarModel": "A similar model already exists:",
+    "similarHint": "Use the existing one if it is the same. Otherwise add yours anyway.",
+    "addAnyway": "Add anyway",
+    "add": "Add",
+    "pending": "Waiting for approval",
+    "approve": "Approve",
+    "reject": "Reject",
+    "rename": "Rename",
+    "merge": "Merge",
+    "delete": "Delete",
+    "save": "Save",
+    "deleteTitle": "Delete?",
+    "deleteBody": "\"{{name}}\" will be removed. This only works when it has no requests.",
+    "mergeTitle": "Merge \"{{name}}\"",
+    "mergeBody": "Everything that belongs to it moves to the one you choose, and this entry is removed.",
+    "mergeInto": "Merge into",
+    "waitingTitle_one": "{{count}} entry waits for your approval",
+    "waitingTitle_other": "{{count}} entries wait for your approval",
+    "withModels_one": "with {{count}} model",
+    "withModels_other": "with {{count}} models",
+    "empty": "No brands yet",
+    "own": "Our own brand",
+    "modelCount_one": "{{count}} model",
+    "modelCount_other": "{{count}} models",
+    "requestsCount_one": "{{count}} request",
+    "requestsCount_other": "{{count}} requests",
+    "noModels": "No models yet.",
+    "ownNote": "RIZO products are edited in the catalogue.",
+    "skillsIntro": "RIZO products and jobs under warranty are repaired by every technician. List here the other makers you can repair; their jobs come after the RIZO and warranty ones.",
+    "skillsEmpty": "Nothing listed yet: you will only get RIZO and warranty jobs.",
+    "allModels": "all models",
+    "allModelsOfBrand": "All models of the brand",
+    "addToList": "Add to my list",
+    "notInList": "Not in the list? Add a new brand or model",
+    "mySkillsTitle": "I repair",
+    "mySkillsIntro": "Brands and models of other makers that you can repair.",
+    "otherMakerNote": "A device of another maker is repaired for a fee, has no RIZO warranty and waits until the technician's RIZO and warranty jobs are done.",
+    "pickModel": "Choose the brand and model of the device.",
+    "tierBadge": "Other maker · paid",
+    "tierBadgeBrand": "{{brand}} · paid",
+    "tierNote": "Another maker's device: paid repair, done after the technician's RIZO and warranty jobs.",
+    "waitingNote": "Waiting: the technician has {{count}} RIZO or warranty job(s) in New, Diagnostics or In progress.",
+    "waitingTech": "Waiting: finish your RIZO and warranty jobs first.",
+    "overridden": "{{by}} moved this job to the front: {{reason}}",
+    "moveToFront": "Move to the front",
+    "overrideBody": "The technician will be able to start this job right away. The reason is saved in the activity log.",
+    "overrideReason": "Reason",
+    "overrideDone": "The job was moved to the front"
   }
 }

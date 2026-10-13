@@ -45,7 +45,10 @@ export const PUSH_TEXTS = {
       "deadlineSummary": "{{count}} ta so‘rovning muddati yaqin ({{ids}}). Texniksiz: {{unassigned}}.",
       "dailyReport": "Kunlik hisobot {{date}}: {{created}} yangi, {{finished}} tugagan, {{open}} ochiq, {{overdue}} kechikkan, {{partsWaiting}} qism kutmoqda.",
       "payrollStatement": "Ish haqi hisobingiz tayyor ({{from}} – {{to}}): {{jobs}} ta ish, jami {{total}} so‘m.",
-      "payrollSummary": "Ish haqi {{from}} – {{to}}: {{technicians}} texnik, jami {{total}} so‘m."
+      "payrollSummary": "Ish haqi {{from}} – {{to}}: {{technicians}} texnik, jami {{total}} so‘m.",
+      "catalogPendingBrand": "{{by}} \"{{name}}\" brendini qo'shdi. Ishlatish uchun tasdiqlang.",
+      "catalogPendingModel": "{{by}} \"{{name}}\" modelini qo'shdi. Ishlatish uchun tasdiqlang.",
+      "queueOverride": "{{displayId}} ({{product}}) ni admin oldinga chiqardi: {{reason}}"
     },
     "type": {
       "installation": "O‘rnatish",
@@ -130,7 +133,10 @@ export const PUSH_TEXTS = {
       "deadlineSummary": "У {{count}} заявок скоро срок ({{ids}}). Без техника: {{unassigned}}.",
       "dailyReport": "Дневной отчёт {{date}}: {{created}} новых, {{finished}} завершено, {{open}} открыто, {{overdue}} просрочено, {{partsWaiting}} ждут запчасть.",
       "payrollStatement": "Расчёт вашей зарплаты готов ({{from}} – {{to}}): {{jobs}} работ, итого {{total}} сум.",
-      "payrollSummary": "Зарплата {{from}} – {{to}}: {{technicians}} техников, итого {{total}} сум."
+      "payrollSummary": "Зарплата {{from}} – {{to}}: {{technicians}} техников, итого {{total}} сум.",
+      "catalogPendingBrand": "{{by}} добавил(а) бренд «{{name}}». Подтвердите, чтобы его можно было использовать.",
+      "catalogPendingModel": "{{by}} добавил(а) модель «{{name}}». Подтвердите, чтобы её можно было использовать.",
+      "queueOverride": "{{displayId}} ({{product}}) поставлена вперёд администратором: {{reason}}"
     },
     "type": {
       "installation": "Установка",
@@ -215,7 +221,10 @@ export const PUSH_TEXTS = {
       "deadlineSummary": "{{count}} job(s) are close to their deadline ({{ids}}). Without a technician: {{unassigned}}.",
       "dailyReport": "Daily report {{date}}: {{created}} new, {{finished}} finished, {{open}} open, {{overdue}} overdue, {{partsWaiting}} waiting for parts.",
       "payrollStatement": "Your pay statement is ready ({{from}} – {{to}}): {{jobs}} jobs, total {{total}} so‘m.",
-      "payrollSummary": "Payroll {{from}} – {{to}}: {{technicians}} technicians, total {{total}} so‘m."
+      "payrollSummary": "Payroll {{from}} – {{to}}: {{technicians}} technicians, total {{total}} so‘m.",
+      "catalogPendingBrand": "{{by}} added the brand \"{{name}}\". Approve it so it can be used.",
+      "catalogPendingModel": "{{by}} added the model \"{{name}}\". Approve it so it can be used.",
+      "queueOverride": "{{displayId}} ({{product}}) was moved to the front by an admin: {{reason}}"
     },
     "type": {
       "installation": "Installation",

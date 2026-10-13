@@ -3,7 +3,7 @@ import { ArrowLeft, ExternalLink, Link2, Printer, QrCode, ScanLine } from "lucid
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
-import { LocationBadge, PriorityBadge, StatusBadge, TypeBadge, WarrantyBadge } from "../../components/Badges";
+import { LocationBadge, PriorityBadge, StatusBadge, TierBadge, TypeBadge, WarrantyBadge } from "../../components/Badges";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { EmptyState } from "../../components/EmptyState";
 import { inputClass } from "../../components/Field";
@@ -28,6 +28,7 @@ import { canConfirmPickup } from "../../lib/pickup";
 import { nextStatuses, statusLabel } from "../../lib/status";
 import type { Priority, RequestDetailPayload, RequestStatus, TechnicianSummary } from "../../lib/types";
 import { useNow } from "../../lib/useNow";
+import { QueueNotice } from "../directory/QueueNotice";
 import { Stars } from "../reporting/FeedbackReport";
 
 const PRIORITIES: Priority[] = ["low", "medium", "high", "urgent"];
@@ -134,6 +135,7 @@ export function RequestDetailPage() {
               <StatusBadge status={request.status} />
               <PriorityBadge priority={request.priority} />
               <WarrantyBadge status={request.warrantyStatus} />
+              <TierBadge tier={request.tier} brand={request.brand} />
               <LocationBadge type={request.locationType} />
               {request.submittedByCustomer ? <span className="inline-flex rounded-full bg-[#FFF4E5] px-2.5 py-1 text-xs font-bold text-[#C56A00]">{t("requests.submittedByCustomer")}</span> : null}
               {request.isRepeat ? <span className="inline-flex rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700">{t("detail.repeat")}</span> : null}
@@ -146,6 +148,7 @@ export function RequestDetailPage() {
                 <JobTimerChip timer={request.timer} now={now} />
               </div>
             ) : null}
+            <QueueNotice request={request} queue={data.queue} isAdmin={role === "admin"} onChanged={refresh} />
             {request.activePause ? <p className="mt-2 text-sm font-semibold text-neutral-600">{t("tech.pausedReason", { reason: request.activePause.reason })}</p> : null}
           </div>
           <div className="flex flex-wrap gap-2 lg:max-w-xs lg:justify-end">

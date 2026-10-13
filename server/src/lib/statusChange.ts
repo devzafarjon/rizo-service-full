@@ -12,6 +12,7 @@ import { tashkentCalendarDate } from "./displayId.js";
 import { getSetting, repairWarrantyDays, warrantyStartsOn } from "./settings.js";
 import { checklistView } from "./checklists.js";
 import { refreshPaymentStatus } from "./payments.js";
+import { assertQueueOpen } from "./queue.js";
 import { addMonths, computeWarrantyStatus, parseDateOnly, warrantyExpiryFor } from "./warranty.js";
 
 export type StatusActor = { audit: AuditActor; role: StaffRoleName | "system" };
@@ -56,6 +57,11 @@ export async function changeRequestStatus(input: {
   const system = input.actor.role === "system";
   if (!system && !canTransition(input.actor.role as StaffRoleName, before.type, before.status, input.next)) {
     throw new HttpError(400, "This status change is not allowed", "statusNotAllowed", { from: before.status, to: input.next });
+  }
+
+  // Another maker's device waits while the technician still has RIZO or warranty jobs to get through.
+  if (input.actor.role === "technician" && before.status === "new" && input.next !== "cancelled" && input.next !== "rejected") {
+    await assertQueueOpen(before);
   }
 
   const now = new Date();

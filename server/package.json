@@ -15,6 +15,7 @@
     "smoke": "node --import tsx/esm scripts/smoke.ts",
     "smoke:growth": "node --import tsx/esm scripts/growth-smoke.ts",
     "smoke:auto": "node --import tsx/esm scripts/auto-smoke.ts",
+    "smoke:brands": "node --import tsx/esm scripts/brands-smoke.ts",
     "push-test": "node --import tsx/esm scripts/push-test.ts",
     "backup": "node --import tsx/esm scripts/backup.ts",
     "set-password": "node --import tsx/esm scripts/set-password.ts",

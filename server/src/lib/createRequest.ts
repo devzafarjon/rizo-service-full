@@ -1,6 +1,7 @@
 import { pushJobAssigned } from "./push.js";
 import { Prisma } from "@prisma/client";
 import type { LocationType, Priority, RequestSource, ServiceType, TechnicianType } from "@prisma/client";
+import { assertUsableProduct } from "./brands.js";
 import { initialStatusFor, paymentFor, pickAvailableTechnician } from "./assignment.js";
 import { allocateDisplayId } from "./displayId.js";
 import { HttpError } from "./httpError.js";
@@ -54,8 +55,9 @@ export async function createServiceRequest(input: CreateRequestInput) {
   }
   const productId = sale ? sale.productId : input.productId;
   if (!productId) throw new HttpError(400, "Select a past purchase or a product");
-  const product = await prisma.product.findUnique({ where: { id: productId } });
+  const product = await prisma.product.findUnique({ where: { id: productId }, include: { brand: { select: { approved: true, isOwn: true } } } });
   if (!product) throw new HttpError(400, "Product not found");
+  assertUsableProduct(product);
 
   const serialNumber = input.serialNumber?.trim() || sale?.serialNumber || null;
   const identity = { customerId: customer.id, saleId: sale?.id ?? null, serialNumber, productId: product.id };
@@ -98,6 +100,7 @@ export async function createServiceRequest(input: CreateRequestInput) {
     const picked = await pickAvailableTechnician(technicianTypeRequired, {
       serviceCenterId,
       productCategory: product.category,
+      secondTier: !product.brand.isOwn && warrantyStatus !== "in_warranty" ? { productId: product.id, brandId: product.brandId } : null,
       location: input.customerLocation ?? null,
     });
     assignedTechnicianId = picked?.id ?? null;

@@ -205,6 +205,10 @@ export type ServiceRequest = {
   legalDueAt: string | null;
   isLegallyOverdue: boolean;
   isRepeat: boolean;
+  /** 1 = RIZO product or under warranty; 2 = another maker, paid, done after the technician's first-tier jobs. */
+  tier: 1 | 2;
+  brand: { id: string; name: string; isOwn: boolean } | null;
+  queueOverride: { reason: string | null; at: string; by: string | null } | null;
   repeatOfId: string | null;
   repairWarrantyUntil: string | null;
   fiscalReceiptNumber: string | null;
@@ -270,6 +274,8 @@ export type TechJobTimer = {
 };
 
 export type TechJob = ServiceRequest & {
+  /** True while this job must wait for the technician's RIZO and warranty jobs. */
+  waitingForFirstTier: boolean;
   column: TechColumn;
 };
 
@@ -789,6 +795,7 @@ export type RecommendationGroup = {
 
 export type RequestDetailPayload = {
   request: ServiceRequest;
+  queue: { waiting: boolean; backlog: number };
   pauses: RequestPauseRecord[];
   timeline: TimelineEvent[];
   serviceLines: JobServiceLine[];
@@ -1058,4 +1065,31 @@ export type PayrollStatement = {
   total: number;
   createdAt: string;
   technician: { id: string; name: string } | null;
+};
+
+// ---- brands and models --------------------------------------------------------------------------------------------
+
+export type DirBrand = {
+  id: string;
+  name: string;
+  isOwn: boolean;
+  approved: boolean;
+  addedByName: string | null;
+  modelCount?: number;
+  pendingModels?: number;
+  categories?: string[];
+};
+
+export type DirModel = {
+  id: string;
+  name: string;
+  sku: string;
+  category: string;
+  brandId: string;
+  brandName: string | null;
+  isOwn: boolean;
+  approved: boolean;
+  addedByName: string | null;
+  salesCount?: number;
+  requestsCount?: number;
 };

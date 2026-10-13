@@ -27,6 +27,8 @@ import { createCustomerNotification } from "../lib/notifyCustomer.js";
 import { getAppSettings } from "../lib/settings.js";
 import { availableSlots, confirmVisit, scheduleVisit } from "../lib/visits.js";
 import { money } from "../lib/warranty.js";
+import { firstTierBacklog, isFirstTier, isWaitingForFirstTier } from "../lib/queue.js";
+import { notifyStaffUser } from "../lib/notifyStaff.js";
 
 const SERVICE_TYPES: ServiceType[] = ["installation", "repair"];
 const STATUSES: RequestStatus[] = ALL_STATUSES;
@@ -278,6 +280,10 @@ requestsRouter.get(
     ]);
     res.json({
       request: serializeRequest(request),
+      queue: {
+        waiting: await isWaitingForFirstTier(request),
+        backlog: request.assignedTechnicianId && !isFirstTier(request) ? await firstTierBacklog(request.assignedTechnicianId, request.id) : 0,
+      },
       feedback: feedback ? { rating: feedback.rating, comment: feedback.comment, tags: feedback.tags, createdAt: feedback.createdAt.toISOString() } : null,
       pauses: serializePauses(request.pauses),
       timeline: await loadTimeline(request),
@@ -337,6 +343,34 @@ requestsRouter.post(
       submittedByCustomer: false,
     });
     res.status(201).json({ request: serializeRequest(result.request), assignment: result.assignment, repeat: result.repeat });
+  }),
+);
+
+// An admin lets a second-tier job (another maker, paid) start before the technician has finished the RIZO and warranty jobs.
+requestsRouter.post(
+  "/:id/queue-override",
+  requireStaffRole("admin"),
+  asyncHandler(async (req, res) => {
+    const body = parseBody(z.object({ reason: z.string().trim().min(3, "Explain why this job goes first").max(300) }), req.body);
+    const request = await prisma.serviceRequest.findUnique({ where: { id: req.params.id }, include: requestInclude });
+    if (!request) throw new HttpError(404, "Service request not found");
+    if (isFirstTier(request)) throw new HttpError(400, "This job is already first in line", "alreadyFirstTier");
+    const updated = await prisma.serviceRequest.update({
+      where: { id: request.id },
+      data: { queueOverrideReason: body.reason, queueOverrideAt: new Date(), queueOverrideBy: req.staff!.name },
+      include: requestInclude,
+    });
+    await writeAudit({ actor: staffActor(req.staff), action: "request.queueOverride", entityType: "ServiceRequest", entityId: request.id, newValue: { reason: body.reason } });
+    if (request.assignedTechnicianId) {
+      await notifyStaffUser(request.assignedTechnicianId, {
+        message: `${request.displayId} (${request.product.name}) was moved to the front by an admin: ${body.reason}`,
+        code: "queueOverride",
+        serviceRequestId: request.id,
+        params: { displayId: request.displayId, product: request.product.name, reason: body.reason },
+      });
+    }
+    publishRequest("request:updated", serializeRequest(updated));
+    res.json({ request: serializeRequest(updated) });
   }),
 );
 

@@ -551,6 +551,62 @@ async function seedWarehouses(admin: string, centers: Json[], parts: Json[]) {
   }
 }
 
+// ---------- other makers ----------
+// Brands and models of other makers (noted DEMO-DATA through `added_by_name`), one entry waiting for approval, the mobile technician's
+// "I repair" list and a few second-tier (paid, other maker) requests for demo customers. Idempotent: skipped once the marked brands exist.
+const OTHER_MAKERS: Array<{ brand: string; models: Array<{ category: string; model: string }> }> = [
+  { brand: "Samsung", models: [{ category: "Kir yuvish mashinalari", model: "WW70T4020" }, { category: "Muzlatkichlar", model: "RB37A5200" }] },
+  { brand: "LG", models: [{ category: "Kir yuvish mashinalari", model: "F2V3HS6" }, { category: "Muzlatkichlar", model: "GC-B459" }] },
+  { brand: "Artel", models: [{ category: "Konditsionerlar", model: "ART-12HE" }] },
+  { brand: "Bosch", models: [{ category: "Kir yuvish mashinalari", model: "WAN2427" }] },
+];
+
+async function seedOtherMakers(admin: string, mobileToken: string, mobileId: string) {
+  if (await prisma.brand.findFirst({ where: { addedByName: MARK } })) return;
+  const categories: string[] = (await http<{ categories: string[] }>("/api/staff/directory/categories", { token: admin })).body.categories ?? [];
+  const models: Json[] = [];
+  for (const maker of OTHER_MAKERS) {
+    const brand = await post("/api/staff/directory/brands", admin, { name: maker.brand });
+    if (brand.status !== 201 && brand.status !== 200) continue;
+    for (const item of maker.models) {
+      const category = categories.find((name) => name === item.category) ?? categories[0];
+      if (!category) continue;
+      const made = await post("/api/staff/directory/models", admin, { brandId: brand.body.brand.id, category, model: item.model });
+      if (made.status === 201) {
+        models.push(made.body.model);
+        bump("other-maker models");
+      }
+    }
+  }
+  // One entry typed in by the technician, still waiting for an admin.
+  const midea = await post("/api/staff/directory/brands", mobileToken, { name: "Midea" });
+  if (midea.status === 201 && categories[0]) await post("/api/staff/directory/models", mobileToken, { brandId: midea.body.brand.id, category: categories.find((name) => name === "Muzlatkichlar") ?? categories[0], model: "MDRB424" });
+  await prisma.$executeRawUnsafe(`update products set added_by_name = $1 where brand_id in (select id from brands where is_own = false)`, MARK);
+  await prisma.$executeRawUnsafe(`update brands set added_by_name = $1 where is_own = false`, MARK);
+  // The mobile technician repairs Samsung (every model) and one LG model.
+  const brands = (await http<{ brands: Json[] }>("/api/staff/directory/brands", { token: admin })).body.brands ?? [];
+  const samsung = brands.find((brand) => brand.name === "Samsung");
+  const lgModel = models.find((model) => String(model.name).includes("GC-B459"));
+  const mine = (await http<{ brands: Json[]; models: Json[] }>("/api/staff/directory/skills", { token: mobileToken })).body;
+  const brandIds = [...new Set([...(mine.brands ?? []).map((brand) => brand.id), ...(samsung ? [samsung.id] : [])])];
+  const productIds = [...new Set([...(mine.models ?? []).map((model) => model.id), ...(lgModel ? [lgModel.id] : [])])];
+  await http("/api/staff/directory/skills", { method: "PUT", token: mobileToken, body: JSON.stringify({ brandIds, productIds }) });
+  bump("technician skills");
+  // Second-tier requests for a few demo customers (the cleaner removes them with the customers).
+  const customers = await prisma.customer.findMany({ where: { notes: MARK }, orderBy: { createdAt: "asc" }, take: 4, select: { id: true, address: true } });
+  const wanted = [models.find((m) => String(m.name).includes("WW70T4020")), models.find((m) => String(m.name).includes("GC-B459")), models.find((m) => String(m.name).includes("ART-12HE")), models.find((m) => String(m.name).includes("WAN2427"))];
+  for (const [index, customer] of customers.entries()) {
+    const model = wanted[index];
+    if (!model) continue;
+    const res = await post("/api/staff/requests", admin, {
+      type: "repair", customerId: customer.id, productId: model.id, issueDescription: ["Kir yuvish mashinasi suv to‘kmayapti", "Muzlatkich sovutmayapti", "Konditsioner yoqilmayapti", "Mashina titrab, shovqin qilyapti"][index], locationType: "on_site",
+      customerLocation: { address: customer.address ?? "Toshkent, Chilonzor 9" }, technicianTypeRequired: "mobile", autoAssign: true, allowDuplicate: true,
+    });
+    if (res.status === 201) bump("other-maker requests");
+  }
+  void mobileId;
+}
+
 /** A few requests in every state, so every warehouse screen has something to show. */
 async function seedTransfers(admin: string, desk: string, mobileToken: string) {
   if ((await prisma.stockTransfer.count({ where: { note: { startsWith: MARK } } })) > 0) return;
@@ -782,6 +838,7 @@ async function main() {
   await Promise.all(Array.from({ length: 3 }, worker));
   await seedStockOrders(admin);
   await seedTransfers(admin, desk, byId.get(mobile.id)!);
+  await seedOtherMakers(admin, byId.get(mobile.id)!, mobile.id);
 
   console.log("\nDone in " + Math.round((Date.now() - started) / 1000) + " s. Created:");
   for (const key of Object.keys(stats).sort()) console.log(`  ${key.padEnd(24)} ${stats[key]}`);

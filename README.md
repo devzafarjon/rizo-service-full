@@ -297,6 +297,15 @@ Admin page **Automatic tasks** (`/app/automation`; accountant read-only): the sy
 - **Payroll statements** (Monday 09:30 for the week before, or the 1st for the month before): pay of every technician (percent of labour + fixed per job + bonuses/penalties) is calculated and stored; each technician sees their own in *My earnings* (website and Texnik app) and gets a notification, the owner gets the total.
 - Each job has a **Run now** button (the payroll one shows the last 7 days up to now, marked "interim"), a switch, a run log and a catch-up: a job whose time passed while the free host slept runs as soon as the server wakes. Settings: warning share, legal-limit days, daily hour, payroll period.
 
+## Brands and models of other makers
+The service system is not limited to RIZO products: a master (or a technician) can repair devices of **other brands**.
+- **Directory** (`/app/directory`, admin and front desk; app: More → Brands and models): category → brand → model. RIZO is the company's own brand and its products stay in the catalogue. Other makers' models have no RIZO warranty and are **always paid repairs**.
+- **Adding**: technicians, front desk and admins add a brand or model (website and apps). Similar names are shown first ("did you mean Samsung?"), and "Samsung", "samsung" and "SAM-SUNG" are one brand. An admin's own entry is approved at once; everything else waits for **one admin** (a bell alert tells them) who also renames, merges duplicates and deletes. Customers cannot add anything.
+- **"I repair"** (`/app/my-skills`, technician menu in the app; admins edit it on the Staff page): the brands or single models a technician can repair. What a technician adds lands in their list.
+- **New request**: for a repair without a sale choose *RIZO product* or *Another maker* (category, brand, model).
+- **Queue rule**: RIZO products and jobs under warranty come first. A job for another maker goes only to a technician who lists it and waits (the technician cannot start it) while they have RIZO / warranty jobs in New, Diagnostics or In progress; paused and parts-waiting jobs do not block. An admin can move one to the front with a reason (kept in the activity log).
+- API: `/api/staff/directory/*` (brands, models, categories, pending, skills), `POST /api/staff/requests/:id/queue-override`. Tests: `npm run smoke:brands -w server`.
+
 ## Request ID (`display_id`)
 
 Shown as `#DDMMYYRRNNNN`.

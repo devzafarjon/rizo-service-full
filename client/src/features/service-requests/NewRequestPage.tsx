@@ -14,10 +14,12 @@ import { ApiError, api, apiErrorMessage } from "../../lib/api";
 import { SignaturePad } from "../../components/SignaturePad";
 import { formatMoney, formatPhone, formatRequestId, technicianTypeLabel } from "../../lib/format";
 import { categoryLabel, localizedName } from "../../lib/localized";
+import { OtherDevicePicker } from "../directory/OtherDevicePicker";
 import type {
   CatalogService,
   LocationType,
   Priority,
+  DirModel,
   Product,
   Sale,
   ServiceCenter,
@@ -49,6 +51,9 @@ export function NewRequestPage() {
   const [customerId, setCustomerId] = useState(prefillCustomerId);
   const [saleId, setSaleId] = useState(prefillSaleId);
   const [productId, setProductId] = useState("");
+  // "rizo" = a product sold by RIZO (or under its warranty); "other" = a device of another maker, repaired for a fee.
+  const [deviceMode, setDeviceMode] = useState<"rizo" | "other">("rizo");
+  const [otherModel, setOtherModel] = useState<DirModel | null>(null);
   const [issueDescription, setIssueDescription] = useState("");
   const [defectType, setDefectType] = useState<"dead_on_arrival" | "failed_during_use" | "">("");
   const [locationType, setLocationType] = useState<LocationType>("in_shop");
@@ -107,7 +112,7 @@ export function NewRequestPage() {
   const customer = customers.find((item) => item.id === customerId);
   const selectedSale = sales.find((item) => item.id === saleId) ?? prefillSale.data?.sale;
   const product = products.find((item) => item.id === productId) ?? selectedSale?.product;
-  const category = product?.category ?? "";
+  const category = (deviceMode === "other" ? otherModel?.category : product?.category) ?? "";
 
   const servicesQuery = useQuery({
     queryKey: ["staff", "services", "category", category],
@@ -214,6 +219,10 @@ export function NewRequestPage() {
     event.preventDefault();
     setError(null);
     setDuplicate(null);
+    if (deviceMode === "other" && !saleId && !productId) {
+      setError(t("directory.pickModel"));
+      return;
+    }
     const latNumber = lat.trim() === "" ? null : Number(lat);
     const lngNumber = lng.trim() === "" ? null : Number(lng);
     create.mutate({
@@ -321,16 +330,35 @@ export function NewRequestPage() {
                 ))}
               </select>
             </Field>
-            <Field label={t("newRequest.product")}>
-              <select className={inputClass} value={productId} required disabled={Boolean(saleId)} onChange={(event) => setProductId(event.target.value)}>
-                <option value="">{t("newRequest.selectProduct")}</option>
-                {products.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {localizedName(item)} ({item.sku})
-                  </option>
+            {type === "repair" && !saleId ? (
+              <div className="grid grid-cols-2 gap-2 sm:col-span-2">
+                {(["rizo", "other"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => { setDeviceMode(mode); setProductId(""); setOtherModel(null); }}
+                    className={`rounded-2xl border px-3 py-2 text-left ${deviceMode === mode ? "border-[#7B00E0] bg-[#F5EBFD]" : "border-neutral-200"}`}
+                  >
+                    <p className="text-sm font-bold">{t(`newRequest.device.${mode}`)}</p>
+                    <p className="text-xs text-neutral-500">{t(`newRequest.device.${mode}Hint`)}</p>
+                  </button>
                 ))}
-              </select>
-            </Field>
+              </div>
+            ) : null}
+            {deviceMode === "other" && type === "repair" && !saleId ? (
+              <OtherDevicePicker value={otherModel} onChange={(model) => { setOtherModel(model); setProductId(model?.id ?? ""); }} />
+            ) : (
+              <Field label={t("newRequest.product")}>
+                <select className={inputClass} value={productId} required disabled={Boolean(saleId)} onChange={(event) => setProductId(event.target.value)}>
+                  <option value="">{t("newRequest.selectProduct")}</option>
+                  {products.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {localizedName(item)} ({item.sku})
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
             <Field label={t("newRequest.priority")}>
               <select className={inputClass} value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
                 {PRIORITIES.map((item) => (
