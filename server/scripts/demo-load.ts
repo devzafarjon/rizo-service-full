@@ -61,7 +61,7 @@ async function http<T = Json>(path: string, options: RequestInit & { token?: str
       });
       const body = (await res.json().catch(() => ({}))) as T;
       // A free host may be waking up: retry a few times.
-      if ([502, 503, 504].includes(res.status) && attempt < 3) {
+      if ([429, 502, 503, 504].includes(res.status) && attempt < 3) {
         await new Promise((r) => setTimeout(r, 4000 * (attempt + 1)));
         continue;
       }
@@ -607,6 +607,88 @@ async function seedOtherMakers(admin: string, mobileToken: string, mobileId: str
   void mobileId;
 }
 
+// ---------- report history ----------
+// The automatic tasks page shows "report history" and "pay statements": a fresh database has none, so write two weeks of daily
+// reports, four weekly summaries and four weeks of pay statements out of the demo requests (the real calculation for pay).
+// Marked by `demo: true` in the run's summary (the cleaner removes the runs and the statements they list). Nothing is sent.
+const TASHKENT = 5 * 3_600_000;
+const DONE = ["ready", "completed", "picked_up", "replaced"] as const;
+const FINISHED_OR_GONE = ["cancelled", "rejected", "refunded"] as const;
+
+function tashkentDayStart(daysAgo: number) {
+  const todayStart = Math.floor((Date.now() + TASHKENT) / DAY) * DAY - TASHKENT;
+  return new Date(todayStart - daysAgo * DAY);
+}
+const dayLabel = (from: Date) => new Date(from.getTime() + TASHKENT).toISOString().slice(0, 10);
+const avg = (list: number[]) => (list.length ? Math.round((list.reduce((a, b) => a + b, 0) / list.length) * 10) / 10 : null);
+
+async function windowSummary(from: Date, to: Date, index: number) {
+  const [created, finishedRows, collected, ratings, openAtEnd] = await Promise.all([
+    prisma.serviceRequest.count({ where: { createdAt: { gte: from, lte: to } } }),
+    prisma.serviceRequest.findMany({ where: { status: { in: [...DONE] }, completedAt: { gte: from, lte: to } }, select: { finalCost: true, assignedTechnician: { select: { name: true } } } }),
+    prisma.payment.aggregate({ _sum: { amount: true }, where: { kind: "payment", createdAt: { gte: from, lte: to } } }),
+    prisma.feedback.findMany({ where: { createdAt: { gte: from, lte: to } }, select: { rating: true } }),
+    prisma.serviceRequest.count({ where: { createdAt: { lte: to }, status: { notIn: [...FINISHED_OR_GONE] }, OR: [{ completedAt: null }, { completedAt: { gt: to } }] } }),
+  ]);
+  const byTech = new Map<string, number>();
+  for (const row of finishedRows) if (row.assignedTechnician?.name) byTech.set(row.assignedTechnician.name, (byTech.get(row.assignedTechnician.name) ?? 0) + 1);
+  const top = [...byTech.entries()].sort((a, b) => b[1] - a[1])[0];
+  return {
+    created,
+    finished: finishedRows.length,
+    open: openAtEnd,
+    overdue: Math.round(openAtEnd * 0.2),
+    atRisk: (index * 7) % 4,
+    partsWaiting: Math.min(6, Math.round(openAtEnd * 0.07)),
+    revenue: Math.round(finishedRows.reduce((sum, row) => sum + Number(row.finalCost ?? 0), 0)),
+    collected: Math.round(Number(collected._sum.amount ?? 0)),
+    avgRating: avg(ratings.map((row) => row.rating)),
+    topTechnician: top ? { name: top[0], done: top[1] } : null,
+  };
+}
+
+async function seedReportHistory() {
+  if (await prisma.autoJobRun.findFirst({ where: { summary: { path: ["demo"], equals: true } } })) return;
+  // Daily reports for the last 14 days (sent at 18:00).
+  for (let ago = 14; ago >= 1; ago -= 1) {
+    const from = tashkentDayStart(ago);
+    const to = new Date(from.getTime() + DAY - 1);
+    const summary = await windowSummary(from, to, ago);
+    const at = new Date(from.getTime() + 18 * 3_600_000);
+    await prisma.autoJobRun.create({ data: { jobKey: "daily_report", trigger: "auto", ok: true, summary: { demo: true, date: dayLabel(from), ...summary }, startedAt: at, finishedAt: new Date(at.getTime() + 900) } });
+    bump("daily reports");
+  }
+  // Four closed weeks (Monday to Sunday): the weekly summary (Monday 09:00 after) and the pay statements (09:30).
+  const weekday = new Date(Date.now() + TASHKENT).getUTCDay();
+  const sinceMonday = (weekday + 6) % 7;
+  const technicians = await prisma.staffUser.findMany({ where: { role: "technician", isActive: true }, orderBy: { name: "asc" } });
+  process.env.JWT_SECRET ??= "demo-loader-only"; // the pay calculation lives in server code that expects the server's settings
+  const { earningsFor } = await import("../src/routes/payroll.js");
+  for (let weeksAgo = 4; weeksAgo >= 1; weeksAgo -= 1) {
+    const monday = tashkentDayStart(sinceMonday + weeksAgo * 7);
+    const sundayEnd = new Date(monday.getTime() + 7 * DAY - 1);
+    const from = dayLabel(monday);
+    const to = dayLabel(new Date(monday.getTime() + 6 * DAY));
+    const summary = await windowSummary(monday, sundayEnd, weeksAgo);
+    const digestAt = new Date(monday.getTime() + 7 * DAY + 9 * 3_600_000);
+    await prisma.autoJobRun.create({ data: { jobKey: "weekly_digest", trigger: "auto", ok: true, summary: { demo: true, from, to, created: summary.created, finished: summary.finished, open: summary.open, overdue: summary.overdue, legalOverdue: 0, revenue: summary.revenue, avgRating: summary.avgRating, firstTimeFixRate: null }, startedAt: digestAt, finishedAt: new Date(digestAt.getTime() + 1500) } });
+    bump("weekly digests");
+    const ids: string[] = [];
+    let total = 0;
+    for (const technician of technicians) {
+      const result = await earningsFor(technician.id, { from: monday, to: sundayEnd } as never);
+      const data = { kind: "auto", jobs: result.jobs.length, jobsTotal: result.jobsTotal, adjustmentsTotal: result.adjustmentsTotal, total: result.total };
+      const key = { staffUserId: technician.id, periodFrom: new Date(`${from}T00:00:00Z`), periodTo: new Date(`${to}T00:00:00Z`) };
+      const row = await prisma.payrollStatement.upsert({ where: { staffUserId_periodFrom_periodTo: key }, update: data, create: { ...key, ...data } });
+      ids.push(row.id);
+      total += result.total;
+      bump("pay statements");
+    }
+    const payAt = new Date(digestAt.getTime() + 1800_000);
+    await prisma.autoJobRun.create({ data: { jobKey: "payroll_statements", trigger: "auto", ok: true, summary: { demo: true, from, to, kind: "auto", technicians: technicians.length, total: Math.round(total), statementIds: ids }, startedAt: payAt, finishedAt: new Date(payAt.getTime() + 2000) } });
+  }
+}
+
 /** A few requests in every state, so every warehouse screen has something to show. */
 async function seedTransfers(admin: string, desk: string, mobileToken: string) {
   if ((await prisma.stockTransfer.count({ where: { note: { startsWith: MARK } } })) > 0) return;
@@ -668,10 +750,22 @@ async function customerFlow(index: number, ctx: Ctx) {
   const name = fullName(rng);
   const phone = `998${pick(rng, OPERATORS)}${String(between(rng, 1_000_000, 9_999_999))}`;
   const where = place(rng);
-  const created = await post("/api/staff/customers", ctx.admin, { name, phone, address: where.address, regionCode: where.region, notes: MARK, password: CUSTOMER_PASSWORD });
+  const customerBody = { name, phone, address: where.address, regionCode: where.region, notes: MARK, password: CUSTOMER_PASSWORD };
+  let created = await post("/api/staff/customers", ctx.admin, customerBody);
   if (created.status === 409) {
-    bump("skipped (already there)");
-    return;
+    // A customer of an earlier run that stopped half-way (no purchase yet) is removed and built again; a finished one is left alone.
+    const half = await prisma.customer.findFirst({ where: { phone, notes: MARK, sales: { none: {} } }, select: { id: true } });
+    if (!half) {
+      bump("skipped (already there)");
+      return;
+    }
+    await prisma.customer.delete({ where: { id: half.id } }).catch(() => undefined);
+    created = await post("/api/staff/customers", ctx.admin, customerBody);
+    if (created.status === 409) {
+      bump("skipped (already there)");
+      return;
+    }
+    bump("rebuilt (earlier run stopped half-way)");
   }
   const customer = ok(created, "create customer").body.customer;
   const session = await login("customer", phone, CUSTOMER_PASSWORD);
@@ -839,6 +933,7 @@ async function main() {
   await seedStockOrders(admin);
   await seedTransfers(admin, desk, byId.get(mobile.id)!);
   await seedOtherMakers(admin, byId.get(mobile.id)!, mobile.id);
+  await seedReportHistory();
 
   console.log("\nDone in " + Math.round((Date.now() - started) / 1000) + " s. Created:");
   for (const key of Object.keys(stats).sort()) console.log(`  ${key.padEnd(24)} ${stats[key]}`);

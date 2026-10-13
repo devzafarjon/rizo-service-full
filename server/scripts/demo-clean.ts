@@ -138,6 +138,11 @@ async function main() {
         const used = await tx.$queryRawUnsafe<Array<{ n: number }>>(`select (select count(*) from sales where product_id = $1)::int + (select count(*) from service_requests where product_id = $1)::int as n`, id);
         if (used[0].n === 0) await purge(tx, "products", [id]);
       }
+      // The demo report history (daily / weekly runs) and the pay statements those runs list.
+      const demoRuns = await tx.$queryRawUnsafe<Array<{ id: string; ids: string | null }>>(`select id, summary->>'statementIds' as ids from auto_job_runs where summary->>'demo' = 'true'`);
+      const statementIds = demoRuns.flatMap((row) => (row.ids ? (JSON.parse(row.ids) as string[]) : []));
+      if (statementIds.length) removed.payroll_statements = Number(await tx.$executeRawUnsafe(`delete from payroll_statements where id = any($1::text[])`, statementIds));
+      if (demoRuns.length) removed.auto_job_runs = Number(await tx.$executeRawUnsafe(`delete from auto_job_runs where id = any($1::text[])`, demoRuns.map((row) => row.id)));
       // The demo brands of other makers go once no model is left under them ("I repair" entries go with them).
       removed.brands = Number(await tx.$executeRawUnsafe(`delete from brands b where b.is_own = false and b.added_by_name = $1 and not exists (select 1 from products p where p.brand_id = b.id)`, MARK));
     },
