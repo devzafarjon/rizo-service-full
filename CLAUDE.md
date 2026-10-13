@@ -33,11 +33,13 @@ React 19 + Vite + TS + Tailwind 4 + React Router + TanStack Query + Headless UI 
 - **i18n**: Uzbek default, Russian, English. No hardcoded UI strings; add keys to all three locale files. Server errors are English with a `code`; the client maps `errors.<code>`. Add new messages to `MESSAGE_CODES` in `server/src/middleware/error.ts` (or throw `HttpError` with an explicit code). `audit.action.*` keys are flat dotted keys (`"request.status"`) — never nest them next to each other or i18next stops resolving the flat ones. Run `node server/scripts/i18n-scan.mjs` — `portal.pendingFeedback` / `portal.photoCount` show as "missing" only because they are plural keys.
 - **Request ID** `display_id` = `DDMMYY` (Tashkent) + 2-digit region + 4-digit daily sequence (one counter per day, atomic upsert), shown as `#…`.
 - **Brand**: purple `#7B00E0`, orange `#F7941E` as accents on a light neutral base (never a full purple screen). Staff app = white header; customer portal = purple-tint header with orange rule and badge. Logo: `client/public/rizo-logo.svg` (do not redraw it).
+- **One website sign-in** (`/login`, `POST /api/auth/login`, `features/auth/LoginPage.tsx`): staff and customers use the same form; the answer for a wrong phone or password never says which side a number belongs to. The apps stay separate (RIZO Texnik / RIZO Mijoz) and keep `/api/staff/auth/login` and `/api/customer/auth/login`, which answer 403 `useCustomerApp` / `useStaffApp` when the password is right for the other side. **Two sides, one at a time**: a staff sign-in and a customer sign-in clear each other's token. While one side is signed in, the other side's entrances are not shown: the public pages' top-right button (`BrandChrome`) and the home page offer only the way back to the signed-in side, `/login` redirects to it, and the portal has its own `/portal/centers`. The last phone used on each side is remembered in `localStorage` (`lib/lastAccount.ts`, never the password) and prefilled with an "other account" link.
 - Requests are never hard-deleted. Everything audit-worthy goes through `writeAudit`.
 - Stubs that are not real integrations: SMS and Telegram default to a `console` driver (set `SMS_HTTP_URL` / `TELEGRAM_BOT_TOKEN` to send). Password-reset SMS therefore only appears in the API log until a gateway is configured.
 
 ## Commands
 ```bash
+# all API checks (each needs the API running on a scratch database): smoke, smoke:growth, smoke:auto, smoke:parts, smoke:warehouses, smoke:telegram, smoke:auth, smoke:rbac, smoke:concurrency, smoke:fuzz
 npm install
 npm run db:migrate        # prisma migrate dev
 npm run db:seed           # demo staff, customers, catalog, sales, one request per board column

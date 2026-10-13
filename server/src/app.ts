@@ -1,3 +1,4 @@
+import { unifiedAuthRouter } from "./routes/authUnified.js";
 import { customerTelegramRouter, staffTelegramRouter, telegramWebhookRouter } from "./routes/telegram.js";
 import cors from "cors";
 import express from "express";
@@ -57,6 +58,7 @@ export function createApp() {
 
   app.use("/api/health", healthRouter);
   app.use("/api/telegram", telegramWebhookRouter);
+  app.use("/api/auth", unifiedAuthRouter);
   app.use("/api/staff/telegram", staffTelegramRouter);
   app.use("/api/customer/telegram", customerTelegramRouter);
   app.use("/api/staff/auth", staffAuthRouter);

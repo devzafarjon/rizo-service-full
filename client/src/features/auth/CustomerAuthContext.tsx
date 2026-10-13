@@ -10,6 +10,8 @@ type CustomerAuthContextValue = {
   token: string | null;
   loading: boolean;
   login: (phone: string, password: string) => Promise<CustomerUser>;
+  /** Takes over a sign-in the unified form already made (token + user from POST /api/auth/login). */
+  acceptLogin: (token: string, user: CustomerUser) => Promise<CustomerUser>;
   signup: (values: { name: string; phone: string; password: string; address?: string }) => Promise<CustomerUser>;
   forgotPassword: (phone: string) => Promise<{ sent: boolean }>;
   logout: () => void;
@@ -60,19 +62,23 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     }
   }, [meQuery.data?.locale]);
 
+  const acceptLogin = useCallback(async (newToken: string, user: CustomerUser) => {
+    localStorage.removeItem(STAFF_TOKEN_KEY);
+    queryClient.removeQueries({ queryKey: ["staff"] });
+    localStorage.setItem(CUSTOMER_TOKEN_KEY, newToken);
+    setToken(newToken);
+    queryClient.setQueryData(["customer", "me", newToken], user);
+    await applyLocale(parseLocale(user.locale));
+    return user;
+  }, [queryClient]);
+
   const login = useCallback(async (phone: string, password: string) => {
     const data = await api<{ token: string; user: CustomerUser }>("/api/customer/auth/login", {
       method: "POST",
       body: JSON.stringify({ phone, password }),
     });
-    localStorage.removeItem(STAFF_TOKEN_KEY);
-    queryClient.removeQueries({ queryKey: ["staff"] });
-    localStorage.setItem(CUSTOMER_TOKEN_KEY, data.token);
-    setToken(data.token);
-    queryClient.setQueryData(["customer", "me", data.token], data.user);
-    await applyLocale(parseLocale(data.user.locale));
-    return data.user;
-  }, [queryClient]);
+    return acceptLogin(data.token, data.user);
+  }, [acceptLogin]);
 
   const signup = useCallback(
     async (values: { name: string; phone: string; password: string; address?: string }) => {
@@ -120,12 +126,13 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
       token,
       loading: Boolean(token) && meQuery.isLoading,
       login,
+      acceptLogin,
       signup,
       forgotPassword,
       logout,
       saveLocale,
     }),
-    [forgotPassword, login, logout, meQuery.data, meQuery.isLoading, saveLocale, signup, token],
+    [acceptLogin, forgotPassword, login, logout, meQuery.data, meQuery.isLoading, saveLocale, signup, token],
   );
 
   return <CustomerAuthContext.Provider value={value}>{children}</CustomerAuthContext.Provider>;

@@ -432,12 +432,14 @@ export async function receivePartOrder(input: { orderId: string; receivedQuantit
   const complete = quantity === order.quantity;
 
   await prisma.$transaction(async (tx) => {
-    const warehouseId = order.warehouseId ?? (await centralWarehouse(tx)).id;
-    await addStock(tx, warehouseId, order.sparePartId, quantity, { kind: "receive", by: input.actor.type === "staff" ? { id: input.actor.id, name: input.actor.name ?? "" } : null, note: order.supplierRef?.name ?? order.supplier ?? null });
-    await tx.partOrder.update({
-      where: { id: order.id },
+    // Claim the order first (still open, still the same quantity): receiving it twice at once must not add the stock twice.
+    const claim = await tx.partOrder.updateMany({
+      where: { id: order.id, status: { in: ["requested", "ordered"] }, quantity: order.quantity },
       data: complete ? { status: "received", receivedAt: new Date() } : { quantity: { decrement: quantity }, status: "ordered", orderedAt: order.orderedAt ?? new Date() },
     });
+    if (claim.count === 0) throw new HttpError(400, "This order is closed", "orderClosed");
+    const warehouseId = order.warehouseId ?? (await centralWarehouse(tx)).id;
+    await addStock(tx, warehouseId, order.sparePartId, quantity, { kind: "receive", by: input.actor.type === "staff" ? { id: input.actor.id, name: input.actor.name ?? "" } : null, note: order.supplierRef?.name ?? order.supplier ?? null });
   });
   await maybeAlertLowStock(order.sparePartId);
   const released = await releaseWaitingJobs({ partId: order.sparePartId, linkedRequestId: order.serviceRequestId, ignoreOrderId: order.id, actor: input.actor });

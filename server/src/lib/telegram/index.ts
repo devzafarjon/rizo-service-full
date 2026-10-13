@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import type { Request, Response } from "express";
 import { env } from "../../config.js";
 import { parseLocale } from "../locale.js";
@@ -247,7 +248,9 @@ export function webhookMode() {
 
 /** Express handler for POST /api/telegram/webhook: Telegram sends the secret in a header. */
 export async function telegramWebhook(req: Request, res: Response) {
-  if (!webhookMode() || req.get("x-telegram-bot-api-secret-token") !== env.telegramWebhookSecret) {
+  const given = Buffer.from(req.get("x-telegram-bot-api-secret-token") ?? "");
+  const wanted = Buffer.from(env.telegramWebhookSecret);
+  if (!webhookMode() || given.length !== wanted.length || !timingSafeEqual(given, wanted)) {
     res.status(403).json({ ok: false });
     return;
   }

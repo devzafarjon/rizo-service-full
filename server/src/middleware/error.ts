@@ -102,7 +102,13 @@ function asClientError(err: unknown): HttpError | null {
   const type = typeof err === "object" && err !== null && "type" in err ? String((err as { type: unknown }).type) : "";
   if (type === "entity.parse.failed") return new HttpError(400, "The request body is not valid JSON", "invalidInput");
   if (type === "entity.too.large") return new HttpError(413, "The request is too large", "invalidInput");
+  // A record that does not exist (an unknown id in the address or the body) is the caller's mistake, not a crash.
+  const prismaCode = typeof err === "object" && err !== null && "code" in err && /^P\d{4}$/.test(String((err as { code: unknown }).code)) ? String((err as { code: unknown }).code) : "";
+  if (prismaCode === "P2025") return new HttpError(404, "Record not found", "notFound");
+  if (prismaCode === "P2003") return new HttpError(400, "A record this refers to was not found", "invalidInput");
   if (err instanceof Error && /numeric field overflow|"22003"/.test(err.message)) return new HttpError(400, "A number is too large", "invalidInput");
+  // A text with a NUL character (the database refuses it) is a bad request.
+  if (err instanceof Error && /invalid byte sequence for encoding|"22021"/.test(err.message)) return new HttpError(400, "The text contains a character that is not allowed", "invalidInput");
   return null;
 }
 

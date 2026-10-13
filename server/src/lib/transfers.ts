@@ -135,6 +135,9 @@ export async function shipTransfer(input: { id: string; quantity?: number; etaAt
   const etaAt = parseDateOnly(input.etaAt ?? addDaysTashkent(etaDays));
 
   await prisma.$transaction(async (tx) => {
+    // Claim the request first: of several people pressing "send" at once, only one gets past this line (the others roll back).
+    const claim = await tx.stockTransfer.updateMany({ where: { id: row.id, status: "requested" }, data: { status: "shipped" } });
+    if (claim.count === 0) throw new HttpError(400, "This transfer is not waiting to be sent", "transferNotRequested");
     const ok = await takeStock(tx, row.fromWarehouseId, row.sparePartId, quantity, { kind: "transfer_out", transferId: row.id, by: { id: input.actor.id, name: input.actor.name }, serviceRequestId: row.serviceRequestId });
     if (!ok) {
       const count = await stockAt(tx, row.fromWarehouseId, row.sparePartId);
@@ -177,6 +180,9 @@ export async function receiveTransfer(input: { id: string; quantity?: number; ac
   const by = { id: input.actor.id, name: input.actor.name };
 
   await prisma.$transaction(async (tx) => {
+    // Claim the delivery first: a second "received" at the same moment finds it taken and rolls back.
+    const claim = await tx.stockTransfer.updateMany({ where: { id: row.id, status: "shipped" }, data: { status: "received" } });
+    if (claim.count === 0) throw new HttpError(400, "This transfer is not on its way", "transferNotShipped");
     if (row.toWarehouseId) {
       await addStock(tx, row.toWarehouseId, row.sparePartId, received, { kind: "transfer_in", transferId: row.id, by, serviceRequestId: row.serviceRequestId });
     } else if (row.toTechnicianId) {
@@ -203,7 +209,8 @@ export async function receiveTransfer(input: { id: string; quantity?: number; ac
 export async function rejectTransfer(input: { id: string; reason: string; actor: Requester }) {
   const row = await loadTransfer(input.id);
   if (row.status !== "requested") throw new HttpError(400, "This transfer is not waiting to be sent", "transferNotRequested");
-  await prisma.stockTransfer.update({ where: { id: row.id }, data: { status: "rejected", rejectionReason: input.reason } });
+  const claim = await prisma.stockTransfer.updateMany({ where: { id: row.id, status: "requested" }, data: { status: "rejected", rejectionReason: input.reason } });
+  if (claim.count === 0) throw new HttpError(400, "This transfer is not waiting to be sent", "transferNotRequested");
   await writeAudit({ actor: auditActor(input.actor), action: "transfer.reject", entityType: "StockTransfer", entityId: row.id, newValue: { reason: input.reason } });
   if (row.requestedById && row.requestedById !== input.actor.id) {
     await notifyStaffUser(row.requestedById, {
@@ -225,7 +232,8 @@ export async function rejectTransfer(input: { id: string; reason: string; actor:
 export async function cancelTransfer(input: { id: string; actor: Requester }) {
   const row = await loadTransfer(input.id);
   if (row.status !== "requested") throw new HttpError(400, "Only a request that was not sent can be cancelled", "transferNotRequested");
-  await prisma.stockTransfer.update({ where: { id: row.id }, data: { status: "cancelled" } });
+  const claim = await prisma.stockTransfer.updateMany({ where: { id: row.id, status: "requested" }, data: { status: "cancelled" } });
+  if (claim.count === 0) throw new HttpError(400, "Only a request that was not sent can be cancelled", "transferNotRequested");
   await writeAudit({ actor: auditActor(input.actor), action: "transfer.cancel", entityType: "StockTransfer", entityId: row.id });
   return loadTransfer(row.id);
 }

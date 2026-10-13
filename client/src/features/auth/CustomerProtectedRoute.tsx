@@ -15,7 +15,7 @@ export function CustomerProtectedRoute() {
   }
 
   if (!token || !user) {
-    return <Navigate to="/portal/login" replace state={{ from: location.pathname }} />;
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
   return <Outlet />;

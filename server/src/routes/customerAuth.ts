@@ -46,6 +46,11 @@ customerAuthRouter.post(
 
     const user = await prisma.customer.findUnique({ where: { phone } });
     if (!user || !(await verifyPassword(body.password, user.passwordHash))) {
+      // The right password of a staff account in the customer app: say where to go instead of "incorrect".
+      const staff = await prisma.staffUser.findUnique({ where: { phone } });
+      if (staff && staff.isActive && (await verifyPassword(body.password, staff.passwordHash))) {
+        throw new HttpError(403, "This is a staff account: use the RIZO Texnik app or the website", "useStaffApp");
+      }
       throw new HttpError(401, "Incorrect phone number or password");
     }
 
@@ -224,7 +229,7 @@ customerAuthRouter.delete(
   }),
 );
 
-function serializeCustomer(user: {
+export function serializeCustomer(user: {
   id: string;
   name: string;
   phone: string;

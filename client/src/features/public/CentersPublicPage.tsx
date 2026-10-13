@@ -8,15 +8,14 @@ import { mapsUrl } from "../../lib/format";
 import { regionLabel } from "../../lib/regions";
 import type { ServiceCenter } from "../../lib/types";
 
-/** Where to take a device for service, grouped by region. Public, no sign-in. */
-export function CentersPublicPage() {
+/** The list of service centres by region; used on the public page and inside the customer portal. */
+export function CentersList({ inPortal = false }: { inPortal?: boolean }) {
   const { t } = useTranslation();
   const list = useQuery({ queryKey: ["public", "centers"], queryFn: () => api<{ centers: ServiceCenter[] }>("/api/public/centers") });
   const centers = list.data?.centers ?? [];
   const regions = [...new Set(centers.map((center) => center.regionCode))];
   return (
-    <BrandChrome action={<Link to="/track" className="btn-rizo-ghost h-11">{t("track.title")}</Link>}>
-      <div className="mx-auto w-full max-w-2xl px-4 pt-4 pb-16">
+    <div className={inPortal ? "" : "mx-auto w-full max-w-2xl px-4 pt-4 pb-16"}>
         <h1 className="text-2xl font-bold tracking-tight text-[#1E293B] sm:text-[31px]">{t("centers.public.title")}</h1>
         <p className="mt-1 mb-5 text-sm text-neutral-500">{t("centers.public.intro")}</p>
         {list.isLoading ? <Spinner className="mx-auto h-6 w-6" /> : null}
@@ -43,7 +42,16 @@ export function CentersPublicPage() {
             </ul>
           </section>
         ))}
-      </div>
+    </div>
+  );
+}
+
+/** Where to take a device for service, grouped by region. Public, no sign-in. */
+export function CentersPublicPage() {
+  const { t } = useTranslation();
+  return (
+    <BrandChrome action={<Link to="/track" className="btn-rizo-ghost h-11">{t("track.title")}</Link>}>
+      <CentersList />
     </BrandChrome>
   );
 }

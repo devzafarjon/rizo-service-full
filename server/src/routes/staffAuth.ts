@@ -30,6 +30,11 @@ staffAuthRouter.post("/login", loginLimiter, async (req, res, next) => {
 
     const user = await prisma.staffUser.findUnique({ where: { phone } });
     if (!user || !(await verifyPassword(body.password, user.passwordHash))) {
+      // The right password of a customer account in the staff app: say where to go instead of "incorrect".
+      const customer = await prisma.customer.findUnique({ where: { phone } });
+      if (customer && !customer.anonymizedAt && (await verifyPassword(body.password, customer.passwordHash))) {
+        throw new HttpError(403, "This is a customer account: use the RIZO Mijoz app or the website", "useCustomerApp");
+      }
       throw new HttpError(401, "Incorrect phone number or password");
     }
     if (!user.isActive) {
@@ -98,7 +103,7 @@ staffAuthRouter.patch("/availability", staffAuth, requireStaffRole("technician")
   }
 });
 
-function serializeStaff(user: {
+export function serializeStaff(user: {
   id: string;
   name: string;
   phone: string;

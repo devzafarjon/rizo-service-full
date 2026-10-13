@@ -2,12 +2,11 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { PortalShell } from "./components/layout/PortalShell";
 import { StaffShell } from "./components/layout/StaffShell";
 import { CustomerForgotPage } from "./features/auth/CustomerForgotPage";
-import { CustomerLoginPage } from "./features/auth/CustomerLoginPage";
 import { CustomerSignupPage } from "./features/auth/CustomerSignupPage";
 import { CustomerProtectedRoute } from "./features/auth/CustomerProtectedRoute";
 import { HomePage } from "./features/auth/HomePage";
 import { RoleRoute, StaffProtectedRoute } from "./features/auth/ProtectedRoute";
-import { StaffLoginPage } from "./features/auth/StaffLoginPage";
+import { LoginPage } from "./features/auth/LoginPage";
 import { DashboardPage } from "./features/reporting/DashboardPage";
 import {
   ExpensesReportPage,
@@ -68,6 +67,7 @@ import { PortalRegisterPage } from "./features/portal/PortalRegisterPage";
 import { PortalProductsPage } from "./features/portal/PortalProductsPage";
 import { PortalHelpPage } from "./features/portal/PortalHelpPage";
 import { PortalAccountPage } from "./features/portal/PortalAccountPage";
+import { PortalCentersPage } from "./features/portal/PortalCentersPage";
 import { LegalPage } from "./features/public/LegalPage";
 import { PublicHelpPage } from "./features/public/PublicHelpPage";
 
@@ -75,8 +75,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
-      <Route path="/login" element={<StaffLoginPage />} />
-      <Route path="/portal/login" element={<CustomerLoginPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/portal/login" element={<Navigate to="/login" replace />} />
       <Route path="/portal/signup" element={<CustomerSignupPage />} />
       <Route path="/portal/forgot" element={<CustomerForgotPage />} />
 
@@ -172,6 +172,7 @@ export default function App() {
           <Route path="register" element={<PortalRegisterPage />} />
           <Route path="products" element={<PortalProductsPage />} />
           <Route path="help" element={<PortalHelpPage />} />
+          <Route path="centers" element={<PortalCentersPage />} />
           <Route path="account" element={<PortalAccountPage />} />
           <Route path="requests/:id" element={<PortalRequestDetailPage />} />
         </Route>

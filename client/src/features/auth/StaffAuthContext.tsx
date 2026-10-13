@@ -9,6 +9,8 @@ type StaffAuthContextValue = {
   token: string | null;
   loading: boolean;
   login: (phone: string, password: string, code?: string) => Promise<StaffUser>;
+  /** Takes over a sign-in the unified form already made (token + user from POST /api/auth/login). */
+  acceptLogin: (token: string, user: StaffUser) => Promise<StaffUser>;
   logout: () => void;
   setAvailability: (isAvailable: boolean) => Promise<void>;
   saveLocale: (locale: AppLocale) => Promise<void>;
@@ -58,19 +60,23 @@ export function StaffAuthProvider({ children }: { children: ReactNode }) {
     }
   }, [meQuery.data?.locale]);
 
+  const acceptLogin = useCallback(async (newToken: string, user: StaffUser) => {
+    localStorage.removeItem(CUSTOMER_TOKEN_KEY);
+    queryClient.removeQueries({ queryKey: ["customer"] });
+    localStorage.setItem(STAFF_TOKEN_KEY, newToken);
+    setToken(newToken);
+    queryClient.setQueryData(["staff", "me", newToken], user);
+    await applyLocale(parseLocale(user.locale));
+    return user;
+  }, [queryClient]);
+
   const login = useCallback(async (phone: string, password: string, code?: string) => {
     const data = await api<{ token: string; user: StaffUser }>("/api/staff/auth/login", {
       method: "POST",
       body: JSON.stringify({ phone, password, ...(code ? { code } : {}) }),
     });
-    localStorage.removeItem(CUSTOMER_TOKEN_KEY);
-    queryClient.removeQueries({ queryKey: ["customer"] });
-    localStorage.setItem(STAFF_TOKEN_KEY, data.token);
-    setToken(data.token);
-    queryClient.setQueryData(["staff", "me", data.token], data.user);
-    await applyLocale(parseLocale(data.user.locale));
-    return data.user;
-  }, [queryClient]);
+    return acceptLogin(data.token, data.user);
+  }, [acceptLogin]);
 
   const setAvailability = useCallback(
     async (isAvailable: boolean) => {
@@ -106,11 +112,12 @@ export function StaffAuthProvider({ children }: { children: ReactNode }) {
       token,
       loading: Boolean(token) && meQuery.isLoading,
       login,
+      acceptLogin,
       logout,
       setAvailability,
       saveLocale,
     }),
-    [login, logout, meQuery.data, meQuery.isLoading, saveLocale, setAvailability, token],
+    [login, acceptLogin, logout, meQuery.data, meQuery.isLoading, saveLocale, setAvailability, token],
   );
 
   return <StaffAuthContext.Provider value={value}>{children}</StaffAuthContext.Provider>;

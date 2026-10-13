@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../prisma.js";
 import { botUsername } from "./api.js";
 
@@ -44,5 +45,5 @@ export async function linkStaffChat(chatId: string, staffId: string) {
 export async function unlinkChat(chatId: string) {
   await prisma.customer.updateMany({ where: { telegramChatId: chatId }, data: { telegramChatId: null } });
   await prisma.staffUser.updateMany({ where: { telegramChatId: chatId }, data: { telegramChatId: null } });
-  await prisma.telegramChat.updateMany({ where: { chatId }, data: { state: null, data: undefined } });
+  await prisma.telegramChat.updateMany({ where: { chatId }, data: { state: null, data: Prisma.DbNull } });
 }

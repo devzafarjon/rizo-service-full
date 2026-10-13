@@ -92,32 +92,22 @@
     "portalBadge": "Mijoz portali"
   },
   "home": {
-    "staff": "Xodimlar kirishi",
     "staffContinue": "Xodim sifatida davom etish",
-    "portal": "Mijoz portali",
     "portalContinue": "Portalga o‘tish",
     "track": "Buyurtmani kuzatish",
     "centers": "Servis markazlari"
   },
   "auth": {
-    "staffTitle": "Xodimlar kirishi",
-    "staffHint": "Dispetcherlar va texniklar shu yerdan kiradi.",
     "signedIn": "Tizimga kirdingiz",
     "signInFailed": "Kirib bo‘lmadi",
     "customerLink": "Mijozmisiz?",
-    "openPortal": "Mijoz portalini ochish",
-    "staffLink": "Xodimmisiz?",
-    "staffSignIn": "Xodimlar kirishi",
     "demoAdmin": "Demo: admin",
     "demoTech": "texnik",
     "portalKicker": "MIJOZ PORTALI",
-    "portalTitle": "Xizmatingizni kuzating",
-    "portalHint": "RIZO hisobingizdagi telefon raqami bilan kiring.",
     "forgot": "Parolni unutdingizmi?",
     "resetIt": "Tiklash",
     "newHere": "Yangi foydalanuvchimisiz?",
     "createAccount": "Hisob ochish",
-    "demoCustomer": "Demo",
     "signupTitle": "Hisob ochish",
     "signupHint": "RIZO xaridlaringizdagi telefon raqamidan foydalaning.",
     "fullName": "To‘liq ism",
@@ -136,7 +126,14 @@
     "showPassword": "Parolni ko'rsatish",
     "hidePassword": "Parolni yashirish",
     "resetSentTitle": "Telefoningizni tekshiring",
-    "resetSentBody": "Agar bu raqamda portal akkaunti bo‘lsa, yangi parolni SMS orqali yubordik. U bilan kiring va saqlab qo‘ying."
+    "resetSentBody": "Agar bu raqamda portal akkaunti bo‘lsa, yangi parolni SMS orqali yubordik. U bilan kiring va saqlab qo‘ying.",
+    "otherAccount": "Boshqa raqam bilan kirish",
+    "loginTitle": "Tizimga kirish",
+    "loginHint": "Telefon raqamingiz va parolingiz bilan kiring: xodim yoki mijoz ekaningiz o‘zi aniqlanadi.",
+    "chooseSide": "Bu raqam va parol ikkala hisobga mos. Qaysi biriga kiramiz?",
+    "asStaff": "Xodim sifatida",
+    "asCustomer": "Mijoz sifatida",
+    "demoBoth": "Demo — xodim: {{staff}} · mijoz: {{customer}}"
   },
   "nav": {
     "dashboard": "Bosh sahifa",
@@ -1562,7 +1559,9 @@
     "notYourWarehouse": "Bu ombor sizga biriktirilmagan.",
     "warehouseInUse": "Omborda qoldiq, so‘rov yoki xodim bor: avval faolsizlantiring.",
     "centralWarehouse": "Markaziy omborni o‘chirib yoki o‘zgartirib bo‘lmaydi.",
-    "telegramNotConfigured": "Telegram boti hali sozlanmagan."
+    "telegramNotConfigured": "Telegram boti hali sozlanmagan.",
+    "useCustomerApp": "Bu mijoz hisobi: RIZO Mijoz ilovasi yoki saytdan foydalaning.",
+    "useStaffApp": "Bu xodim hisobi: RIZO Texnik ilovasi yoki saytdan foydalaning."
   },
   "customerStatus": {
     "new": "Qabul qilindi",

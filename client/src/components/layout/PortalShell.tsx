@@ -21,14 +21,14 @@ export function PortalShell() {
 
   function onLogout() {
     logout();
-    navigate("/portal/login");
+    navigate("/login");
   }
 
   const links = [
     { to: "/portal", label: t("nav.myRequests"), icon: ClipboardList, end: true },
     { to: "/portal/new", label: t("nav.newRequest"), icon: Plus, end: false },
     { to: "/portal/products", label: t("nav.myProducts"), icon: Package, end: false },
-    { to: "/centers", label: t("nav.centers"), icon: MapPin, end: false },
+    { to: "/portal/centers", label: t("nav.centers"), icon: MapPin, end: false },
   ];
 
   return (

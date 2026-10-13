@@ -37,7 +37,7 @@ export function CustomerForgotPage() {
   return (
     <BrandChrome
       action={
-        <Link to="/portal/login" className="btn-rizo-ghost h-11">
+        <Link to="/login" className="btn-rizo-ghost h-11">
           {t("common.signIn")}
         </Link>
       }
@@ -53,7 +53,7 @@ export function CustomerForgotPage() {
           <div className="rounded-2xl border border-gray-100 bg-[#FFF4E5] p-5 sm:p-6">
             <p className="text-sm font-semibold text-[#C56A00]">{t("auth.resetSentTitle")}</p>
             <p className="mt-3 text-sm text-gray-600">{t("auth.resetSentBody")}</p>
-            <Link to="/portal/login" className="btn-rizo mt-5 h-12 w-full text-sm">
+            <Link to="/login" className="btn-rizo mt-5 h-12 w-full text-sm">
               {t("auth.backToSignIn")}
             </Link>
           </div>

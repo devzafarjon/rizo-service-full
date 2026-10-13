@@ -3,6 +3,9 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { RizoLogo, RizoServiceLockup } from "./RizoLogo";
+import { useCustomerAuth } from "../features/auth/CustomerAuthContext";
+import { useStaffAuth } from "../features/auth/StaffAuthContext";
+import { homePathFor } from "../lib/home";
 
 /**
  * Public page frame, matching the RizoPost sign-in screen: light gray page, no app chrome.
@@ -18,6 +21,23 @@ export function BrandChrome({
   variant?: "auth" | "landing";
 }) {
   const { t } = useTranslation();
+  const { user: staff } = useStaffAuth();
+  const { user: customer } = useCustomerAuth();
+
+  // Who is signed in decides the way back: a customer never sees the staff sign-in, and staff never see the portal's.
+  const sessionAction = staff ? (
+    <Link to={homePathFor(staff.role)} className="btn-rizo h-11">
+      {t("home.staffContinue")}
+    </Link>
+  ) : customer ? (
+    <Link to="/portal" className="btn-rizo h-11">
+      {t("home.portalContinue")}
+    </Link>
+  ) : (
+    <Link to="/login" className="btn-rizo-ghost h-11">
+      {t("common.signIn")}
+    </Link>
+  );
 
   return (
     <div className="min-h-dvh bg-[#F5F7FA] text-gray-800">
@@ -31,11 +51,7 @@ export function BrandChrome({
         )}
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
-          {action ?? (
-            <Link to="/login" className="btn-rizo-ghost h-11">
-              {t("common.signIn")}
-            </Link>
-          )}
+          {staff || customer ? sessionAction : (action ?? sessionAction)}
         </div>
       </div>
       {variant === "auth" ? (

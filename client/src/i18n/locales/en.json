@@ -92,32 +92,22 @@
     "portalBadge": "Customer portal"
   },
   "home": {
-    "staff": "Staff sign in",
     "staffContinue": "Continue as staff",
-    "portal": "Customer portal",
     "portalContinue": "Continue to portal",
     "track": "Track a request",
     "centers": "Service centers"
   },
   "auth": {
-    "staffTitle": "Staff sign in",
-    "staffHint": "Dispatchers and technicians use this login.",
     "signedIn": "Signed in",
     "signInFailed": "Could not sign in",
     "customerLink": "Customer?",
-    "openPortal": "Open the customer portal",
-    "staffLink": "Staff member?",
-    "staffSignIn": "Staff sign in",
     "demoAdmin": "Demo: admin",
     "demoTech": "technician",
     "portalKicker": "CUSTOMER PORTAL",
-    "portalTitle": "Track your service",
-    "portalHint": "Sign in with the phone number on your RIZO account.",
     "forgot": "Forgot password?",
     "resetIt": "Reset it",
     "newHere": "New here?",
     "createAccount": "Create an account",
-    "demoCustomer": "Demo",
     "signupTitle": "Create an account",
     "signupHint": "Use the phone number from your RIZO purchases when you have one.",
     "fullName": "Full name",
@@ -136,7 +126,14 @@
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "resetSentTitle": "Check your phone",
-    "resetSentBody": "If this number has a portal account, we sent a new password by SMS. Sign in with it and keep it safe."
+    "resetSentBody": "If this number has a portal account, we sent a new password by SMS. Sign in with it and keep it safe.",
+    "otherAccount": "Sign in with another number",
+    "loginTitle": "Sign in",
+    "loginHint": "Sign in with your phone number and password: whether you are staff or a customer is detected automatically.",
+    "chooseSide": "This number and password open two accounts. Which one?",
+    "asStaff": "As staff",
+    "asCustomer": "As a customer",
+    "demoBoth": "Demo — staff: {{staff}} · customer: {{customer}}"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -1562,7 +1559,9 @@
     "notYourWarehouse": "This warehouse is not assigned to you.",
     "warehouseInUse": "This warehouse has stock, requests or staff: switch it off instead.",
     "centralWarehouse": "The central warehouse cannot be deleted or switched off.",
-    "telegramNotConfigured": "The Telegram bot is not set up yet."
+    "telegramNotConfigured": "The Telegram bot is not set up yet.",
+    "useCustomerApp": "This is a customer account: use the RIZO Mijoz app or the website.",
+    "useStaffApp": "This is a staff account: use the RIZO Texnik app or the website."
   },
   "customerStatus": {
     "new": "Received",

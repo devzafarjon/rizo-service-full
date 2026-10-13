@@ -23,7 +23,11 @@
     "demo:clean": "node --import tsx/esm scripts/demo-clean.ts",
     "smoke:parts": "node --import tsx/esm scripts/parts-smoke.ts",
     "smoke:warehouses": "node --import tsx/esm scripts/warehouses-smoke.ts",
-    "smoke:telegram": "node --import tsx/esm scripts/telegram-smoke.ts"
+    "smoke:telegram": "node --import tsx/esm scripts/telegram-smoke.ts",
+    "smoke:auth": "node --import tsx/esm scripts/auth-smoke.ts",
+    "smoke:rbac": "node --import tsx/esm scripts/rbac-smoke.ts",
+    "smoke:concurrency": "node --import tsx/esm scripts/concurrency-smoke.ts",
+    "smoke:fuzz": "node --import tsx/esm scripts/fuzz-smoke.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

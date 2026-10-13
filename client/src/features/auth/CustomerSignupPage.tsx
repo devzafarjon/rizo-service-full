@@ -48,7 +48,7 @@ export function CustomerSignupPage() {
   return (
     <BrandChrome
       action={
-        <Link to="/portal/login" className="btn-rizo-ghost h-11">
+        <Link to="/login" className="btn-rizo-ghost h-11">
           {t("common.signIn")}
         </Link>
       }
@@ -86,7 +86,7 @@ export function CustomerSignupPage() {
 
         <p className="mt-6 text-center text-sm text-gray-500">
           {t("auth.haveAccount")}{" "}
-          <Link to="/portal/login" className="font-bold text-[#7B00E0] hover:underline">
+          <Link to="/login" className="font-bold text-[#7B00E0] hover:underline">
             {t("common.signIn")}
           </Link>
         </p>
