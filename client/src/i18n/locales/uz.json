@@ -173,7 +173,9 @@
     "checklists": "Tekshiruv ro‘yxatlari",
     "myStock": "Mening zaxiram",
     "warehouses": "Omborlar",
-    "automation": "Avtomatik vazifalar"
+    "automation": "Avtomatik vazifalar",
+    "directory": "Brendlar va modellar",
+    "mySkills": "Men tuzataman"
   },
   "staffHome": {
     "welcome": "Xush kelibsiz",
@@ -448,7 +450,10 @@
     "deadlineSummary": "{{count}} ta so‘rovning muddati yaqin ({{ids}}). Texniksiz: {{unassigned}}.",
     "dailyReport": "Kunlik hisobot {{date}}: {{created}} yangi, {{finished}} tugagan, {{open}} ochiq, {{overdue}} kechikkan, {{partsWaiting}} qism kutmoqda.",
     "payrollStatement": "Ish haqi hisobingiz tayyor ({{from}} – {{to}}): {{jobs}} ta ish, jami {{total}} so‘m.",
-    "payrollSummary": "Ish haqi {{from}} – {{to}}: {{technicians}} texnik, jami {{total}} so‘m."
+    "payrollSummary": "Ish haqi {{from}} – {{to}}: {{technicians}} texnik, jami {{total}} so‘m.",
+    "catalogPendingBrand": "{{by}} \"{{name}}\" brendini qo'shdi. Ishlatish uchun tasdiqlang.",
+    "catalogPendingModel": "{{by}} \"{{name}}\" modelini qo'shdi. Ishlatish uchun tasdiqlang.",
+    "queueOverride": "{{displayId}} ({{product}}) ni admin oldinga chiqardi: {{reason}}"
   },
   "notifications": {
     "title": "Bildirishnomalar",
@@ -720,7 +725,13 @@
     "openExisting": "Mavjud so‘rovni ochish",
     "createAnyway": "Baribir yaratish",
     "repeatFound": "Takroriy nosozlik aniqlandi ({{id}})",
-    "repeatFree": "Takroriy nosozlik ({{id}}) — ta’mir bepul"
+    "repeatFree": "Takroriy nosozlik ({{id}}) — ta’mir bepul",
+    "device": {
+      "rizo": "RIZO mahsuloti",
+      "rizoHint": "RIZO sotgan yoki kafolatdagi",
+      "other": "Boshqa brend",
+      "otherHint": "Pullik ta'mir, RIZO kafolati yo'q"
+    }
   },
   "detail": {
     "job": "Ish",
@@ -1419,7 +1430,16 @@
       "warehouse.update": "Ombor o‘zgartirildi",
       "warehouse.delete": "Ombor o‘chirildi",
       "warehouse.stock": "Ombor qoldig‘i o‘zgartirildi",
-      "autojob.run": "Avtomatik vazifa qo‘lda ishga tushirildi"
+      "autojob.run": "Avtomatik vazifa qo‘lda ishga tushirildi",
+      "directory.brand.add": "Brend qo'shildi",
+      "directory.model.add": "Model qo'shildi",
+      "directory.brand.rename": "Brend nomi o'zgardi",
+      "directory.model.update": "Model o'zgardi",
+      "directory.approve": "Brend yoki model tasdiqlandi",
+      "directory.delete": "Brend yoki model o'chirildi",
+      "directory.merge": "Brend yoki modellar birlashtirildi",
+      "directory.skills": "\"Men tuzataman\" ro'yxati o'zgardi",
+      "request.queueOverride": "Ish oldinga chiqarildi"
     }
   },
   "errors": {
@@ -1561,7 +1581,20 @@
     "centralWarehouse": "Markaziy omborni o‘chirib yoki o‘zgartirib bo‘lmaydi.",
     "telegramNotConfigured": "Telegram boti hali sozlanmagan.",
     "useCustomerApp": "Bu mijoz hisobi: RIZO Mijoz ilovasi yoki saytdan foydalaning.",
-    "useStaffApp": "Bu xodim hisobi: RIZO Texnik ilovasi yoki saytdan foydalaning."
+    "useStaffApp": "Bu xodim hisobi: RIZO Texnik ilovasi yoki saytdan foydalaning.",
+    "similarBrand": "Shunga o'xshash brend bor",
+    "similarModel": "Shunga o'xshash model bor",
+    "modelNotApproved": "Bu modelni admin hali tasdiqlamagan",
+    "waitingForWarranty": "Avval RIZO va kafolatli ishlarni tugating (yana {{count}} ta)",
+    "brandInUse": "Bu brendda so'rovlar bor; uni boshqa brendga birlashtiring",
+    "modelInUse": "Bu modelda so'rovlar bor; uni boshqa modelga birlashtiring",
+    "ownBrand": "Kompaniyaning o'z brendini bunday o'zgartirib bo'lmaydi",
+    "ownBrandModel": "RIZO mahsulotlari katalogda yuritiladi",
+    "unknownCategory": "Mavjud kategoriyani tanlang",
+    "brandNameRequired": "Brend nomini kiriting",
+    "modelNameRequired": "Modelni kiriting",
+    "mergeSame": "Boshqa yozuvni tanlang",
+    "alreadyFirstTier": "Bu ish allaqachon birinchi navbatda"
   },
   "customerStatus": {
     "new": "Qabul qilindi",
@@ -2547,5 +2580,69 @@
       "empty": "Hali hisob tuzilmagan.",
       "jobs": "{{count}} ta ish"
     }
+  },
+  "directory": {
+    "title": "Brendlar va modellar",
+    "intro": "Boshqa ishlab chiqaruvchilarning brend va modellari. RIZO mahsulotlari katalogda yuritiladi. Boshqa brend qurilmalari pullik ta'mirlanadi va RIZO kafolati yo'q.",
+    "addDevice": "Qurilma qo'shish",
+    "addHint": "Siz qo'shganni admin tasdiqlagandan keyingina so'rovlarda ishlatish mumkin.",
+    "addHintAdmin": "Admin sifatida qo'shganingiz darrov tasdiqlanadi.",
+    "brand": "Brend",
+    "brandPlaceholder": "Masalan, Samsung",
+    "category": "Kategoriya",
+    "chooseCategory": "Kategoriyani tanlang",
+    "model": "Model",
+    "modelPlaceholder": "Masalan, WW70T4020",
+    "chooseBrand": "Brendni tanlang",
+    "chooseModel": "Modelni tanlang",
+    "similarBrand": "Shunga o'xshash brend bor:",
+    "similarModel": "Shunga o'xshash model bor:",
+    "similarHint": "Bir xil bo'lsa, mavjudini ishlating. Aks holda o'zingiznikini baribir qo'shing.",
+    "addAnyway": "Baribir qo'shish",
+    "add": "Qo'shish",
+    "pending": "Tasdiq kutilmoqda",
+    "approve": "Tasdiqlash",
+    "reject": "Rad etish",
+    "rename": "Nomini o'zgartirish",
+    "merge": "Birlashtirish",
+    "delete": "O'chirish",
+    "save": "Saqlash",
+    "deleteTitle": "O'chirilsinmi?",
+    "deleteBody": "\"{{name}}\" o'chiriladi. Faqat so'rovlari bo'lmasa o'chadi.",
+    "mergeTitle": "\"{{name}}\" ni birlashtirish",
+    "mergeBody": "Unga tegishli hamma narsa tanlaganingizga o'tadi, bu yozuv esa o'chadi.",
+    "mergeInto": "Qaysi biriga qo'shiladi",
+    "waitingTitle_one": "{{count}} ta yozuv tasdig'ingizni kutmoqda",
+    "waitingTitle_other": "{{count}} ta yozuv tasdig'ingizni kutmoqda",
+    "withModels_one": "{{count}} ta model bilan",
+    "withModels_other": "{{count}} ta model bilan",
+    "empty": "Hozircha brend yo'q",
+    "own": "O'zimizning brend",
+    "modelCount_one": "{{count}} ta model",
+    "modelCount_other": "{{count}} ta model",
+    "requestsCount_one": "{{count}} ta so'rov",
+    "requestsCount_other": "{{count}} ta so'rov",
+    "noModels": "Hozircha model yo'q.",
+    "ownNote": "RIZO mahsulotlari katalogda tahrirlanadi.",
+    "skillsIntro": "RIZO mahsulotlari va kafolatdagi ishlarni barcha texniklar tuzatadi. Bu yerga siz tuzata oladigan boshqa brendlarni kiriting; ularning ishlari RIZO va kafolatli ishlardan keyin keladi.",
+    "skillsEmpty": "Hozircha hech narsa kiritilmagan: faqat RIZO va kafolatli ishlar tushadi.",
+    "allModels": "barcha modellar",
+    "allModelsOfBrand": "Brendning barcha modellari",
+    "addToList": "Ro'yxatimga qo'shish",
+    "notInList": "Ro'yxatda yo'qmi? Yangi brend yoki model qo'shing",
+    "mySkillsTitle": "Men tuzataman",
+    "mySkillsIntro": "Siz tuzata oladigan boshqa brend va modellar.",
+    "otherMakerNote": "Boshqa brend qurilmasi pullik ta'mirlanadi, RIZO kafolati yo'q va texnikning RIZO hamda kafolatli ishlari tugamaguncha kutadi.",
+    "pickModel": "Qurilmaning brendi va modelini tanlang.",
+    "tierBadge": "Boshqa brend · pullik",
+    "tierBadgeBrand": "{{brand}} · pullik",
+    "tierNote": "Boshqa brend qurilmasi: pullik ta'mir, texnikning RIZO va kafolatli ishlaridan keyin bajariladi.",
+    "waitingNote": "Kutilmoqda: texnikda Yangi, Diagnostika yoki Jarayonda holatida {{count}} ta RIZO yoki kafolatli ish bor.",
+    "waitingTech": "Kutilmoqda: avval RIZO va kafolatli ishlaringizni tugating.",
+    "overridden": "{{by}} bu ishni oldinga chiqardi: {{reason}}",
+    "moveToFront": "Oldinga chiqarish",
+    "overrideBody": "Texnik bu ishni darrov boshlay oladi. Sabab faoliyat jurnaliga yoziladi.",
+    "overrideReason": "Sabab",
+    "overrideDone": "Ish oldinga chiqarildi"
   }
 }

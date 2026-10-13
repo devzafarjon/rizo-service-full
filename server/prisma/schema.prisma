@@ -185,6 +185,7 @@ model StaffUser {
   alerts             Notification[]       @relation("StaffAlerts")
   deviceTokens       DeviceToken[]
   payrollStatements  PayrollStatement[]
+  repairSkills       StaffSkill[]
   // Product categories this technician can repair (empty = any) and a home base used to pick the nearest one.
   skillCategories    String[]             @default([]) @map("skill_categories")
   baseLat            Float?               @map("base_lat")
@@ -250,12 +251,20 @@ model Product {
   warrantyCoversLabor Boolean           @default(true) @map("warranty_covers_labor")
   warrantyCoversParts Boolean           @default(true) @map("warranty_covers_parts")
   categoryRef         ProductCategory   @relation(fields: [category], references: [name], onUpdate: Cascade, onDelete: Restrict)
+  // Every product belongs to a brand; the default is the company's own brand (RIZO), so existing code that never mentions brands keeps working.
+  brandId             String            @default("brand_rizo") @map("brand_id")
+  brand               Brand             @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  addedByName         String?           @map("added_by_name")
+  // A model typed in by a technician or the front desk waits here until an admin approves it (admins' own entries are approved at once).
+  approved            Boolean           @default(true)
   createdAt           DateTime          @default(now()) @map("created_at")
+  staffSkills         StaffSkill[]
   sales               Sale[]
   requests            ServiceRequest[]
   replacements        ReplacementItem[]
 
   @@index([category])
+  @@index([brandId])
   @@map("products")
 }
 
@@ -356,6 +365,10 @@ model ServiceRequest {
   etaMinutes             Int?                    @map("eta_minutes")
   etaSetAt               DateTime?               @map("eta_set_at")
   completionChecklist    Json?                   @map("completion_checklist")
+  // Set by an admin to let a second-tier job (another brand, no warranty) start before the technician's warranty jobs are done.
+  queueOverrideReason    String?                 @map("queue_override_reason")
+  queueOverrideAt        DateTime?               @map("queue_override_at")
+  queueOverrideBy        String?                 @map("queue_override_by")
   escalationLevel        Int                     @default(0) @map("escalation_level")
   escalatedAt            DateTime?               @map("escalated_at")
   legalDueAt             DateTime?               @map("legal_due_at")
@@ -1004,4 +1017,35 @@ model PayrollStatement {
   @@unique([staffUserId, periodFrom, periodTo])
   @@index([periodTo])
   @@map("payroll_statements")
+}
+
+// A make of device. The company's own brand (isOwn) is the first-tier work; any other brand is repaired only by technicians who list it.
+model Brand {
+  id          String       @id @default(cuid())
+  name        String
+  // Lower-case letters and digits only, so "Samsung", "samsung" and "SAM-SUNG" are the same brand.
+  key         String       @unique
+  isOwn       Boolean      @default(false) @map("is_own")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  addedByName String?      @map("added_by_name")
+  approved    Boolean      @default(true)
+  products    Product[]
+  staffSkills StaffSkill[]
+
+  @@map("brands")
+}
+
+// "I repair": a technician lists a whole brand or one model (exactly one of the two is set).
+model StaffSkill {
+  id          String    @id @default(cuid())
+  staffUserId String    @map("staff_user_id")
+  brandId     String?   @map("brand_id")
+  productId   String?   @map("product_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  staffUser   StaffUser @relation(fields: [staffUserId], references: [id], onDelete: Cascade)
+  brand       Brand?    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  product     Product?  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([staffUserId])
+  @@map("staff_skills")
 }

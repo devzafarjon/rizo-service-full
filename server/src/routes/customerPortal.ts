@@ -172,7 +172,7 @@ customerPortalRouter.get(
 customerPortalRouter.get(
   "/products",
   asyncHandler(async (_req, res) => {
-    const products = await prisma.product.findMany({ orderBy: { name: "asc" } });
+    const products = await prisma.product.findMany({ where: { brand: { isOwn: true } }, orderBy: { name: "asc" } });
     res.json({
       products: products.map((product) => ({
         id: product.id,
@@ -351,7 +351,7 @@ customerPortalRouter.post(
       }),
       req.body,
     );
-    const product = await prisma.product.findUnique({ where: { id: body.productId } });
+    const product = await prisma.product.findFirst({ where: { id: body.productId, brand: { isOwn: true } } });
     if (!product) throw new HttpError(400, "Product not found");
     const saleDate = parseDateOnly(body.purchaseDate);
     if (saleDate.getTime() > Date.now()) throw new HttpError(400, "The purchase date cannot be in the future", "futureDate");

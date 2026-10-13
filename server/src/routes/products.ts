@@ -57,6 +57,8 @@ productsRouter.get(
               }
             : {},
           category ? { category } : {},
+          // The RIZO catalogue lists the company's own products; other makers live in the directory (/api/staff/directory).
+          req.query.all === "1" ? {} : { brand: { isOwn: true } },
         ],
       },
       orderBy: [{ category: "asc" }, { name: "asc" }],

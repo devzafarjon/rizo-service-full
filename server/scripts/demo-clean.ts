@@ -66,7 +66,7 @@ async function main() {
   const customers = (await prisma.$queryRawUnsafe<Array<{ id: string }>>(`select id from customers where notes = $1`, MARK)).map((row) => row.id);
   const requests = customers.length ? (await prisma.$queryRawUnsafe<Array<{ id: string }>>(`select id from service_requests where customer_id = any($1::text[])`, customers)).map((row) => row.id) : [];
   const sales = customers.length ? (await prisma.$queryRawUnsafe<Array<{ id: string }>>(`select id from sales where customer_id = any($1::text[])`, customers)).map((row) => row.id) : [];
-  const products = (await prisma.$queryRawUnsafe<Array<{ id: string }>>(`select id from products where sku like 'DEMO-%'`)).map((row) => row.id);
+  const products = (await prisma.$queryRawUnsafe<Array<{ id: string }>>(`select id from products where sku like 'DEMO-%' or added_by_name = $1`, MARK)).map((row) => row.id);
   const stockOrders = (await prisma.$queryRawUnsafe<Array<{ id: string }>>(`select id from part_orders where note = $1 and service_request_id is null`, MARK)).map((row) => row.id);
   const demoParts = (await prisma.$queryRawUnsafe<Array<{ id: string }>>(`select id from spare_parts where name like 'DEMO %'`)).map((row) => row.id);
   const suppliers = (await prisma.$queryRawUnsafe<Array<{ id: string }>>(`select id from suppliers where note like $1 || '%'`, MARK)).map((row) => row.id);
@@ -138,6 +138,8 @@ async function main() {
         const used = await tx.$queryRawUnsafe<Array<{ n: number }>>(`select (select count(*) from sales where product_id = $1)::int + (select count(*) from service_requests where product_id = $1)::int as n`, id);
         if (used[0].n === 0) await purge(tx, "products", [id]);
       }
+      // The demo brands of other makers go once no model is left under them ("I repair" entries go with them).
+      removed.brands = Number(await tx.$executeRawUnsafe(`delete from brands b where b.is_own = false and b.added_by_name = $1 and not exists (select 1 from products p where p.brand_id = b.id)`, MARK));
     },
     { timeout: 120_000 },
   );

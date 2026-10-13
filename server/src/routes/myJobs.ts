@@ -28,6 +28,7 @@ import { consumeForJob, releaseFromJob, technicianStockList } from "../lib/techS
 import { normalizeDisplayIdQuery, tashkentCalendarDate } from "../lib/displayId.js";
 import { parseDateOnly, toDateOnly } from "../lib/warranty.js";
 import { earningsFor } from "./payroll.js";
+import { assertQueueOpen, firstTierBacklog, isWaitingForFirstTier } from "../lib/queue.js";
 import { parseReportRange, serializeWindow } from "../lib/reportRange.js";
 
 const jobInclude = Prisma.validator<Prisma.ServiceRequestInclude>()({
@@ -183,7 +184,8 @@ myJobsRouter.get(
       orderBy: { createdAt: "desc" },
       include: jobInclude,
     });
-    res.json({ jobs: jobs.map(serializeTechJob) });
+    const backlog = await firstTierBacklog(req.staff!.sub);
+    res.json({ jobs: await Promise.all(jobs.map(async (job) => serializeTechJob(job, await isWaitingForFirstTier(job, backlog)))) });
   }),
 );
 
@@ -516,7 +518,7 @@ myJobsRouter.put(
       throw new HttpError(400, "Only repairs have a resolution");
     }
     if (body.resolutionType === "replace") {
-      const product = await prisma.product.findUnique({ where: { id: body.productId! } });
+      const product = await prisma.product.findFirst({ where: { id: body.productId!, brand: { isOwn: true } } });
       if (!product) throw new HttpError(400, "Replacement product not found");
       await prisma.$transaction([
         prisma.serviceRequest.update({ where: { id: job.id }, data: { resolutionType: "replace" } }),
@@ -771,6 +773,7 @@ async function loadOpenJob(technicianId: string, id: string) {
   if (techColumn(job.status) === "completed") {
     throw new HttpError(400, "Completed jobs cannot be edited");
   }
+  await assertQueueOpen(job);
   return job;
 }
 
@@ -786,7 +789,7 @@ async function jobWorkPayload(job: OwnedJob) {
       orderBy: { name: "asc" },
     }),
     job.type === "repair"
-      ? prisma.product.findMany({ where: { category: job.product.category }, orderBy: { name: "asc" } })
+      ? prisma.product.findMany({ where: { category: job.product.category, brand: { isOwn: true } }, orderBy: { name: "asc" } })
       : Promise.resolve([]),
     prisma.estimate.findMany({ where: { serviceRequestId: job.id }, orderBy: { createdAt: "desc" }, include: estimateInclude }),
     prisma.defectCode.findMany({
@@ -811,7 +814,7 @@ async function jobWorkPayload(job: OwnedJob) {
   // Same rule as when the job is completed: repairs that are not replaced need their required items ticked.
   const checklistGap = checklist.missingRequired.length > 0 && job.type === "repair" && job.resolutionType !== "replace";
   return {
-    job: serializeTechJob(job),
+    job: serializeTechJob(job, await isWaitingForFirstTier(job)),
     pauses: serializePauses(job.pauses),
     timeline: await loadTimeline(job),
     decision: job.decision,
@@ -868,10 +871,12 @@ async function jobWorkPayload(job: OwnedJob) {
   };
 }
 
-function serializeTechJob(job: Prisma.ServiceRequestGetPayload<{ include: typeof jobInclude }>) {
+function serializeTechJob(job: Prisma.ServiceRequestGetPayload<{ include: typeof jobInclude }>, waiting = false) {
   return {
     ...serializeRequest(job as RequestRecord),
     column: techColumn(job.status),
+    // True while this job must wait for the technician's RIZO and warranty jobs.
+    waitingForFirstTier: waiting,
   };
 }
 

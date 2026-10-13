@@ -11,6 +11,7 @@ import { useStaffAuth } from "../auth/StaffAuthContext";
 import { api, apiErrorMessage } from "../../lib/api";
 import { formatMoney, formatPhone, technicianTypeLabel } from "../../lib/format";
 import { categoryLabel } from "../../lib/localized";
+import { SkillsEditor } from "../directory/SkillsEditor";
 import type { ServiceCenter, StaffRole, TechnicianType, Warehouse } from "../../lib/types";
 
 type Row = {
@@ -263,6 +264,12 @@ export function StaffPage() {
                   })}
                 </div>
               </Field>
+              {editing && editing !== "new" ? (
+                <div className="rounded-xl border border-neutral-200 p-3">
+                  <p className="mb-2 text-[10.24px] font-bold tracking-wide text-gray-700 uppercase">{t("directory.mySkillsTitle")}</p>
+                  <SkillsEditor staffId={editing.id} />
+                </div>
+              ) : null}
               <div className="grid grid-cols-2 gap-3">
                 <Field label={t("staffAdmin.baseLat")} hint={t("staffAdmin.baseHint")}>
                   <input className={inputClass} type="number" step="any" min={-90} max={90} value={form.baseLat} onChange={(event) => setForm({ ...form, baseLat: event.target.value })} />

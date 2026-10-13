@@ -16,7 +16,7 @@ import { useMemo, useState, type HTMLAttributes } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router-dom";
 import { segmentedGroupClass, segmentedItemClass } from "../../components/segmented";
-import { PriorityBadge, TypeBadge, WarrantyBadge } from "../../components/Badges";
+import { PriorityBadge, TierBadge, TypeBadge, WarrantyBadge } from "../../components/Badges";
 import { inputClass } from "../../components/Field";
 import { JobTimerChip } from "../../components/JobTimer";
 import { PageSkeleton } from "../../components/PageSkeleton";
@@ -414,6 +414,7 @@ function RequestCard({
             <TypeBadge type={request.type} />
             <PriorityBadge priority={request.priority} />
             <WarrantyBadge status={request.warrantyStatus} />
+            <TierBadge tier={request.tier} brand={request.brand} />
             {request.isOverdue ? (
               <span className="inline-flex rounded-full bg-rose-100 px-2.5 py-1 text-xs font-bold text-rose-700">{t("kanban.overdue")}</span>
             ) : null}

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
+  BadgeCheck,
   BarChart3,
   Building2,
   CalendarClock,
@@ -25,6 +26,7 @@ import {
   ScrollText,
   ShoppingBag,
   Store,
+  Tags,
   UserCog,
   Users,
   Wallet,
@@ -60,6 +62,7 @@ export const ADMIN_MANAGEMENT: NavItem[] = [
   { to: "/app/requests", labelKey: "nav.requests", icon: ClipboardList, roles: OFFICE, end: true },
   { to: "/app/calendar", labelKey: "nav.calendar", icon: CalendarClock, roles: OFFICE },
   { to: "/app/map", labelKey: "nav.map", icon: MapIcon, roles: OFFICE },
+  { to: "/app/directory", labelKey: "nav.directory", icon: Tags, roles: OFFICE },
   { to: "/app/catalog", labelKey: "nav.inventory", icon: Package, roles: ["admin", "warehouse"] },
   { to: "/app/part-orders", labelKey: "nav.partOrders", icon: PackageCheck, roles: ["admin", "receptionist", "warehouse"] },
   { to: "/app/warehouses", labelKey: "nav.warehouses", icon: Warehouse, roles: ["admin", "receptionist", "warehouse", "accountant"] },
@@ -81,6 +84,7 @@ export const ADMIN_MANAGEMENT: NavItem[] = [
 export const TECH_NAV: NavItem[] = [
   { to: "/app/my-jobs", labelKey: "nav.myJobs", icon: Wrench, roles: ["technician"] },
   { to: "/app/my-stock", labelKey: "nav.myStock", icon: Boxes, roles: ["technician"] },
+  { to: "/app/my-skills", labelKey: "nav.mySkills", icon: BadgeCheck, roles: ["technician"] },
   { to: "/app/my-earnings", labelKey: "nav.myEarnings", icon: Wallet, roles: ["technician"] },
 ];
 

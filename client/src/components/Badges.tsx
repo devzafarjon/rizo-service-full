@@ -15,6 +15,13 @@ export function WarrantyBadge({ status }: { status: WarrantyStatus }) {
   return <span className={`${badgeClass} bg-neutral-100 text-neutral-600`}>{t("warranty.not_applicable")}</span>;
 }
 
+/** Second-tier work: a device of another maker, paid, done after the technician's RIZO and warranty jobs. */
+export function TierBadge({ tier, brand }: { tier: 1 | 2; brand?: { name: string } | null }) {
+  const { t } = useTranslation();
+  if (tier !== 2) return null;
+  return <span className={`${badgeClass} bg-sky-50 text-sky-800`}>{brand ? t("directory.tierBadgeBrand", { brand: brand.name }) : t("directory.tierBadge")}</span>;
+}
+
 export function TypeBadge({ type }: { type: ServiceType }) {
   const { t } = useTranslation();
   const styles: Record<ServiceType, string> = {

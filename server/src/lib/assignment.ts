@@ -2,6 +2,7 @@ import type { PaymentStatus, RequestStatus, ServiceType, TechnicianType, Warrant
 import { OPEN_STATUSES } from "./status.js";
 import { tashkentCalendarDate } from "./displayId.js";
 import { prisma } from "./prisma.js";
+import { FIRST_TIER_BUSY, firstTierWhere } from "./queue.js";
 
 export function initialStatusFor(): RequestStatus {
   return "new";
@@ -46,10 +47,12 @@ export function distanceKm(a: GeoPoint, b: GeoPoint) {
  * Picks the technician for a new job: right type, working today, able to repair this product category
  * (a technician with no skills listed takes anything) and then the best of load and distance:
  * every open job counts as one point and every 10 km from the technician's base as another.
+ * Another maker's device (`secondTier`) only goes to a technician who lists that brand or model under "I repair", and
+ * to one without RIZO / warranty jobs waiting if there is such a technician.
  */
 export async function pickAvailableTechnician(
   technicianType: TechnicianType,
-  options?: { serviceCenterId?: string | null; productCategory?: string | null; location?: GeoPoint | null },
+  options?: { serviceCenterId?: string | null; productCategory?: string | null; location?: GeoPoint | null; secondTier?: { productId: string; brandId: string } | null },
 ) {
   const today = new Date(`${tashkentCalendarDate(new Date())}T00:00:00.000Z`);
   const todayRows = await prisma.technicianSchedule.findMany({
@@ -70,7 +73,23 @@ export async function pickAvailableTechnician(
     select: { id: true, name: true, phone: true, technicianType: true, isAvailable: true, skillCategories: true, baseLat: true, baseLng: true, serviceCenter: { select: { lat: true, lng: true } } },
   });
   const category = options?.productCategory;
-  const skilled = category ? technicians.filter((tech) => tech.skillCategories.length === 0 || tech.skillCategories.includes(category)) : technicians;
+  const secondTier = options?.secondTier ?? null;
+  const busyFirstTier = new Set<string>();
+  if (secondTier) {
+    const listed = await prisma.staffSkill.findMany({
+      where: { staffUserId: { in: technicians.map((tech) => tech.id) }, OR: [{ brandId: secondTier.brandId }, { productId: secondTier.productId }] },
+      select: { staffUserId: true },
+    });
+    const allowed = new Set(listed.map((row) => row.staffUserId));
+    technicians.splice(0, technicians.length, ...technicians.filter((tech) => allowed.has(tech.id)));
+    const busy = await prisma.serviceRequest.groupBy({
+      by: ["assignedTechnicianId"],
+      where: { assignedTechnicianId: { in: technicians.map((tech) => tech.id) }, status: { in: FIRST_TIER_BUSY }, ...firstTierWhere },
+      _count: { _all: true },
+    });
+    for (const row of busy) if (row.assignedTechnicianId) busyFirstTier.add(row.assignedTechnicianId);
+  }
+  const skilled = secondTier ? technicians : category ? technicians.filter((tech) => tech.skillCategories.length === 0 || tech.skillCategories.includes(category)) : technicians;
   technicians.splice(0, technicians.length, ...skilled);
   if (technicians.length === 0) {
     return null;
@@ -88,7 +107,7 @@ export async function pickAvailableTechnician(
 
   const score = (tech: (typeof technicians)[number]) => {
     const km = options?.location ? distanceKm({ lat: tech.baseLat ?? tech.serviceCenter?.lat, lng: tech.baseLng ?? tech.serviceCenter?.lng }, options.location) : null;
-    return (openJobs.get(tech.id) ?? 0) + (km == null ? 0 : km / 10);
+    return (openJobs.get(tech.id) ?? 0) + (km == null ? 0 : km / 10) + (busyFirstTier.has(tech.id) ? 1000 : 0);
   };
   technicians.sort((a, b) => {
     const diff = score(a) - score(b);
