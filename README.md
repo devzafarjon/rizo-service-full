@@ -100,10 +100,15 @@ Phone + password. Staff and customers use **separate JWT scopes** — a staff to
 | Technician (mobile) | `998900000002` | `tech123` |
 | Technician (service center) | `998900000004` | `tech123` |
 | Front desk (receptionist) | `998900000005` | `desk123` |
-| Customer (Dilnoza) | `998900000003` | `customer123` |
+| Accountant (read-only) | `998900000006` | `acc12345` |
 | Warehouse keeper | `998900000007` | `ware1234` |
+| Customer (Dilnoza) | `998900000003` | `customer123` |
+| Customer (Jasur) | `998901112233` | `customer123` |
+| Customer (Malika) | `998907778899` | `customer123` |
 
-Seed also creates extra customers (Jasur, Malika), invoices `RZ-1001` … `RZ-1004`, a catalog with cost prices, and — on an empty database — one request in every board column (an overdue New job, an on-site job in progress, a paused job, a completed in-shop job awaiting pickup, and a picked-up job with a rating). Login is rate limited (10 failed attempts per phone per 15 minutes).
+Staff roles sign in on the website or the RIZO Staff app; customers sign in on the customer portal or the RIZO Customer app. Phone numbers are entered with the `998` prefix and no spaces.
+
+Seed also creates invoices `RZ-1001` … `RZ-1004`, a catalog with cost prices, and — on an empty database — one request in every board column (an overdue New job, an on-site job in progress, a paused job, a completed in-shop job awaiting pickup, and a picked-up job with a rating). Login is rate limited (10 failed attempts per phone per 15 minutes).
 
 ---
 
