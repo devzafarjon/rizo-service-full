@@ -22,6 +22,7 @@
     "add-demo-accounts": "node --import tsx/esm scripts/add-demo-accounts.ts",
     "demo:load": "node --import tsx/esm scripts/demo-load.ts",
     "demo:clean": "node --import tsx/esm scripts/demo-clean.ts",
+    "demo:catalog": "node --import tsx/esm scripts/demo-catalog.ts",
     "smoke:parts": "node --import tsx/esm scripts/parts-smoke.ts",
     "smoke:warehouses": "node --import tsx/esm scripts/warehouses-smoke.ts",
     "smoke:telegram": "node --import tsx/esm scripts/telegram-smoke.ts",

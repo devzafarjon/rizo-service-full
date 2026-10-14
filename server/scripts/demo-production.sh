@@ -70,6 +70,7 @@ export DEMO_CONFIRM=yes DEMO_COUNT="${DEMO_COUNT:-150}"
 # 3. earlier demo rows (a half-finished run) are removed first, so the load starts from a clean state
 echo "Avvalgi demo yozuvlar tekshirilmoqda ..."
 npm run demo:clean -w server 2>&1 | grep -E "Demo customers|Removed|error|Error" || true
+npm run demo:catalog -w server
 npm run demo:load -w server
 echo
 echo "Tayyor. Saytni va ilovalarni yangilang (ilovada pastga tortib yangilash)."
