@@ -7,7 +7,24 @@ Taqdimotda hamma ko'rishi mumkin bo'lishi uchun: har rol uchun qadamlar, nimani 
 2. **Demo ma'lumotni yangilang** (agar mashq paytida o'zgartirilgan bo'lsa): `./server/scripts/demo-production.sh` avval eski demo yozuvlarni **tozalaydi**, keyin 150 mijoz, ~170 so'rov, to'lovlar, rasmlar, omborlar, brendlar, hisobotlar tarixi va ish haqi ko'chirmalarini qaytadan yuklaydi (~10–15 daqiqa). Bu "demoni qayta boshlash" yo'li. Haqiqiy ma'lumotlarga tegmaydi.
 3. **Qurilmalar:** telefon (texnik), planshet (admin), kompyuter (sayt). Ilovalar `~/Desktop/RIZO/apk` (Android) va TestFlight/imzosiz IPA (iPhone). Telefonda kirish, kamera va push ruxsatlari oldindan berilgan bo'lsin.
 4. **Telegram:** @rizoservicebot ga mijoz telefoni ulangan bo'lsin; admin Telegram'i ham ulangan (kunlik hisobot keladi).
-5. Hisoblar: seed hisoblari (`CLAUDE.md`, "Demo logins"); production'da o'zingizning parollaringiz.
+5. **Hisoblar:** quyidagi jadvalga qarang.
+
+### Hisoblar (telefon / parol)
+
+| Rol | Ism | Telefon | Parol | Qayerda ishlatiladi |
+|---|---|---|---|---|
+| Admin | Madina Karimova | 998900000001 | `admin123` | Sayt: hamma bo'limlar |
+| Qabulxona (dispetcher) | Nigora Sodiqova | 998900000005 | `desk123` | Sayt: so'rovlar, mijozlar |
+| Texnik (chiqib ishlaydi) | Aziz Rakhimov | 998900000002 | `tech123` | RIZO Texnik ilovasi |
+| Texnik (servis markazida) | Bekzod Tursunov | 998900000004 | `tech123` | RIZO Texnik ilovasi |
+| Buxgalter | Gulnora Yusupova | 998900000006 | `acc12345` | Sayt: hisobotlar va pul (faqat ko'rish) |
+| Omborchi | Rustam Qodirov | 998900000007 | `ware1234` | Sayt: qismlar va texnik ombori |
+| Mijoz | Dilnoza Alieva | 998900000003 | `customer123` | RIZO Mijoz ilovasi |
+| Mijoz (ikkinchi) | Jasur Nazarov | 998901112233 | `customer123` | RIZO Mijoz ilovasi |
+
+Kirish: telefon raqam 998 bilan, bo'shliqlarsiz. Hisob-fakturalar: `RZ-1001` … `RZ-1004`.
+
+> Eslatma: buxgalter va omborchi parollari production'da tekshirilgan. Admin, texnik va qabulxona parollari seed bo'yicha; production'da ular sizning o'zingiz qo'ygan parollar bo'lishi mumkin.
 
 ## Hikoya (ketma-ketlik, ~15 daqiqa)
 1. **Mijoz Telegram'da so'rov ochadi** (1 daq): botda "Yangi so'rov" → mahsulot → muammo → manzil. Saytda so'rov darrov paydo bo'ladi.
