@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery } from "@tanstack/react-query";
 import { api } from "./api";
 
 export const PAGE_SIZE = 50;
@@ -19,6 +19,8 @@ export function usePagedList<T>({ queryKey, path, params, itemsKey, token, enabl
     queryKey,
     enabled: Boolean(token) && enabled,
     initialPageParam: 0,
+    // Keep the previous rows on screen while a new search / filter loads, so the page (and the focused search box) does not blank out.
+    placeholderData: keepPreviousData,
     queryFn: ({ pageParam }) => {
       const search = new URLSearchParams(params);
       search.set("limit", String(PAGE_SIZE));
@@ -35,6 +37,10 @@ export function usePagedList<T>({ queryKey, path, params, itemsKey, token, enabl
     loadMore: () => void query.fetchNextPage(),
     loadingMore: query.isFetchingNextPage,
     isLoading: query.isLoading,
+    isRefreshing: query.isPlaceholderData,
+    isError: query.isError,
+    error: query.error,
+    refetch: () => void query.refetch(),
     query,
   };
 }

@@ -8,6 +8,7 @@ import { EstimateView } from "../request-panels/EstimateView";
 import { StatusBadge, TypeBadge, WarrantyBadge } from "../../components/Badges";
 import { CameraCapture, canUseLiveCamera } from "../../components/CameraCapture";
 import { EmptyState } from "../../components/EmptyState";
+import { QueryError } from "../../components/QueryError";
 import { Field, inputClass } from "../../components/Field";
 import { PageSkeleton } from "../../components/PageSkeleton";
 import { RequestTimeline } from "../../components/RequestTimeline";
@@ -22,7 +23,7 @@ import type { ChecklistItem, JobWorkPayload } from "../../lib/types";
 import { PartRequestDialog } from "../warehouses/TechnicianDialogs";
 import { TRANSFER_STATUS_STYLE } from "../warehouses/TransfersTab";
 
-function ChecklistGroup({ kind, items, checked, disabled, onChange }: { kind: "diagnosis" | "completion"; items: ChecklistItem[]; checked: string[]; disabled: boolean; onChange: (checked: string[]) => void }) {
+function ChecklistGroup({ kind, items, checked, disabled, showRequired, onChange }: { kind: "diagnosis" | "completion"; items: ChecklistItem[]; checked: string[]; disabled: boolean; showRequired: boolean; onChange: (checked: string[]) => void }) {
   const { t, i18n } = useTranslation();
   const lang = (i18n.language.slice(0, 2) as "uz" | "ru" | "en") || "uz";
   return (
@@ -36,7 +37,7 @@ function ChecklistGroup({ kind, items, checked, disabled, onChange }: { kind: "d
               <label className={`flex min-h-12 items-center gap-3 rounded-2xl px-4 ring-1 ${on ? "bg-emerald-50 ring-emerald-300" : "bg-neutral-50 ring-neutral-200"}`}>
                 <input type="checkbox" className="h-5 w-5" checked={on} disabled={disabled} onChange={() => onChange(on ? checked.filter((id) => id !== item.id) : [...checked, item.id])} />
                 <span className="flex-1 text-sm font-semibold">{item[lang] || item.uz || item.en}</span>
-                {item.required ? <span className="rounded-full bg-[#F5EBFD] px-2 py-0.5 text-[10px] font-bold text-[#7B00E0] uppercase">{t("checklists.required")}</span> : null}
+                {showRequired && item.required ? <span className="rounded-full bg-[#F5EBFD] px-2 py-0.5 text-[10px] font-bold text-[#7B00E0] uppercase">{t("checklists.required")}</span> : null}
               </label>
             </li>
           );
@@ -201,6 +202,9 @@ export function JobCompletePage() {
   }
 
   const data = detail.data;
+  if (detail.isError && !data) {
+    return <QueryError error={detail.error} onRetry={() => void detail.refetch()} />;
+  }
   if (!data) {
     return <EmptyState title={t("job.notFoundTitle")} body={t("job.notFoundBody")} />;
   }
@@ -354,10 +358,10 @@ export function JobCompletePage() {
       ) : null}
 
       {data.checklist && (data.checklist.completion.items.length > 0 || (repair && data.checklist.diagnosis.items.length > 0)) ? (
-        <Section title={t("checklist.title")} hint={t("checklist.hint")}>
+        <Section title={t("checklist.title")} hint={t(repair ? "checklist.hint" : "checklist.hintInstall")}>
           <div className="space-y-4">
-            {repair && data.checklist.diagnosis.items.length > 0 ? <ChecklistGroup kind="diagnosis" items={data.checklist.diagnosis.items} checked={data.checklist.diagnosis.checked} disabled={done || busy} onChange={(checked) => checklistMut.mutate({ kind: "diagnosis", checked })} /> : null}
-            {data.checklist.completion.items.length > 0 ? <ChecklistGroup kind="completion" items={data.checklist.completion.items} checked={data.checklist.completion.checked} disabled={done || busy} onChange={(checked) => checklistMut.mutate({ kind: "completion", checked })} /> : null}
+            {repair && data.checklist.diagnosis.items.length > 0 ? <ChecklistGroup kind="diagnosis" items={data.checklist.diagnosis.items} checked={data.checklist.diagnosis.checked} disabled={done || busy} showRequired={repair} onChange={(checked) => checklistMut.mutate({ kind: "diagnosis", checked })} /> : null}
+            {data.checklist.completion.items.length > 0 ? <ChecklistGroup kind="completion" items={data.checklist.completion.items} checked={data.checklist.completion.checked} disabled={done || busy} showRequired={repair} onChange={(checked) => checklistMut.mutate({ kind: "completion", checked })} /> : null}
           </div>
         </Section>
       ) : null}

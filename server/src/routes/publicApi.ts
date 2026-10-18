@@ -181,7 +181,7 @@ publicRouter.get(
   asyncHandler(async (req, res) => {
     const request = await loadByToken(req.params.token);
     const summary = await paymentSummary(request.id);
-    res.json(paymentLinks({ displayId: request.displayId, balance: summary.balance, returnUrl: `${env.clientOrigin}/t/${request.trackingToken}` }));
+    res.json(paymentLinks({ displayId: request.displayId, status: request.status, balance: summary.balance, returnUrl: `${env.clientOrigin}/t/${request.trackingToken}` }));
   }),
 );
 

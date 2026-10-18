@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { EmptyState } from "../../components/EmptyState";
+import { QueryError } from "../../components/QueryError";
 import { inputClass } from "../../components/Field";
 import { Modal } from "../../components/Modal";
 import { PageSkeleton } from "../../components/PageSkeleton";
@@ -137,7 +138,19 @@ export function CustomersPage() {
         />
       </div>
 
-      {customers.length === 0 ? (
+      {list.isError && customers.length === 0 ? (
+        <QueryError error={list.error} onRetry={list.refetch} />
+      ) : customers.length === 0 && debounced.trim() ? (
+        <EmptyState
+          title={t("customers.noResultsTitle")}
+          body={t("customers.noResultsBody")}
+          action={
+            <button type="button" onClick={() => setQ("")} className="inline-flex h-12 items-center rounded-lg bg-[#7B00E0] px-6 text-[12.8px] font-bold text-white">
+              {t("customers.clearFilters")}
+            </button>
+          }
+        />
+      ) : customers.length === 0 ? (
         <EmptyState title={t("customers.emptyTitle")} body={t("customers.emptyBody")} />
       ) : (
 <>

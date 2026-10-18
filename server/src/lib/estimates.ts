@@ -136,11 +136,16 @@ export async function sendEstimate(estimateId: string, actor: AuditActor) {
   if (!estimate) throw new HttpError(404, "Estimate not found");
   if (estimate.status !== "draft" && estimate.status !== "sent") throw new HttpError(400, "This estimate can no longer be sent", "estimateClosed");
   const request = await prisma.serviceRequest.findUniqueOrThrow({ where: { id: estimate.serviceRequestId }, include: { product: true } });
-  const updated = await prisma.estimate.update({
-    where: { id: estimate.id },
-    data: { status: "sent", sentAt: new Date() },
-    include: estimateInclude,
-  });
+  // A draft is claimed atomically: when two sends race (double tap, two staff), only the winner notifies the
+  // customer and writes the audit row; the loser just gets the estimate back. Re-sending an already sent estimate
+  // stays allowed as a reminder.
+  if (estimate.status === "draft") {
+    const claimed = await prisma.estimate.updateMany({ where: { id: estimate.id, status: "draft" }, data: { status: "sent", sentAt: new Date() } });
+    if (claimed.count === 0) return prisma.estimate.findUniqueOrThrow({ where: { id: estimate.id }, include: estimateInclude });
+  } else {
+    await prisma.estimate.update({ where: { id: estimate.id }, data: { sentAt: new Date() } });
+  }
+  const updated = await prisma.estimate.findUniqueOrThrow({ where: { id: estimate.id }, include: estimateInclude });
   await createCustomerNotification(request.customerId, request.id, `Estimate ready for ${formatRequestId(request.displayId)}`, "estimateSent", {
     displayId: request.displayId,
     total: estimateTotal(updated.lines),

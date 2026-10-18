@@ -100,6 +100,10 @@ async function main() {
   assert(plainWrong.status === 401 && plainWrong.body.code === "badCredentials", "a wrong password in the apps is still just wrong");
   const stillWorks = await post("/api/staff/auth/login", { phone: "998900000002", password: "tech123" });
   assert(stillWorks.status === 200, "the old staff sign-in still works for the app");
+  const localStaff = await post("/api/staff/auth/login", { phone: "90 000 00 02", password: "tech123" });
+  assert(localStaff.status === 200, "a 9-digit local number signs staff in to the app");
+  const localUnified = await unified("900000003", "customer123");
+  assert(localUnified.status === 200 && localUnified.body.scope === "customer", "a 9-digit local number signs in on the web too");
 
   console.log("too many attempts");
   let last = 0;

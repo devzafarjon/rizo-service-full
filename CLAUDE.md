@@ -10,7 +10,7 @@ After-sales service management for RIZO market (Uzbekistan). Website plus two Fl
 - Cost: 0 if in warranty (extras are still charged), otherwise services + parts + extra expenses. Profit = revenue − part **cost price** (snapshotted per line) − extra expenses.
 
 ## Roles
-`admin` (dispatcher), `receptionist` (front desk: board, requests, customers, sales, calendar, map, part orders, kiosk — no reports/settings/staff/catalog), `technician` (`mobile` | `service_center`), `accountant` (reports, payroll, fiscal/partner reports; read-only elsewhere), `warehouse` (spare parts, part orders, technician stock), `customer`. Role sets live in `server/src/lib/roles.ts`; use `readWriteRoles(read, write)` for routes where reads are wider than writes. Phone + password for all three; customers use a separate login and JWT scope. Reports, dashboard, inventory, schedule, audit, duplicates, staff admin and settings changes are admin-only **at the API** (`requireStaffRole("admin")`). Customer queries are always scoped to the token's customer id. Deactivated staff (`is_active=false`) cannot sign in and lose API access within ~15s.
+`admin` (dispatcher), `receptionist` (front desk: board, requests, customers, sales, calendar, map, part orders, kiosk — no reports/settings/staff/catalog), `technician` (`mobile` | `service_center`), `accountant` (reports, payroll, fiscal/partner reports; read-only elsewhere), `warehouse` (spare parts, part orders, technician stock), `customer`. Role sets live in `server/src/lib/roles.ts`; use `readWriteRoles(read, write)` for routes where reads are wider than writes. Staff and customers both sign in with phone + password; customers get a separate JWT scope. Reports, dashboard, inventory, schedule, audit, duplicates, staff admin and settings changes are admin-only **at the API** (`requireStaffRole("admin")`). Customer queries are always scoped to the token's customer id. Deactivated staff (`is_active=false`) cannot sign in and lose API access within ~15s.
 
 ## Status model (one model for both types, per `Rizo.xlsx` #4)
 `new → diagnosing → awaiting_decision → awaiting_parts → in_progress ⇄ paused → ready | completed | replaced → picked_up`, plus `refunded`, `rejected`, `cancelled`. Installation is `new → in_progress → completed` (+ paused/cancelled). Tables live in `server/src/lib/status.ts` (mirrored in `client/src/lib/status.ts`); the technician board folds them into 4 columns (`lib/techBoard.ts`).
@@ -39,7 +39,7 @@ React 19 + Vite + TS + Tailwind 4 + React Router + TanStack Query + Headless UI 
 
 ## Commands
 ```bash
-# all API checks (each needs the API running on a scratch database): smoke, smoke:growth, smoke:auto, smoke:parts, smoke:warehouses, smoke:telegram, smoke:auth, smoke:rbac, smoke:concurrency, smoke:fuzz
+# all API checks (run with `-w server` except `smoke`; each needs the API running on a scratch database): smoke, smoke:growth, smoke:auto, smoke:parts, smoke:warehouses, smoke:telegram, smoke:auth, smoke:rbac, smoke:concurrency, smoke:fuzz
 npm install
 npm run db:migrate        # prisma migrate dev
 npm run db:seed           # demo staff, customers, catalog, sales, one request per board column
@@ -53,7 +53,7 @@ node server/scripts/i18n-scan.mjs
 Scratch DB for QA: point `DATABASE_URL` at another database, `prisma migrate deploy`, seed, run the API on another `PORT`, and start Vite with `API_TARGET=http://localhost:4100 DEV_PORT=5174`.
 
 ## Growth suite (added 2026-10)
-Visit slots + capacity (`lib/visits.ts`), ETA, skill/distance assignment (`lib/assignment.ts`), checklists (`lib/checklists.ts`), technician stock (`lib/techStock.ts`), help articles, partner centre payouts, per-payment fiscal receipts, TOTP two-step sign-in (`lib/totp.ts`), privacy export/erase, weekly digest (`lib/digest.ts`), escalation (in `lib/sla.ts`), service KPIs (`lib/serviceKpis.ts`), Telegram buttons on notifications (`lib/telegramText.ts`), market API (`routes/integrations.ts`). New settings are in `lib/settings.ts`. Two extra scripts: `npm run smoke:growth`. Production runs `prisma migrate deploy` on start, so a migration goes live with the deploy.
+Visit slots + capacity (`lib/visits.ts`), ETA, skill/distance assignment (`lib/assignment.ts`), checklists (`lib/checklists.ts`), technician stock (`lib/techStock.ts`), help articles, partner centre payouts, per-payment fiscal receipts, TOTP two-step sign-in (`lib/totp.ts`), privacy export/erase, weekly digest (`lib/digest.ts`), escalation (in `lib/sla.ts`), service KPIs (`lib/serviceKpis.ts`), Telegram buttons on notifications (`lib/telegramText.ts`), market API (`routes/integrations.ts`). New settings are in `lib/settings.ts`. Two extra scripts: `npm run smoke:growth -w server`. Production runs `prisma migrate deploy` on start, so a migration goes live with the deploy.
 **Never model periodic / seasonal maintenance** (still true): no "service due" reminders, no maintenance plans. **No paid warranty-extension plans either** (removed 2026-10-12: a warranty cannot be extended at all, neither bought nor added by staff). Where the warranty starts (`sale` or `installation`) is the company setting `warranty_starts_on` (default `sale`), not a per-product field.
 
 ## Spare-part control (added 2026-10)

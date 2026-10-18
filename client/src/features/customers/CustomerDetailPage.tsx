@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 import { StatusBadge, TypeBadge, WarrantyBadge } from "../../components/Badges";
 import { EmptyState } from "../../components/EmptyState";
+import { QueryError } from "../../components/QueryError";
 import { PageSkeleton } from "../../components/PageSkeleton";
 import { SurfaceTable, Td, Th } from "../../components/SurfaceTable";
 import { useToast } from "../../components/toast";
@@ -73,6 +74,9 @@ export function CustomerDetailPage() {
   }
 
   const customer = detail.data?.customer;
+  if (detail.isError && !customer) {
+    return <QueryError error={detail.error} onRetry={() => void detail.refetch()} />;
+  }
   if (!customer) {
     return <EmptyState title={t("errors.customerNotFound")} body={t("customers.notFoundBody")} />;
   }

@@ -238,7 +238,7 @@ customerPortalRouter.get(
   asyncHandler(async (req, res) => {
     const request = await loadOwnRequest(req.customer!.sub, req.params.id);
     const summary = await paymentSummary(request.id);
-    res.json(paymentLinks({ displayId: request.displayId, balance: summary.balance, returnUrl: `${env.clientOrigin}/portal/requests/${request.id}` }));
+    res.json(paymentLinks({ displayId: request.displayId, status: request.status, balance: summary.balance, returnUrl: `${env.clientOrigin}/portal/requests/${request.id}` }));
   }),
 );
 

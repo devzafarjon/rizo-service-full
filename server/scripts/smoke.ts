@@ -386,7 +386,8 @@ async function main() {
   await json(`/api/staff/requests/${intake.body.request.id}`, { method: "PATCH", token: admin.token, body: JSON.stringify({ status: "cancelled" }) });
   const sched = new Date(Date.now() + 26 * 3_600_000).toISOString();
   const visit = await createJob({ type: "repair", issueDescription: "Smoke visit", locationType: "on_site", customerLocation: { address: "12 Amir Temur Avenue" }, technicianTypeRequired: "mobile", scheduledAt: sched });
-  const day = sched.slice(0, 10);
+  // The calendar filter works in Tashkent time (+05:00), so derive the day there, not in UTC.
+  const day = new Date(Date.parse(sched) + 5 * 3_600_000).toISOString().slice(0, 10);
   const visits = await json<{ requests: Array<{ id: string }> }>(`/api/staff/requests?from=${day}&to=${day}`, { token: desk.token });
   assert(visits.body.requests.some((row) => row.id === visit.body.request.id), "scheduled visits appear on the calendar range");
   await json(`/api/staff/requests/${visit.body.request.id}`, { method: "PATCH", token: admin.token, body: JSON.stringify({ status: "cancelled" }) });

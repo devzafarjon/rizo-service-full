@@ -4,7 +4,8 @@ import { Bell } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { useCustomerAuth } from "../auth/CustomerAuthContext";
-import { api } from "../../lib/api";
+import { api, apiErrorMessage } from "../../lib/api";
+import { useToast } from "../../components/toast";
 import { formatStamp } from "../../lib/format";
 import { notificationText } from "../../lib/notifications";
 import type { PortalNotification } from "../../lib/types";
@@ -13,6 +14,7 @@ export function NotificationBell() {
   const { t, i18n } = useTranslation();
   const { token } = useCustomerAuth();
   const queryClient = useQueryClient();
+  const { notify } = useToast();
 
   const list = useQuery({
     queryKey: ["customer", "notifications"],
@@ -24,11 +26,21 @@ export function NotificationBell() {
   const markOne = useMutation({
     mutationFn: (id: string) => api(`/api/customer/notifications/${id}/read`, { method: "PATCH", token }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["customer", "notifications"] }),
+    // Put the list back to what the server says, and tell the person the mark did not go through.
+    onError: (error: unknown) => {
+      void queryClient.invalidateQueries({ queryKey: ["customer", "notifications"] });
+      notify(apiErrorMessage(error, t), "error");
+    },
   });
 
   const markAll = useMutation({
     mutationFn: () => api("/api/customer/notifications/read-all", { method: "PATCH", token }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["customer", "notifications"] }),
+    // Put the list back to what the server says, and tell the person the mark did not go through.
+    onError: (error: unknown) => {
+      void queryClient.invalidateQueries({ queryKey: ["customer", "notifications"] });
+      notify(apiErrorMessage(error, t), "error");
+    },
   });
 
   const notifications = list.data?.notifications ?? [];

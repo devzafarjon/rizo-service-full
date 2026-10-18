@@ -73,12 +73,14 @@ async function main() {
   const demoWarehouses = (await prisma.$queryRawUnsafe<Array<{ id: string }>>(`select id from warehouses where kind <> 'central' and note like $1 || '%'`, MARK)).map((row) => row.id);
   const demoKeepers = demoWarehouses.length ? (await prisma.$queryRawUnsafe<Array<{ id: string }>>(`select id from staff_users where warehouse_id = any($1::text[]) and name like 'DEMO %'`, demoWarehouses)).map((row) => row.id) : [];
   console.log(`Demo warehouses: ${demoWarehouses.length}, keepers: ${demoKeepers.length}`);
-  console.log(`Demo customers: ${customers.length}, their requests: ${requests.length}, sales: ${sales.length}, demo products: ${products.length}, demo parts: ${demoParts.length}, suppliers: ${suppliers.length}, stock orders: ${stockOrders.length}`);
+  const demoRunCount = Number((await prisma.$queryRawUnsafe<Array<{ n: number }>>(`select count(*)::int as n from auto_job_runs where summary->>'demo' = 'true'`))[0].n);
+  const demoBrandCount = Number((await prisma.$queryRawUnsafe<Array<{ n: number }>>(`select count(*)::int as n from brands where is_own = false and added_by_name = $1`, MARK))[0].n);
+  console.log(`Demo customers: ${customers.length}, their requests: ${requests.length}, sales: ${sales.length}, demo products: ${products.length}, demo parts: ${demoParts.length}, suppliers: ${suppliers.length}, stock orders: ${stockOrders.length}, report runs: ${demoRunCount}, brands: ${demoBrandCount}`);
   if (process.env.DEMO_DRY === "yes") return;
   if (!["localhost", "127.0.0.1", "::1", ""].includes(host) && process.env.DEMO_CONFIRM !== "yes") {
     throw new Error("This is not a local database. Run again with DEMO_CONFIRM=yes to delete the demo data from it.");
   }
-  if (customers.length === 0 && products.length === 0 && demoParts.length === 0 && suppliers.length === 0 && demoWarehouses.length === 0) return;
+  if (customers.length === 0 && products.length === 0 && demoParts.length === 0 && suppliers.length === 0 && demoWarehouses.length === 0 && demoRunCount === 0 && demoBrandCount === 0) return;
 
   await prisma.$transaction(
     async (tx) => {

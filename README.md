@@ -244,7 +244,7 @@ Added after comparing RIZO Service with other field-service and repair systems. 
 
 Not modelled on purpose: periodic / seasonal maintenance and "service due" reminders.
 
-Checks: `npm run smoke` (core flows) and `npm run smoke:growth` (everything above; run the API with `MARKET_API_KEY=smoke-key`).
+Checks: `npm run smoke` (core flows) and `npm run smoke:growth -w server` (everything above; run the API with `MARKET_API_KEY=smoke-key`).
 
 ---
 
@@ -261,7 +261,7 @@ Built so a part that is missing never leaves a customer or a technician in the d
 - **Dashboard**: the admin dashboard (website and staff app) has a *Spare parts* row: jobs waiting, nothing ordered, late orders, to order; each tile opens the matching view.
 - **The customer** sees a banner on the request (portal, public tracking page and the customer app): whether the part is ordered, the expected date, and an apology when late (`partWait` in the request payload).
 - **Mobile (RIZO Texnik)**: admin, front desk and warehouse get the same four views (More → Spare parts; the warehouse's first screen), including receiving part of an order, the supplier message to copy, and new-order sheets. Technicians and customers get the notices as push and in the bell.
-- **Demo data**: `npm run demo:load` also creates 3 suppliers, 4 low-stock `DEMO ` parts, jobs waiting for parts (some ordered, some late, some with no order) and 2 stock orders; `demo:clean` removes them again.
+- **Demo data**: `npm run demo:load -w server` also creates 3 suppliers, 4 low-stock `DEMO ` parts, jobs waiting for parts (some ordered, some late, some with no order) and 2 stock orders; `npm run demo:clean -w server` removes them again.
 - Check: `npm run smoke:parts -w server` (scratch database, API running).
 
 ---
@@ -277,7 +277,7 @@ Spare parts live in **warehouses**, not in one pile. Page `/app/warehouses` (adm
 - **Keeper's screens**: requests to send, parts on the way in, the **stock** list (count a shelf, set a per-warehouse minimum), **restock** (everything below its minimum with the quickest source for each, one tap sends all), the **history** of every movement, and (admin) the **list** of warehouses to add, edit, link to a service centre or switch off. Technician stock (give / take back) is in the app too (More → Technician stock).
 - **Orders** (`/api/staff/part-orders`) show the warehouse they are delivered to and who asked; `receivePartOrder` puts the stock on that shelf.
 - **Settings**: `transfer_ship_hours` (24).
-- **Demo data**: `npm run demo:load` creates 8 warehouses (6 regional, 2 branch), 3 keepers, filled shelves and requests in every state (waiting, sent, late, received, refused, a van top-up); `demo:clean` removes them and puts parts in transit back.
+- **Demo data**: `npm run demo:load -w server` creates 8 warehouses (6 regional, 2 branch), 3 keepers, filled shelves and requests in every state (waiting, sent, late, received, refused, a van top-up); `npm run demo:clean -w server` removes them and puts parts in transit back.
 - Check: `npm run smoke:warehouses -w server` (scratch database, API running).
 
 ---
@@ -368,7 +368,7 @@ Repairs can be in shop or on site, chosen when the request is created; on-site r
 
 ## Domain model (short)
 
-- **StaffUser** — `admin`, `receptionist` or `technician` (`mobile` / `service_center`), availability, `is_active`, locale, pay percent / fixed per job, service center
+- **StaffUser** — `admin`, `receptionist`, `technician` (`mobile` / `service_center`), `accountant` or `warehouse`, availability, `is_active`, locale, pay percent / fixed per job, service center
 - **ServiceCenter** — branch directory (address, hours, coordinates, authorised flag)
 - **Estimate / EstimateLine** — draft → sent → approved / declined / expired; optional lines, part lines fulfilled from stock
 - **Payment** — payment or refund per request, method, fiscal receipt number

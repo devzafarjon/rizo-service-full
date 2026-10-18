@@ -6,14 +6,61 @@ import { Field, inputClass } from "../../components/Field";
 import { PageSkeleton } from "../../components/PageSkeleton";
 import { useStaffAuth } from "../auth/StaffAuthContext";
 import { api } from "../../lib/api";
-import { formatDateTime } from "../../lib/format";
+import { formatDate, formatDateTime, formatMoney, formatStamp } from "../../lib/format";
 import type { AuditLogEntry, OutboundMessage } from "../../lib/types";
 
-function valueText(value: Record<string, unknown> | null) {
-  if (!value) return "";
-  return Object.entries(value)
-    .map(([key, item]) => `${key}: ${typeof item === "object" ? JSON.stringify(item) : String(item)}`)
-    .join(", ");
+const ISO_DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const MONEY_KEYS = new Set(["amount", "balance", "estimatedCost", "finalCost", "total"]);
+const ENUM_KEYS: Record<string, string> = {
+  status: "status",
+  role: "staffAdmin.roles",
+  method: "payments.methods",
+};
+
+type Translate = (key: string, options?: Record<string, unknown>) => string;
+
+function sameValue(a: unknown, b: unknown) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+function fieldLabel(t: Translate, key: string) {
+  return t(`audit.field.${key}`, { defaultValue: key });
+}
+
+function fieldValue(t: Translate, key: string, value: unknown): string {
+  if (value === null || value === undefined || value === "") return t("common.dash");
+  if (typeof value === "boolean") return value ? t("audit.yes") : t("audit.no");
+  if (typeof value === "number") return MONEY_KEYS.has(key) ? formatMoney(value) : String(value);
+  if (typeof value === "string") {
+    if (ISO_DATE_TIME.test(value)) return formatStamp(value);
+    if (ISO_DATE.test(value)) return formatDate(value);
+    const group = ENUM_KEYS[key];
+    return group ? t(`${group}.${value}`, { defaultValue: value }) : value;
+  }
+  if (Array.isArray(value)) {
+    return value.length === 0 ? t("common.dash") : value.map((item) => fieldValue(t, key, item)).join(", ");
+  }
+  return JSON.stringify(value);
+}
+
+/** One readable "label: value" line per changed field; when both sides carry a field it shows old → new. */
+function changeLines(t: Translate, oldValue: Record<string, unknown> | null, newValue: Record<string, unknown> | null) {
+  const before = oldValue ?? {};
+  const after = newValue ?? {};
+  const keys = [...new Set([...Object.keys(before), ...Object.keys(after)])];
+  const lines: string[] = [];
+  for (const key of keys) {
+    const inBefore = key in before;
+    const inAfter = key in after;
+    if (inBefore && inAfter) {
+      if (sameValue(before[key], after[key])) continue;
+      lines.push(`${fieldLabel(t, key)}: ${fieldValue(t, key, before[key])} → ${fieldValue(t, key, after[key])}`);
+    } else {
+      lines.push(`${fieldLabel(t, key)}: ${fieldValue(t, key, inAfter ? after[key] : before[key])}`);
+    }
+  }
+  return lines;
 }
 
 export function ActivityLogPage() {
@@ -67,22 +114,27 @@ export function ActivityLogPage() {
         <EmptyState title={t("audit.emptyTitle")} body={t("audit.emptyBody")} />
       ) : (
         <ol className="space-y-3">
-          {items.map((row) => (
-            <li key={row.id} className="rounded-2xl border border-neutral-200 bg-white p-4">
-              <p className="text-sm font-extrabold">{t(`audit.action.${row.action}`, { defaultValue: row.action })}</p>
-              <p className="mt-1 text-xs text-neutral-500">
-                {row.userName ?? row.userId} · {row.userType} · {formatDateTime(row.createdAt)}
-              </p>
-              <p className="mt-2 text-xs text-neutral-600">
-                {row.entityType} {row.entityId}
-              </p>
-              {row.oldValue || row.newValue ? (
-                <p className="mt-2 text-xs text-neutral-500">
-                  {valueText(row.oldValue)} {row.oldValue && row.newValue ? "→" : ""} {valueText(row.newValue)}
+          {items.map((row) => {
+            const lines = changeLines(t, row.oldValue, row.newValue);
+            return (
+              <li key={row.id} className="rounded-2xl border border-neutral-200 bg-white p-4">
+                <p className="text-sm font-extrabold">{t(`audit.action.${row.action}`, { defaultValue: row.action })}</p>
+                <p className="mt-1 text-xs text-neutral-500">
+                  {row.userName ?? row.userId} · {row.userType} · {formatDateTime(row.createdAt)}
                 </p>
-              ) : null}
-            </li>
-          ))}
+                <p className="mt-2 text-xs text-neutral-600">
+                  {row.entityType} {row.entityId}
+                </p>
+                {lines.length > 0 ? (
+                  <ul className="mt-2 space-y-0.5 text-xs text-neutral-500">
+                    {lines.map((line, index) => (
+                      <li key={`${index}-${line}`}>{line}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </li>
+            );
+          })}
         </ol>
       )}
 

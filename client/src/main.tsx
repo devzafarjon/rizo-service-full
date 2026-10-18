@@ -11,6 +11,9 @@ import { StaffAuthProvider } from "./features/auth/StaffAuthContext";
 import "./i18n";
 import { parseLocale } from "./i18n";
 import "./index.css";
+import { installLocalizedValidation } from "./lib/localizedValidation";
+
+installLocalizedValidation();
 
 const queryClient = new QueryClient({
   defaultOptions: {

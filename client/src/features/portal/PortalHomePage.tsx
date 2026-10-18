@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { LocationBadge, StatusBadge, TypeBadge, WarrantyBadge } from "../../components/Badges";
 import { EmptyState } from "../../components/EmptyState";
+import { QueryError } from "../../components/QueryError";
 import { PageSkeleton } from "../../components/PageSkeleton";
 import { useCustomerAuth } from "../auth/CustomerAuthContext";
 import { api } from "../../lib/api";
@@ -43,6 +44,9 @@ export function PortalHomePage() {
 
   if (list.isLoading) {
     return <PageSkeleton />;
+  }
+  if (list.isError && !list.data) {
+    return <QueryError error={list.error} onRetry={() => void list.refetch()} />;
   }
 
   return (

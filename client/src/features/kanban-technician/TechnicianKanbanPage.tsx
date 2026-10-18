@@ -20,6 +20,7 @@ import { Modal } from "../../components/Modal";
 import { OverflowLink, OverflowMenu } from "../../components/OverflowMenu";
 import { PauseDialog } from "../../components/PauseDialog";
 import { PageSkeleton } from "../../components/PageSkeleton";
+import { QueryError } from "../../components/QueryError";
 import { useToast } from "../../components/toast";
 import { useStaffAuth } from "../auth/StaffAuthContext";
 import { api, apiErrorMessage } from "../../lib/api";
@@ -189,6 +190,9 @@ export function TechnicianKanbanPage() {
 
   if (board.isLoading) {
     return <PageSkeleton />;
+  }
+  if (board.isError && !board.data) {
+    return <QueryError error={board.error} onRetry={() => void board.refetch()} />;
   }
 
   return (

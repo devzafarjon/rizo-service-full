@@ -138,8 +138,6 @@ export default function App() {
           <Route element={<RoleRoute roles={["admin", "accountant"]} />}>
             <Route path="automation" element={<AutomationPage />} />
           </Route>
-          <Route element={<RoleRoute roles={["admin", "receptionist", "accountant"]} />}>
-          </Route>
           <Route element={<RoleRoute roles={["admin", "receptionist"]} />}>
             <Route path="kanban" element={<AdminKanbanPage />} />
             <Route path="customers" element={<CustomersPage />} />

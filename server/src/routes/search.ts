@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { normalizeDisplayIdQuery } from "../lib/displayId.js";
-import { normalizePhone } from "../lib/phone.js";
+import { digitsOnly } from "../lib/phone.js";
 import { prisma } from "../lib/prisma.js";
 import { computeWarrantyStatus, money, toDateOnly } from "../lib/warranty.js";
 import { requireOffice, requireStaffRole, staffAuth } from "../middleware/staffAuth.js";
@@ -17,7 +17,7 @@ searchRouter.get(
       res.json({ customers: [], sales: [], requests: [] });
       return;
     }
-    const digits = normalizePhone(q);
+    const digits = digitsOnly(q);
     const displayId = normalizeDisplayIdQuery(q);
     const [customers, sales, requests] = await Promise.all([
       prisma.customer.findMany({

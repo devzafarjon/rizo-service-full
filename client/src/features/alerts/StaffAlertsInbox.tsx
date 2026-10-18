@@ -4,7 +4,8 @@ import { Link } from "react-router-dom";
 import { EmptyState } from "../../components/EmptyState";
 import { PageSkeleton } from "../../components/PageSkeleton";
 import { useStaffAuth } from "../auth/StaffAuthContext";
-import { api } from "../../lib/api";
+import { api, apiErrorMessage } from "../../lib/api";
+import { useToast } from "../../components/toast";
 import { formatStamp } from "../../lib/format";
 import { localizedName } from "../../lib/localized";
 import { notificationText } from "../../lib/notifications";
@@ -13,6 +14,8 @@ import type { SparePart, StaffAlert } from "../../lib/types";
 export function useStaffAlerts() {
   const { token } = useStaffAuth();
   const queryClient = useQueryClient();
+  const { notify } = useToast();
+  const { t } = useTranslation();
 
   const list = useQuery({
     queryKey: ["staff", "alerts"],
@@ -24,11 +27,21 @@ export function useStaffAlerts() {
   const markOne = useMutation({
     mutationFn: (id: string) => api(`/api/staff/alerts/${id}/read`, { method: "PATCH", token }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["staff", "alerts"] }),
+    // Put the list back to what the server says, and tell the person the mark did not go through.
+    onError: (error: unknown) => {
+      void queryClient.invalidateQueries({ queryKey: ["staff", "alerts"] });
+      notify(apiErrorMessage(error, t), "error");
+    },
   });
 
   const markAll = useMutation({
     mutationFn: () => api("/api/staff/alerts/read-all", { method: "PATCH", token }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["staff", "alerts"] }),
+    // Put the list back to what the server says, and tell the person the mark did not go through.
+    onError: (error: unknown) => {
+      void queryClient.invalidateQueries({ queryKey: ["staff", "alerts"] });
+      notify(apiErrorMessage(error, t), "error");
+    },
   });
 
   return {

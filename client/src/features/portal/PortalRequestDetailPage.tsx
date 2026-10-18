@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 import { LocationBadge, StatusBadge, TypeBadge, WarrantyBadge } from "../../components/Badges";
 import { EmptyState } from "../../components/EmptyState";
+import { QueryError } from "../../components/QueryError";
 import { PickupConfirm } from "../../components/PickupConfirm";
 import { Spinner } from "../../components/Spinner";
 import { useToast } from "../../components/toast";
@@ -144,6 +145,9 @@ export function PortalRequestDetailPage() {
   }
 
   const request = detail.data?.request;
+  if (detail.isError && !request) {
+    return <QueryError error={detail.error} onRetry={() => void detail.refetch()} />;
+  }
   if (!request) {
     return <EmptyState title={t("portal.notFoundTitle")} body={t("portal.notFoundBody")} />;
   }

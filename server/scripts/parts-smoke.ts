@@ -41,7 +41,8 @@ async function main() {
   const tag = String(Date.now()).slice(-6);
   const admin = await login("staff", "998900000001", "admin123");
   const desk = await login("staff", "998900000005", "desk123");
-  const tech = await login("staff", "998900000004", "tech123");
+  // Aziz has no centre or shelf of his own, so his jobs take parts from the central warehouse (the shelf this suite stocks).
+  const tech = await login("staff", "998900000002", "tech123");
   const accountant = await login("staff", "998900000006", "acc12345");
   const warehouse = await login("staff", "998900000007", "ware1234");
   const customer = await login("customer", "998900000003", "customer123");
@@ -69,7 +70,7 @@ async function main() {
   const dilnoza = customers.body.customers.find((row: any) => row.phone === "998900000003");
 
   const makeJob = async () => {
-    const job = await post("/api/staff/requests", admin.token, { customerId: dilnoza.id, productId: fridge.id, type: "repair", issueDescription: `Parts smoke ${tag}`, locationType: "in_shop", technicianTypeRequired: "service_center", assignedTechnicianId: tech.id, autoAssign: false, allowDuplicate: true, defectType: "failed_during_use" });
+    const job = await post("/api/staff/requests", admin.token, { customerId: dilnoza.id, productId: fridge.id, type: "repair", issueDescription: `Parts smoke ${tag}`, locationType: "on_site", customerLocation: { address: "Tashkent, Chilonzor 5" }, technicianTypeRequired: "mobile", assignedTechnicianId: tech.id, autoAssign: false, allowDuplicate: true, defectType: "failed_during_use" });
     assert(job.status === 201, "a repair job is created");
     const id = job.body.request.id as string;
     await patch(`/api/staff/my-jobs/${id}`, tech.token, { column: "in_progress" });

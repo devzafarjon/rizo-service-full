@@ -6,6 +6,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { WarrantyBadge } from "../../components/Badges";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { EmptyState } from "../../components/EmptyState";
+import { QueryError } from "../../components/QueryError";
 import { Field, inputClass } from "../../components/Field";
 import { Modal } from "../../components/Modal";
 import { PageSkeleton } from "../../components/PageSkeleton";
@@ -132,7 +133,29 @@ export function SalesPage() {
         />
       </div>
 
-      {sales.length === 0 ? (
+      {list.isError && sales.length === 0 ? (
+        <QueryError error={list.error} onRetry={list.refetch} />
+      ) : sales.length === 0 && (debounced.trim() || invoiceParam) ? (
+        <EmptyState
+          title={t("sales.noResultsTitle")}
+          body={t("sales.noResultsBody")}
+          action={
+            <button
+              type="button"
+              onClick={() => {
+                setQ("");
+                if (invoiceParam) {
+                  params.delete("invoice");
+                  setParams(params, { replace: true });
+                }
+              }}
+              className="inline-flex h-12 items-center rounded-lg bg-[#7B00E0] px-6 text-[12.8px] font-bold text-white"
+            >
+              {t("sales.clearFilters")}
+            </button>
+          }
+        />
+      ) : sales.length === 0 ? (
         <EmptyState title={t("sales.emptyTitle")} body={t("sales.emptyBody")} />
       ) : (
 <>

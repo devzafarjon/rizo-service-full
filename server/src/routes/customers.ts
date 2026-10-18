@@ -5,7 +5,7 @@ import { pageInfo, parsePaging } from "../lib/paging.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { HttpError } from "../lib/httpError.js";
 import { parseBody } from "../lib/parse.js";
-import { assertPhone, normalizePhone } from "../lib/phone.js";
+import { assertPhone, digitsOnly, normalizePhone } from "../lib/phone.js";
 import { hashPassword } from "../lib/password.js";
 import { prisma } from "../lib/prisma.js";
 import { handlePrismaError } from "../lib/prismaErrors.js";
@@ -109,7 +109,7 @@ customersRouter.get(
   "/",
   asyncHandler(async (req, res) => {
     const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
-    const digits = normalizePhone(q);
+    const digits = digitsOnly(q);
     const where = q
       ? {
           OR: [

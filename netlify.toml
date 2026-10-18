@@ -13,7 +13,7 @@
 # loaded. The one inline script (theme, in client/index.html) is allowed by its hash: if you edit that script, the hash changes;
 # compute the new one with  node -e "console.log('sha256-'+require('crypto').createHash('sha256').update(SCRIPT_TEXT).digest('base64'))"
 # or read the "Refused to execute inline script ... 'sha256-...'" message in the browser console. If the API moves to another
-# host, change both occurrences of rizo-service-api.onrender.com below.
+# host, change every occurrence of rizo-service-api.onrender.com below (img-src, connect-src https and wss).
 [[headers]]
   for = "/*"
   [headers.values]

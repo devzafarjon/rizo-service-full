@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router-dom";
 import { LocationBadge, PriorityBadge, StatusBadge, TypeBadge, WarrantyBadge } from "../../components/Badges";
 import { EmptyState } from "../../components/EmptyState";
+import { QueryError } from "../../components/QueryError";
 import { inputClass } from "../../components/Field";
 import { PageSkeleton } from "../../components/PageSkeleton";
 import { SurfaceTable, Td, Th } from "../../components/SurfaceTable";
@@ -170,7 +171,28 @@ export function ServiceRequestsPage() {
         </div>
       ) : null}
 
-      {requests.length === 0 ? (
+      {list.isError && requests.length === 0 ? (
+        <QueryError error={list.error} onRetry={list.refetch} />
+      ) : requests.length === 0 && (debounced.trim() || type || status || scope) ? (
+        <EmptyState
+          title={t("requests.noResultsTitle")}
+          body={t("requests.noResultsBody")}
+          action={
+            <button
+              type="button"
+              onClick={() => {
+                setQ("");
+                setType("");
+                setStatus("");
+                setUrlParams({}, { replace: true });
+              }}
+              className="inline-flex h-12 items-center rounded-lg bg-[#7B00E0] px-6 text-[12.8px] font-bold text-white"
+            >
+              {t("requests.clearFilters")}
+            </button>
+          }
+        />
+      ) : requests.length === 0 ? (
         <EmptyState
           title={t("requests.emptyTitle")}
           body={t("requests.emptyBody")}

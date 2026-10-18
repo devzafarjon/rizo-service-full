@@ -6,6 +6,7 @@ import { Link, useParams } from "react-router-dom";
 import { LocationBadge, PriorityBadge, StatusBadge, TierBadge, TypeBadge, WarrantyBadge } from "../../components/Badges";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { EmptyState } from "../../components/EmptyState";
+import { QueryError } from "../../components/QueryError";
 import { inputClass } from "../../components/Field";
 import { JobTimerChip } from "../../components/JobTimer";
 import { PageSkeleton } from "../../components/PageSkeleton";
@@ -30,6 +31,14 @@ import type { Priority, RequestDetailPayload, RequestStatus, TechnicianSummary }
 import { useNow } from "../../lib/useNow";
 import { QueueNotice } from "../directory/QueueNotice";
 import { Stars } from "../reporting/FeedbackReport";
+
+/** The server stores two English default notes; show them in the staff member's language. */
+function decisionNoteText(note: string, t: (key: string, params?: Record<string, unknown>) => string): string {
+  if (note === "Approved by the customer in person or by phone") return t("decision.noteApprovedOffline");
+  const repeat = /^Repeat failure inside the warranty of repair #(\S+)$/.exec(note);
+  return repeat ? t("decision.noteRepeatFailure", { id: repeat[1] }) : note;
+}
+
 
 const PRIORITIES: Priority[] = ["low", "medium", "high", "urgent"];
 const DECIDABLE: RequestStatus[] = ["new", "diagnosing", "awaiting_decision", "awaiting_parts", "in_progress"];
@@ -97,6 +106,7 @@ export function RequestDetailPage() {
   if (detail.isLoading) return <PageSkeleton />;
   const data = detail.data;
   const request = data?.request;
+  if (detail.isError && !data) return <QueryError error={detail.error} onRetry={() => void detail.refetch()} />;
   if (!data || !request) return <EmptyState title={t("detail.notFoundTitle")} body={t("detail.notFoundBody")} />;
 
   const role = user?.role ?? "admin";
@@ -271,7 +281,7 @@ export function RequestDetailPage() {
                 <dt className="text-neutral-500">{t("decision.title")}</dt>
                 <dd>
                   {t(`decision.${request.decision}`)}
-                  {request.decisionNote ? <span className="text-neutral-500"> · {request.decisionNote}</span> : null}
+                  {request.decisionNote ? <span className="text-neutral-500"> · {decisionNoteText(request.decisionNote, t)}</span> : null}
                 </dd>
               </>
             ) : null}
@@ -425,7 +435,7 @@ export function RequestDetailPage() {
               />
             ))}
             {openEstimate && openEstimate.status === "draft" ? (
-              <button type="button" onClick={() => estimateAction.mutate({ estimateId: openEstimate.id, action: "send" })} className="h-11 rounded-lg bg-[#7B00E0] px-5 text-sm font-bold text-white">
+              <button type="button" onClick={() => estimateAction.mutate({ estimateId: openEstimate.id, action: "send" })} disabled={estimateAction.isPending} className="h-11 rounded-lg bg-[#7B00E0] px-5 text-sm font-bold text-white disabled:opacity-60">
                 {t("estimate.sendToCustomer")}
               </button>
             ) : null}

@@ -267,7 +267,10 @@
   html.dark .text-\[\#6500BD\] {
     color: #bb82ff;
   }
-  html.dark .text-\[\#5A0085\] {
+  html.dark .text-\[\#5A0085\],
+  html.dark .text-\[\#4B0089\],
+  html.dark .text-\[\#4B0082\],
+  html.dark .text-\[\#5A00A8\] {
     color: #d6aefa;
   }
   html.dark .text-\[\#C56A00\] {
@@ -303,7 +306,8 @@
   html.dark .bg-sky-50 {
     background-color: #0f2a3a;
   }
-  html.dark .text-sky-800 {
+  html.dark .text-sky-800,
+  html.dark .text-sky-900 {
     color: #7dd3fc;
   }
   html.dark .leaflet-control-attribution {
@@ -358,6 +362,7 @@
   html.dark .text-red-600,
   html.dark .text-red-700,
   html.dark .text-red-800,
+  html.dark .text-red-900,
   html.dark .text-rose-700 {
     color: #fca5a5;
   }
