@@ -32,7 +32,9 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
       if (data.token) localStorage.setItem(CUSTOMER_TOKEN_KEY, data.token);
       return data.user;
     },
-    retry: false,
+    // A slow or failed check (server waking up, network blip) must not look like a lost session: retry, only a 401 ends it.
+    retry: (count, error) => !(error instanceof ApiError && error.status === 401) && count < 4,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
   });
 
   const logout = useCallback(() => {
