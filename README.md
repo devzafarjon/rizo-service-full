@@ -133,7 +133,7 @@ Translation files: `client/src/i18n/locales/{uz,ru,en}.json`. Add keys there whe
 
 | Path | Screen |
 | --- | --- |
-| `/` | Home — staff vs customer portal |
+| `/` | Landing page — hero, services, how it works, portal; signed-in users go straight to their home |
 | `/login` | **One sign-in for everybody** (staff and customers): phone + password, the server finds whose it is (`POST /api/auth/login` answers `scope: staff | customer`); a staff account with two-step sign-in is asked for the code; a phone and password that open both a staff and a customer account ask which one. `/portal/login` redirects here. The apps keep their own endpoints and tell an account of the other app where to go (`useStaffApp` / `useCustomerApp`) |
 | `/portal/signup` | Customer registration (sends current language) |
 | `/track` | Track a request by request number + phone (rate limited, no login) |

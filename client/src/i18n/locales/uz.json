@@ -98,7 +98,104 @@
     "staffContinue": "Xodim sifatida davom etish",
     "portalContinue": "Portalga o‘tish",
     "track": "Buyurtmani kuzatish",
-    "centers": "Servis markazlari"
+    "centers": "Servis markazlari",
+    "hero": {
+      "badge": "RIZO market uchun sotuvdan keyingi servis",
+      "title": "Texnikangizga g‘amxo‘rlik —",
+      "titleAccent": "o‘rnatishdan ta’mirlashgacha",
+      "subtitle": "RIZO market’dan olgan mahsulotingizni usta uyingizda o‘rnatadi, kerak bo‘lsa ta’mirlaydi. Har bir bosqichni telefoningizdan kuzatib borasiz.",
+      "noAccount": "Hisob shart emas — buyurtma raqami va telefon raqami yetarli."
+    },
+    "mock": {
+      "caption": "Namuna ko‘rinish",
+      "heading": "Buyurtmangiz holati",
+      "number": "Ariza #051026010001",
+      "product": "Kir yuvish mashinasi",
+      "technician": "Usta Jasur yo‘lda",
+      "arrival": "Taxminan 25 daqiqada yetib keladi"
+    },
+    "services": {
+      "title": "Biz nima qilamiz",
+      "subtitle": "Xarid qilingan mahsulot bilan bog‘liq hamma narsa bir joyda.",
+      "install": {
+        "title": "O‘rnatish",
+        "text": "Usta manzilingizga keladi, mahsulotni o‘rnatadi va ishlashini tekshiradi. Kafolat muddati sotuv yoki o‘rnatish sanasidan hisoblanadi."
+      },
+      "repair": {
+        "title": "Ta’mirlash",
+        "text": "Servis markazida yoki manzilingizda. Narx smeta bilan oldindan ko‘rsatiladi — uni telefondan tasdiqlaysiz yoki rad etasiz."
+      },
+      "warranty": {
+        "title": "Kafolat nazorati",
+        "text": "Mahsulotingiz kafolati qancha qolganini ko‘ring va bir bosishda servisga yoziling."
+      }
+    },
+    "how": {
+      "title": "Qanday ishlaydi",
+      "subtitle": "To‘rt oddiy qadam — qolganini biz hal qilamiz.",
+      "step1": {
+        "title": "So‘rov qoldiring",
+        "text": "Portal, Telegram-bot orqali yoki servis markazida. Xarid qilgan mahsulotingizni tanlash kifoya."
+      },
+      "step2": {
+        "title": "Usta biriktiriladi",
+        "text": "Mos va bugun ishlayotgan usta avtomatik tayinlanadi. Tashrif vaqtini o‘zingiz tanlaysiz."
+      },
+      "step3": {
+        "title": "Ish bajariladi",
+        "text": "O‘rnatish yoki ta’mirlash. Ishlatilgan ehtiyot qismlar va natija yozib qo‘yiladi."
+      },
+      "step4": {
+        "title": "Kuzating va baholang",
+        "text": "Holat, usta yo‘lda ekani, to‘lovlar — hammasi bir joyda. Yakunda ish sifatini baholaysiz."
+      }
+    },
+    "why": {
+      "title": "Nega RIZO Service",
+      "subtitle": "Sizga qulay va shaffof bo‘lishi uchun o‘ylangan.",
+      "track": {
+        "title": "Hisobsiz kuzatuv",
+        "text": "Buyurtma raqami va telefon yoki SMS/QR havola orqali holatni ko‘ring — kirish shart emas."
+      },
+      "clear": {
+        "title": "Tushunarli holatlar",
+        "text": "Texnik atamalarsiz: «Qabul qilindi», «Jarayonda», «Olib ketishga tayyor»."
+      },
+      "estimate": {
+        "title": "Smeta sizning qo‘lingizda",
+        "text": "Narxni ko‘rib chiqing va saytda yoki botda tasdiqlang yoki rad eting."
+      },
+      "telegram": {
+        "title": "Telegram-bot",
+        "text": "Arizalar, kafolat, servis markazlari va xabarlar — Telegram’da ham."
+      },
+      "languages": {
+        "title": "Uch tilda",
+        "text": "O‘zbekcha, ruscha va inglizcha — sayt, ilovalar va botda."
+      },
+      "privacy": {
+        "title": "Ma’lumotlaringiz sizniki",
+        "text": "Ustaning faqat ismi ko‘rinadi. Ma’lumotlaringizni yuklab olish yoki o‘chirishni so‘rash mumkin."
+      }
+    },
+    "portal": {
+      "badge": "Mijozlar uchun",
+      "title": "Shaxsiy kabinet va mobil ilova",
+      "text": "Hisob oching — barcha arizalaringiz, mahsulotlaringiz va kafolatlaringiz bir joyda. RIZO Mijoz ilovasida ham xuddi shunday.",
+      "li1": "Arizalar holati va ustaga xabarlar",
+      "li2": "Mahsulotlar va kafolat hisoblagichi",
+      "li3": "Tashrif vaqtini tanlash, ko‘chirish yoki bekor qilish",
+      "li4": "To‘lovlar, chek va ustaga baho",
+      "staff": "Xodimmisiz? RIZO Texnik ilovasi va boshqaruv paneli kirish orqali ochiladi."
+    },
+    "centersBlock": {
+      "title": "Yaqin servis markazini toping",
+      "text": "Hududlar bo‘yicha manzillar, ish vaqti, telefon va yo‘nalish havolasi."
+    },
+    "cta": {
+      "title": "Boshlashga tayyormisiz?",
+      "text": "Hisob oching yoki mavjud buyurtmangiz holatini kuzating."
+    }
   },
   "auth": {
     "signedIn": "Tizimga kirdingiz",

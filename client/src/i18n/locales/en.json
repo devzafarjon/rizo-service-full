@@ -98,7 +98,104 @@
     "staffContinue": "Continue as staff",
     "portalContinue": "Continue to portal",
     "track": "Track a request",
-    "centers": "Service centers"
+    "centers": "Service centers",
+    "hero": {
+      "badge": "After-sales service for RIZO market",
+      "title": "Care for your appliances —",
+      "titleAccent": "from installation to repair",
+      "subtitle": "A technician installs what you bought at RIZO market in your home and repairs it when needed. You follow every step from your phone.",
+      "noAccount": "No account needed — just your request number and phone."
+    },
+    "mock": {
+      "caption": "Sample view",
+      "heading": "Your request status",
+      "number": "Request #051026010001",
+      "product": "Washing machine",
+      "technician": "Technician Jasur is on the way",
+      "arrival": "Arrives in about 25 minutes"
+    },
+    "services": {
+      "title": "What we do",
+      "subtitle": "Everything about the product you bought, in one place.",
+      "install": {
+        "title": "Installation",
+        "text": "A technician comes to your address, installs the product and checks it works. Warranty counts from the sale or installation date."
+      },
+      "repair": {
+        "title": "Repair",
+        "text": "At a service center or at your home. The price is shown upfront in an estimate — you approve or decline it from your phone."
+      },
+      "warranty": {
+        "title": "Warranty check",
+        "text": "See how much warranty is left on your product and book a service in one tap."
+      }
+    },
+    "how": {
+      "title": "How it works",
+      "subtitle": "Four simple steps — we handle the rest.",
+      "step1": {
+        "title": "Submit a request",
+        "text": "In the portal, via the Telegram bot, or at a service center. Just pick the product you bought."
+      },
+      "step2": {
+        "title": "A technician is assigned",
+        "text": "A suitable technician who is working today is assigned automatically. You choose the visit time."
+      },
+      "step3": {
+        "title": "The work is done",
+        "text": "Installation or repair. Parts used and the outcome are recorded."
+      },
+      "step4": {
+        "title": "Track and rate",
+        "text": "Status, the technician on the way, payments — all in one place. At the end you rate the work."
+      }
+    },
+    "why": {
+      "title": "Why RIZO Service",
+      "subtitle": "Built to be convenient and transparent for you.",
+      "track": {
+        "title": "Tracking without an account",
+        "text": "See the status with your request number and phone, or via the SMS/QR link — no sign-in needed."
+      },
+      "clear": {
+        "title": "Clear statuses",
+        "text": "No jargon: “Received”, “In progress”, “Ready for pickup”."
+      },
+      "estimate": {
+        "title": "The estimate is yours to decide",
+        "text": "Review the price and approve or decline it on the website or in the bot."
+      },
+      "telegram": {
+        "title": "Telegram bot",
+        "text": "Requests, warranty, service centers and messages — in Telegram too."
+      },
+      "languages": {
+        "title": "Three languages",
+        "text": "Uzbek, Russian and English — on the website, in the apps and in the bot."
+      },
+      "privacy": {
+        "title": "Your data stays yours",
+        "text": "Only the technician’s first name is shown. You can download your data or request its erasure."
+      }
+    },
+    "portal": {
+      "badge": "For customers",
+      "title": "Personal account and mobile app",
+      "text": "Create an account — all your requests, products and warranties in one place. The RIZO Mijoz app does the same.",
+      "li1": "Request status and messages to the service",
+      "li2": "Products and a warranty countdown",
+      "li3": "Pick, reschedule or cancel a visit",
+      "li4": "Payments, receipt and technician rating",
+      "staff": "Are you staff? The RIZO Texnik app and the dashboard open after sign-in."
+    },
+    "centersBlock": {
+      "title": "Find your nearest service center",
+      "text": "Addresses by region, opening hours, phone and a directions link."
+    },
+    "cta": {
+      "title": "Ready to get started?",
+      "text": "Create an account or track the status of your current request."
+    }
   },
   "auth": {
     "signedIn": "Signed in",
